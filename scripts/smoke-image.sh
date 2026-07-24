@@ -21,7 +21,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-docker network create --internal "${network}" >/dev/null
+docker network create "${network}" >/dev/null
 docker volume create "${volume_a}" >/dev/null
 docker volume create "${volume_b}" >/dev/null
 

@@ -5,6 +5,13 @@ import { validateComposeText, validateImageReference } from '../src/policy.mjs';
 
 const compose = await readFile(new URL('../compose.yaml', import.meta.url), 'utf8');
 validateComposeText(compose);
+const smoke = await readFile(new URL('./smoke-image.sh', import.meta.url), 'utf8');
+if (smoke.includes('docker network create --internal')) {
+  throw new Error('image smoke uses a host-disconnected network for published localhost ports');
+}
+if (!smoke.includes('docker network create "${network}"')) {
+  throw new Error('image smoke does not create the expected user-defined bridge network');
+}
 
 for (const relative of ['../package.json']) {
   JSON.parse(await readFile(new URL(relative, import.meta.url), 'utf8'));
