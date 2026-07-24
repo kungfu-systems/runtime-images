@@ -77,6 +77,29 @@ jobs:
             KUNGFU_PACKAGE_VERSION=${{ inputs.package-version }}
             KUNGFU_SOURCE_SHA=${{ inputs.kungfu-source-sha }}
             SOURCE_REVISION=${{ github.sha }}
+      - name: Smoke documented Compose path
+        env:
+          KUNGFU_HUB_IMAGE: ghcr.io/${{ github.repository }}/hub-starter@${{ steps.build.outputs.digest }}
+          COMPOSE_PROJECT_NAME: kungfu-hub-compose-${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          set -euo pipefail
+          cleanup() {
+            docker compose down >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+          docker compose up --detach
+          deadline=$((SECONDS + 300))
+          until curl --fail --silent http://127.0.0.1:8080/healthz >/dev/null; do
+            if (( SECONDS >= deadline )); then
+              docker compose logs hub
+              echo "Documented Compose path did not become ready within five minutes" >&2
+              exit 1
+            fi
+            sleep 2
+          done
+          curl --fail --silent http://127.0.0.1:8080/api/state | jq -e '.assignment.assignment_id' >/dev/null
+          docker compose down
+          trap - EXIT
       - name: Smoke two isolated instances
         env:
           IMAGE_REF: ghcr.io/${{ github.repository }}/hub-starter@${{ steps.build.outputs.digest }}
