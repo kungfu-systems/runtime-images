@@ -3,7 +3,7 @@
   "status": "awaiting-qualified-image",
   "image": "ghcr.io/kungfu-systems/runtime-images/hub-starter@sha256:INPUT_IMAGE_DIGEST",
   "imageSourceRevision": "INPUT_RUNTIME_SOURCE_SHA",
-  "kungfuSourceSha": "aeaad1bfc057d382dd4ba36d24c25ee676507d45",
+  "kungfuSourceSha": "de6fc09a1ce9b427c6850bfed7e6487497edb2c1",
   "kungfuPackageSha256": "INPUT_PACKAGE_SHA256",
   "kungfuPackageVersion": "INPUT_PACKAGE_VERSION",
   "buildImagesConsumerSha": "3056c23e70b83f5bb63062f04027a93e79039e4b",
