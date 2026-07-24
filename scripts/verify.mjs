@@ -27,6 +27,9 @@ for (const required of [
   'tech.kungfu.product.source',
   'tech.kungfu.product.package.sha256',
   'tech.kungfu.build-image.digest',
+  'KUNGFU_INSTALL_SOURCE=archive',
+  'KUNGFU_DIR=/opt/kungfu',
+  'KUNGFU_UPGRADE_MANIFEST=/opt/kungfu/upgrade/kungfu-release-manifest.json',
   'ln -s /opt/kungfu/kungfu /usr/local/bin/kungfu',
 ]) {
   if (!dockerfile.includes(required)) throw new Error(`Dockerfile invariant missing: ${required}`);
