@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 ARG BUILD_IMAGE=ghcr.io/kungfu-systems/build-images/kungfu-verify@sha256:cb6d939d567c129903d6e3ad858e2c09a9475b3b8f81b1aad10279d0e63a920d
-ARG RUNTIME_IMAGE=node:24-bookworm-slim@sha256:d45d78e7929b46875bbd4e29bea672d5bc48186c6c3588306521c815e78352d6
+ARG RUNTIME_IMAGE=node:24-trixie-slim@sha256:5301bbf5e8046148348b1dea15436326f43c579031f8d76654a631225bdfe467
 
 FROM ${BUILD_IMAGE} AS package
 ARG KUNGFU_PACKAGE_SHA256
