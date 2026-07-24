@@ -48,6 +48,18 @@ const hub = new HubStarterClient();
 console.log(await hub.state());
 ```
 
+For one bounded course-domain extension, create a second disposable project
+with a different course name and port:
+
+```sh
+COMPOSE_PROJECT_NAME=my-course HUB_PORT=8081 \
+  HUB_COURSE_NAME="Responsible AI Workshop" docker compose up
+```
+
+On its fresh named volume, the adapter admits that course name through the
+public Assignment request. It changes the example's domain behavior without
+modifying Kungfu Core or constructing internal storage records.
+
 ## Reproducible identity
 
 [`contracts/hub-starter-runtime.contract.json`](contracts/hub-starter-runtime.contract.json)

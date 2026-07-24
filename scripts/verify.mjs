@@ -23,6 +23,7 @@ for (const required of [
   'tech.kungfu.product.source',
   'tech.kungfu.product.package.sha256',
   'tech.kungfu.build-image.digest',
+  'ln -s /opt/kungfu/kungfu /usr/local/bin/kungfu',
 ]) {
   if (!dockerfile.includes(required)) throw new Error(`Dockerfile invariant missing: ${required}`);
 }
@@ -34,5 +35,8 @@ const lock = JSON.parse(await readFile(new URL('../release/runtime.lock.json', i
 if (lock.status === 'qualified-development-candidate') validateImageReference(lock.image);
 if (!/^[0-9a-f]{40}$/u.test(lock.kungfuSourceSha)) throw new Error('Kungfu source is not an exact commit');
 if (!lock.buildImageDigest.startsWith('sha256:')) throw new Error('build image is not digest-pinned');
+if (!compose.includes('HUB_COURSE_NAME: ${HUB_COURSE_NAME:-AI Teaching Sprint}')) {
+  throw new Error('bounded course-team extension seam is missing');
+}
 
 console.log('[verify] source, Compose, image boundary, and identity contracts passed');

@@ -65,7 +65,11 @@ COPY --from=package --chown=root:root /opt/kungfu /opt/kungfu
 COPY --chown=root:root src /opt/hub/src
 COPY --chown=root:root web /opt/hub/web
 COPY --chown=root:root package.json /opt/hub/package.json
-RUN mkdir -p /state /opt/hub && chown node:node /state && chmod 0755 /state /opt/hub
+RUN ln -s /opt/kungfu/kungfu /usr/local/bin/kungfu && \
+    test -x /usr/local/bin/kungfu && \
+    mkdir -p /state /opt/hub && \
+    chown node:node /state && \
+    chmod 0755 /state /opt/hub
 
 USER node
 WORKDIR /opt/hub
