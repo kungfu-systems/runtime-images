@@ -190,6 +190,11 @@ export class KungfuRuntime {
     ]);
   }
 
+  async readiness() {
+    const { identity, metadata } = await this.ensureBootstrap();
+    return { identity, status: await this.#status(metadata) };
+  }
+
   async state() {
     const { identity, metadata } = await this.ensureBootstrap();
     const status = await this.#status(metadata);

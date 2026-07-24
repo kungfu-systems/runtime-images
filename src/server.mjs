@@ -38,7 +38,7 @@ const server = createServer(async (request, response) => {
   try {
     const url = new URL(request.url, 'http://hub-starter.local');
     if (request.method === 'GET' && url.pathname === '/healthz') {
-      const state = await runtime.state();
+      const { identity, status } = await runtime.readiness();
       const readyPhases = new Set([
         'executing',
         'stage-ready',
@@ -46,12 +46,14 @@ const server = createServer(async (request, response) => {
         'reviewed',
         'continuation-decided',
       ]);
-      sendJson(response, 200, {
+      const ready = readyPhases.has(status.phase);
+      sendJson(response, ready ? 200 : 503, {
         schema: 'kungfu.hub-starter.readiness/v1',
-        ready: readyPhases.has(state.assignment.phase),
-        instanceId: state.instance.instanceId,
-        workspaceIdentityRoot: state.assignment.assignment.owning_workspace_identity_root,
-        queryProofRoot: state.assignment.query_proof_root,
+        ready,
+        phase: status.phase,
+        instanceId: identity.instanceId,
+        workspaceIdentityRoot: status.assignment.owning_workspace_identity_root,
+        queryProofRoot: status.query_proof_root,
       });
       return;
     }
