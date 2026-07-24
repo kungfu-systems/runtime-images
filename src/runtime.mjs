@@ -33,6 +33,7 @@ export class KungfuRuntime {
   constructor({
     stateRoot = process.env.HUB_STATE_ROOT || '/state',
     kungfuBin = process.env.KUNGFU_BIN || '/opt/kungfu/kungfu',
+    kungfuPrefixArgs = JSON.parse(process.env.KUNGFU_PREFIX_ARGS || '[]'),
     packageSha256 = process.env.KUNGFU_PACKAGE_SHA256 || '',
     sourceSha = process.env.KUNGFU_SOURCE_SHA || '',
     instanceLabel = process.env.HUB_INSTANCE_LABEL || 'local',
@@ -42,6 +43,7 @@ export class KungfuRuntime {
     this.control = join(stateRoot, 'control');
     this.runtimeHome = join(this.workspace, '.kungfu');
     this.kungfuBin = kungfuBin;
+    this.kungfuPrefixArgs = kungfuPrefixArgs;
     this.packageSha256 = packageSha256;
     this.sourceSha = sourceSha;
     this.instanceLabel = instanceLabel;
@@ -51,7 +53,8 @@ export class KungfuRuntime {
 
   async run(args, { timeoutMs = 90_000 } = {}) {
     return new Promise((resolve, reject) => {
-      const child = spawn(this.kungfuBin, args, {
+      const commandArgs = [...this.kungfuPrefixArgs, ...args];
+      const child = spawn(this.kungfuBin, commandArgs, {
         env: { ...process.env, HOME: this.stateRoot, KUNGFU_LOG_LEVEL: 'warning' },
         stdio: ['ignore', 'pipe', 'pipe'],
       });
@@ -71,7 +74,7 @@ export class KungfuRuntime {
       child.once('close', (code) => {
         clearTimeout(timer);
         if (code !== 0) {
-          reject(new Error(`Kungfu command failed (${code}): ${args.join(' ')}\n${stderr || stdout}`));
+          reject(new Error(`Kungfu command failed (${code}): ${commandArgs.join(' ')}\n${stderr || stdout}`));
           return;
         }
         resolve(parseJsonOutput(stdout, args));
@@ -219,11 +222,22 @@ export class KungfuRuntime {
     const { metadata } = await this.ensureBootstrap();
     const settlementPath = join(this.control, 'settlement.json');
     try {
-      return await readJson(settlementPath);
+      const settled = await readJson(settlementPath);
+      if (!ROOT_PATTERN.test(settled.stateRoot || '')) {
+        throw new Error('persisted settlement has no valid sealed state root');
+      }
+      return settled;
     } catch (error) {
       if (error.code !== 'ENOENT') throw error;
     }
     const status = await this.#status(metadata);
+    if (status.phase === 'executing') {
+      await this.run([
+        'assignment', 'stage', '--workspace', this.workspace,
+        '--initiative-id', metadata.initiativeId, '--assignment-id', metadata.assignmentId,
+        '--actor', 'hub-starter', '--reason', 'Guided walkthrough is ready for completion review',
+      ]);
+    }
     const acceptanceRoot = root('hub-starter-guided-walkthrough/v1');
     const proofRoots = [metadata.requestRoot, root(this.packageSha256 || 'package-not-reported')]
       .filter((value) => ROOT_PATTERN.test(value));
@@ -256,7 +270,7 @@ export class KungfuRuntime {
       reviewerSource: 'hub-starter-independent-review',
       source: 'kungfu',
       purpose: 'completion-review',
-      executorProfile: 'hub-starter',
+      executorProfile: 'thread',
       proposedFollowups: [],
     });
     const review = await this.run([
@@ -284,13 +298,6 @@ export class KungfuRuntime {
       'assignment', 'decide', decisionInput, '--workspace', this.workspace,
       '--authorized-by', 'hub-starter-operator',
     ]);
-    if (status.phase === 'executing') {
-      await this.run([
-        'assignment', 'stage', '--workspace', this.workspace,
-        '--initiative-id', metadata.initiativeId, '--assignment-id', metadata.assignmentId,
-        '--actor', 'hub-starter', '--reason', 'Guided walkthrough has review and decision evidence',
-      ]);
-    }
     const sealPlan = await this.run([
       'assignment', 'seal', '--workspace', this.workspace,
       '--initiative-id', metadata.initiativeId, '--assignment-id', metadata.assignmentId,
@@ -308,8 +315,8 @@ export class KungfuRuntime {
       verdict: review.review.verdict,
       decisionId: decision.decision?.decision_id || decision.coreReceipt?.decision?.decision_id || null,
       action,
-      stateRoot: seal.state_root,
-      sealedStatePath: seal.output_path || seal.state_path || null,
+      stateRoot: seal.stateRoot,
+      sealedStatePath: seal.statePath,
       recordedAt: new Date().toISOString(),
     };
     await writeJsonAtomic(settlementPath, settlement);
