@@ -30,7 +30,7 @@ services:
 
 networks:
   hub-private:
-    internal: true
+    driver: bridge
 
 volumes:
   hub-state:
