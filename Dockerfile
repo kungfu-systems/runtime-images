@@ -58,6 +58,9 @@ ENV NODE_ENV=production \
     PORT=8080 \
     HUB_STATE_ROOT=/state \
     KUNGFU_BIN=/opt/kungfu/kungfu \
+    KUNGFU_INSTALL_SOURCE=archive \
+    KUNGFU_DIR=/opt/kungfu \
+    KUNGFU_UPGRADE_MANIFEST=/opt/kungfu/upgrade/kungfu-release-manifest.json \
     KUNGFU_PACKAGE_SHA256=${KUNGFU_PACKAGE_SHA256} \
     KUNGFU_SOURCE_SHA=${KUNGFU_SOURCE_SHA}
 
