@@ -15,7 +15,7 @@ async function load() {
   byId('initiative-root').textContent = short(assignment.initiative_ref?.version_root);
   byId('assignment').textContent = assignment.title;
   byId('assignment-root').textContent = short(assignment.work_definition_root);
-  byId('episodes').textContent = String(state.episodes.episodes?.length || state.instance ? state.assignment.phase_transitions.length + 2 : 0);
+  byId('episodes').textContent = String(state.episodes.episodes?.length ?? 0);
   byId('query-root').textContent = short(state.assignment.query_proof_root);
   byId('settlement').textContent = state.settlement ? state.settlement.verdict : 'Open';
   byId('state-root').textContent = short(state.settlement?.stateRoot || 'Not sealed');
