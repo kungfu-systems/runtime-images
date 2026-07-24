@@ -29,7 +29,7 @@ RUN set -eu; \
     entry=$(jq -r '.entries.kungfu' /opt/kungfu/product.json); \
     case "${entry}" in /*|../*|*/../*|*/..) exit 66 ;; esac; \
     test -x "/opt/kungfu/${entry}"; \
-    ln -s "/opt/kungfu/${entry}" /opt/kungfu/kungfu; \
+    test "${entry}" = kungfu; \
     chmod -R a-w /opt/kungfu
 
 FROM ${RUNTIME_IMAGE} AS runtime
