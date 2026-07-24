@@ -1,0 +1,23 @@
+{
+  "name": "@kungfu-tech/hub-starter-runtime",
+  "version": "0.1.0-alpha.1",
+  "description": "Docker-first development runtime for exploring Kungfu-managed work.",
+  "license": "Apache-2.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "exports": {
+    "./client": "./src/client.mjs"
+  },
+  "scripts": {
+    "check": "node scripts/verify.mjs && node --test",
+    "start": "node src/server.mjs",
+    "test": "node --test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kungfu-systems/runtime-images.git"
+  }
+}

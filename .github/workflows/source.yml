@@ -1,0 +1,41 @@
+name: Source
+
+on:
+  pull_request:
+  push:
+    branches:
+      - dev/v*/v*
+      - alpha/v*/v*
+      - release/v*/v*
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Source contract
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out exact source
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - name: Use Node.js 24
+        uses: actions/setup-node@1e60f620b9541d20930b5e22a7a8e192e9374a5a # v4.0.4
+        with:
+          node-version: "24"
+          cache: npm
+      - name: Install exact dependency graph
+        run: npm ci --ignore-scripts --registry=https://registry.npmjs.org/
+      - name: Verify source and negative cases
+        run: npm run check
+      - name: Validate shell entrypoints
+        run: bash -n scripts/smoke-image.sh
+
+  buildchain:
+    name: Buildchain contract
+    uses: kungfu-systems/buildchain/.github/workflows/check.yml@8e7955851381b50f0081008bc0655c4cf8aa92aa
+    with:
+      require-version-state: true
+      upload-artifacts: true

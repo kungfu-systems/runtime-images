@@ -1,0 +1,42 @@
+name: DCO
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  signoff:
+    name: Signed-off commits
+    runs-on: ubuntu-24.04
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPOSITORY: ${{ github.repository }}
+      PULL_REQUEST: ${{ github.event.pull_request.number }}
+    steps:
+      - name: Require one DCO signoff on every commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          page=1
+          checked=0
+          while :; do
+            commits=$(gh api "/repos/${REPOSITORY}/pulls/${PULL_REQUEST}/commits?per_page=100&page=${page}")
+            count=$(jq 'length' <<<"${commits}")
+            test "${count}" -gt 0 || break
+            while IFS= read -r encoded; do
+              message=$(printf '%s' "${encoded}" | base64 --decode | jq -r '.commit.message')
+              sha=$(printf '%s' "${encoded}" | base64 --decode | jq -r '.sha')
+              grep -Eiq '^Signed-off-by: .+ <[^>]+>$' <<<"${message}" || {
+                echo "commit ${sha} has no DCO signoff" >&2
+                exit 1
+              }
+              checked=$((checked + 1))
+            done < <(jq -r '.[] | @base64' <<<"${commits}")
+            test "${count}" -eq 100 || break
+            page=$((page + 1))
+          done
+          test "${checked}" -gt 0

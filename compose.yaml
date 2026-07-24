@@ -1,0 +1,36 @@
+name: kungfu-hub-starter
+
+services:
+  hub:
+    image: ${KUNGFU_HUB_IMAGE:?Set KUNGFU_HUB_IMAGE to the exact published sha256 digest}
+    restart: unless-stopped
+    read_only: true
+    user: node
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    environment:
+      HUB_INSTANCE_LABEL: ${HUB_INSTANCE_LABEL:-local}
+    ports:
+      - "127.0.0.1:${HUB_PORT:-8080}:8080"
+    volumes:
+      - hub-state:/state
+    networks:
+      - hub-private
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8080/healthz').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 4s
+      start_period: 90s
+      retries: 24
+
+networks:
+  hub-private:
+    internal: true
+
+volumes:
+  hub-state:
+    name: ${COMPOSE_PROJECT_NAME:-kungfu-hub-starter}-state

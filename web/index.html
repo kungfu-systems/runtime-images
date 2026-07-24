@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Kungfu Hub Starter</title>
+    <link rel="stylesheet" href="/style.css">
+  </head>
+  <body>
+    <main>
+      <p class="eyebrow">KUNGFU / HUB STARTER</p>
+      <h1>Real work.<br><span>One local container.</span></h1>
+      <p class="boundary">Pre-Alpha development candidate. Localhost only. No authentication, multi-user isolation, HA, or production support.</p>
+      <section id="status" class="status">Opening the native Kungfu workspace…</section>
+      <section class="grid">
+        <article><p>Initiative</p><h2 id="initiative">—</h2><code id="initiative-root">—</code></article>
+        <article><p>Assignment</p><h2 id="assignment">—</h2><code id="assignment-root">—</code></article>
+        <article><p>Episode evidence</p><h2 id="episodes">—</h2><code id="query-root">—</code></article>
+        <article><p>Settlement cut</p><h2 id="settlement">Open</h2><code id="state-root">Not sealed</code></article>
+      </section>
+      <div class="actions">
+        <button id="settle">Review and settle the walkthrough</button>
+        <button id="refresh" class="secondary">Refresh native state</button>
+      </div>
+      <details>
+        <summary>Developer extension seam</summary>
+        <pre><code>import { HubStarterClient } from '@kungfu-tech/hub-starter-runtime/client';
+
+const hub = new HubStarterClient();
+const state = await hub.state();
+// The client calls the bounded HTTP adapter; Kungfu CLI remains authority.</code></pre>
+      </details>
+      <pre id="raw" aria-label="Native state JSON"></pre>
+    </main>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
