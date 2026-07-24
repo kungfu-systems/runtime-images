@@ -1,0 +1,9 @@
+.git
+.github
+.artifacts
+node_modules
+test
+docs
+*.md
+!LICENSE
+

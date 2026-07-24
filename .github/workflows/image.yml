@@ -1,0 +1,109 @@
+name: Image candidate
+
+on:
+  workflow_dispatch:
+    inputs:
+      package-release-tag:
+        description: Immutable runtime-images prerelease containing the exact Kungfu CLI package
+        required: true
+      package-sha256:
+        description: Exact lowercase SHA-256 of kungfu-episodes-cli-linux-x64.tar.gz
+        required: true
+      package-version:
+        description: Exact product version recorded inside the package
+        required: true
+      kungfu-source-sha:
+        description: Exact Kungfu source commit used to build the package
+        required: true
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish-and-smoke:
+    name: Publish and smoke exact candidate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Check out exact runtime source
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - name: Validate trusted inputs
+        env:
+          PACKAGE_SHA256: ${{ inputs.package-sha256 }}
+          KUNGFU_SOURCE_SHA: ${{ inputs.kungfu-source-sha }}
+        run: |
+          set -euo pipefail
+          [[ "${PACKAGE_SHA256}" =~ ^[0-9a-f]{64}$ ]]
+          [[ "${KUNGFU_SOURCE_SHA}" =~ ^[0-9a-f]{40}$ ]]
+      - name: Download exact source-built Kungfu package
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.package-release-tag }}
+        run: gh release download "${RELEASE_TAG}" --pattern kungfu-episodes-cli-linux-x64.tar.gz
+      - name: Verify package checksum
+        env:
+          PACKAGE_SHA256: ${{ inputs.package-sha256 }}
+        run: echo "${PACKAGE_SHA256}  kungfu-episodes-cli-linux-x64.tar.gz" | sha256sum -c -
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3
+      - name: Sign in to GHCR
+        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - name: Resolve candidate identity
+        id: identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "tag=ghcr.io/${GITHUB_REPOSITORY}/hub-starter:dev-${GITHUB_SHA::12}" >>"${GITHUB_OUTPUT}"
+      - name: Build and publish development candidate
+        id: build
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6
+        with:
+          context: .
+          file: Dockerfile
+          platforms: linux/amd64
+          push: true
+          provenance: mode=max
+          sbom: true
+          tags: ${{ steps.identity.outputs.tag }}
+          build-args: |
+            KUNGFU_PACKAGE_SHA256=${{ inputs.package-sha256 }}
+            KUNGFU_PACKAGE_VERSION=${{ inputs.package-version }}
+            KUNGFU_SOURCE_SHA=${{ inputs.kungfu-source-sha }}
+            SOURCE_REVISION=${{ github.sha }}
+      - name: Smoke two isolated instances
+        env:
+          IMAGE_REF: ghcr.io/${{ github.repository }}/hub-starter@${{ steps.build.outputs.digest }}
+        run: bash scripts/smoke-image.sh "${IMAGE_REF}" .artifacts/image-smoke.json
+      - name: Retain image identity
+        env:
+          IMAGE_REF: ghcr.io/${{ github.repository }}/hub-starter@${{ steps.build.outputs.digest }}
+          PACKAGE_SHA256: ${{ inputs.package-sha256 }}
+          KUNGFU_SOURCE_SHA: ${{ inputs.kungfu-source-sha }}
+        run: |
+          jq -n \
+            --arg schema 'kungfu.hub-starter.image-identity/v1' \
+            --arg image "${IMAGE_REF}" \
+            --arg runtimeSource "${GITHUB_SHA}" \
+            --arg kungfuSource "${KUNGFU_SOURCE_SHA}" \
+            --arg packageSha256 "${PACKAGE_SHA256}" \
+            --arg buildImagesSource '3056c23e70b83f5bb63062f04027a93e79039e4b' \
+            --arg buildImageDigest 'sha256:cb6d939d567c129903d6e3ad858e2c09a9475b3b8f81b1aad10279d0e63a920d' \
+            --arg runUrl "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" \
+            '{schema:$schema,image:$image,runtimeSourceRevision:$runtimeSource,kungfuSourceSha:$kungfuSource,kungfuPackageSha256:$packageSha256,buildImagesConsumerSha:$buildImagesSource,buildImageDigest:$buildImageDigest,qualificationRun:$runUrl}' \
+            >.artifacts/image-identity.json
+          cat .artifacts/image-identity.json >>"${GITHUB_STEP_SUMMARY}"
+      - name: Upload retained evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: hub-starter-image-${{ github.run_id }}
+          path: .artifacts
+          if-no-files-found: warn
+          retention-days: 30
