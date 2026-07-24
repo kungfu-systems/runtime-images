@@ -19,7 +19,7 @@
         <article><p>Settlement cut</p><h2 id="settlement">Open</h2><code id="state-root">Not sealed</code></article>
       </section>
       <div class="actions">
-        <button id="settle">Review and settle the walkthrough</button>
+        <button id="settle">Review and settle the course-team walkthrough</button>
         <button id="refresh" class="secondary">Refresh native state</button>
       </div>
       <details>
@@ -29,6 +29,10 @@
 const hub = new HubStarterClient();
 const state = await hub.state();
 // The client calls the bounded HTTP adapter; Kungfu CLI remains authority.</code></pre>
+        <p>To change one bounded domain behavior without changing Core, start a
+        fresh Compose project with <code>HUB_COURSE_NAME</code> set to your
+        course name. The adapter admits that name through the public Assignment
+        request; it never edits internal records.</p>
       </details>
       <pre id="raw" aria-label="Native state JSON"></pre>
     </main>

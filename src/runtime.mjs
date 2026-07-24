@@ -37,6 +37,7 @@ export class KungfuRuntime {
     packageSha256 = process.env.KUNGFU_PACKAGE_SHA256 || '',
     sourceSha = process.env.KUNGFU_SOURCE_SHA || '',
     instanceLabel = process.env.HUB_INSTANCE_LABEL || 'local',
+    courseName = process.env.HUB_COURSE_NAME || 'AI Teaching Sprint',
   } = {}) {
     this.stateRoot = stateRoot;
     this.workspace = join(stateRoot, 'workspace');
@@ -47,6 +48,7 @@ export class KungfuRuntime {
     this.packageSha256 = packageSha256;
     this.sourceSha = sourceSha;
     this.instanceLabel = instanceLabel;
+    this.courseName = courseName.trim().slice(0, 80) || 'AI Teaching Sprint';
     this.bootstrapPromise = null;
     this.settlePromise = null;
   }
@@ -125,10 +127,10 @@ export class KungfuRuntime {
       workDefinition: {
         goal_id: assignmentId,
         mission_id: initiativeId,
-        title: 'Explore Kungfu-managed work',
-        objective: 'Complete the bounded Hub Starter walkthrough and inspect its native evidence.',
+        title: `Prepare the ${this.courseName} course`,
+        objective: `Complete the bounded course-team workflow for ${this.courseName} and inspect its native evidence.`,
         owner_agent: 'hub-starter',
-        responsibility: 'development-only local walkthrough',
+        responsibility: 'development-only local course-team walkthrough',
       },
     };
     const requestPath = join(this.control, 'assignment-request.json');
