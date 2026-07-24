@@ -56,6 +56,11 @@ export class KungfuRuntime {
   async run(args, { timeoutMs = 90_000 } = {}) {
     return new Promise((resolve, reject) => {
       const commandArgs = [...this.kungfuPrefixArgs, ...args];
+      const commandSurface = args[0] === '-H'
+        ? args.slice(2, 5).join(' ')
+        : args.slice(0, 2).join(' ');
+      const startedAt = Date.now();
+      console.log(`[hub-starter] kungfu ${commandSurface} started`);
       const child = spawn(this.kungfuBin, commandArgs, {
         env: { ...process.env, HOME: this.stateRoot, KUNGFU_LOG_LEVEL: 'warning' },
         stdio: ['ignore', 'pipe', 'pipe'],
@@ -75,10 +80,13 @@ export class KungfuRuntime {
       child.once('error', reject);
       child.once('close', (code) => {
         clearTimeout(timer);
+        const durationMs = Date.now() - startedAt;
         if (code !== 0) {
+          console.error(`[hub-starter] kungfu ${commandSurface} failed after ${durationMs}ms`);
           reject(new Error(`Kungfu command failed (${code}): ${commandArgs.join(' ')}\n${stderr || stdout}`));
           return;
         }
+        console.log(`[hub-starter] kungfu ${commandSurface} completed in ${durationMs}ms`);
         resolve(parseJsonOutput(stdout, args));
       });
     });
