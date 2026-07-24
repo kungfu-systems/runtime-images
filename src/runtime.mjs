@@ -192,7 +192,9 @@ export class KungfuRuntime {
 
   async readiness() {
     const { identity, metadata } = await this.ensureBootstrap();
-    return { identity, status: await this.#status(metadata) };
+    const status = await this.#status(metadata);
+    console.log(`[hub-starter] assignment readiness phase=${status.phase}`);
+    return { identity, status };
   }
 
   async state() {
