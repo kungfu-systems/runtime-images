@@ -89,8 +89,24 @@ jobs:
           trap cleanup EXIT
           docker compose up --detach
           deadline=$((SECONDS + 300))
-          until curl --fail --silent http://127.0.0.1:8080/healthz >/dev/null; do
+          mkdir -p .artifacts
+          health_body=.artifacts/compose-health.json
+          previous_code=
+          while true; do
+            http_code=$(curl --silent --show-error --output "${health_body}" \
+              --write-out '%{http_code}' --connect-timeout 2 --max-time 10 \
+              http://127.0.0.1:8080/healthz || true)
+            if [[ "${http_code}" != "${previous_code}" ]]; then
+              echo "localhost readiness HTTP ${http_code:-000}"
+              previous_code=${http_code}
+            fi
+            if [[ "${http_code}" == 200 ]]; then
+              jq -e '.ready == true and (.phase | type == "string")' "${health_body}" >/dev/null
+              break
+            fi
             if (( SECONDS >= deadline )); then
+              docker compose ps
+              test ! -s "${health_body}" || cat "${health_body}"
               docker compose logs hub
               echo "Documented Compose path did not become ready within five minutes" >&2
               exit 1
