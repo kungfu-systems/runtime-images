@@ -13,6 +13,11 @@ test('compose preserves the localhost, non-root, read-only boundary', () => {
   assert.equal(validateComposeText(compose), true);
 });
 
+test('policy rejects a host-disconnected network for the localhost Web service', () => {
+  const candidate = compose.replace('driver: bridge', 'internal: true');
+  assert.throws(() => validateComposeText(candidate), /host-disconnected/u);
+});
+
 for (const [name, mutation, expected] of [
   ['privileged', '\n    privileged: true', /privileged/u],
   ['host network', '\n    network_mode: host', /host networking/u],

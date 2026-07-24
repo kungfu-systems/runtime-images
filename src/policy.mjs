@@ -11,6 +11,7 @@ export function validateComposeText(text) {
   const forbidden = [
     [/privileged\s*:\s*true/iu, 'privileged containers are forbidden'],
     [/network_mode\s*:\s*host/iu, 'host networking is forbidden'],
+    [/\binternal\s*:\s*true/iu, 'host-disconnected networks cannot serve the localhost Web contract'],
     [/docker\.sock/iu, 'Docker socket mounts are forbidden'],
     [/cap_add\s*:/iu, 'Linux capability additions are forbidden'],
     [/(?:0\.0\.0\.0|::):\$?\{?HUB_PORT/iu, 'non-loopback publication is forbidden'],
@@ -25,6 +26,7 @@ export function validateComposeText(text) {
     'no-new-privileges:true',
     '127.0.0.1:${HUB_PORT:-8080}:8080',
     'hub-state:/state',
+    'driver: bridge',
   ]) {
     if (!text.includes(required)) throw new Error(`compose safety invariant missing: ${required}`);
   }
