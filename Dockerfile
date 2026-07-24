@@ -8,6 +8,7 @@ FROM ${BUILD_IMAGE} AS package
 ARG KUNGFU_PACKAGE_SHA256
 ARG KUNGFU_PACKAGE_VERSION
 ARG KUNGFU_SOURCE_SHA
+USER root
 COPY kungfu-episodes-cli-linux-x64.tar.gz /tmp/kungfu-episodes-cli-linux-x64.tar.gz
 RUN set -eu; \
     test -n "${KUNGFU_PACKAGE_SHA256}"; \
