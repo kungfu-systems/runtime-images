@@ -8,18 +8,35 @@ localhost-only way to see real Kungfu-managed work in a browser.
 > authenticated, multi-user, highly available, or an official Kungfu Alpha or
 > stable release.
 
-## Start the Hub
+## Start the course demo
 
-Requirements: Docker Engine with Compose v2. The checked-in Compose file already
-pins the qualified development candidate by digest. Run:
+Requirements: Docker with Compose v2. This path is native on Apple Silicon Macs
+(`linux/arm64`) and Intel Macs or Linux x86-64 hosts (`linux/amd64`). Windows is
+supported through Docker Desktop's Linux-container mode; this is not a native
+Windows container. The checked-in Compose file pins the qualified development
+candidate by digest. Run:
 
 ```sh
 docker compose up
 ```
 
-Open <http://127.0.0.1:8080>. Pull time is excluded from the five-minute
-semantic-readiness target. The container does not mount the Docker socket,
-your Home directory, `~/.kungfu`, credentials, or host paths.
+Open <http://127.0.0.1:8080>. You arrive at a single-user course backend for
+**Agent/Kungfu Course**, not an infrastructure dashboard. The first assignment
+is already selected. Use the two actions in order:
+
+1. **Agent claims homework is done** — the independent reviewer rejects the
+   claim because no Evidence Episode is attached, so Kungfu requests evidence
+   and does not settle the Assignment.
+2. **Produce evidence and request review** — a deterministic script creates the
+   homework artifact, publishes its exact bytes, attaches the payload reference
+   to one Episode, and submits a new claim. The reviewer accepts it and Kungfu
+   closes and seals the Assignment.
+
+The page keeps Episode details, payload hashes, receipts, and the final state
+root collapsed until you ask for them. This makes the human workflow primary
+while preserving the native audit trail underneath. Pull time is excluded from
+the five-minute semantic-readiness target. The container does not mount the
+Docker socket, your Home directory, `~/.kungfu`, credentials, or host paths.
 
 To test a separately qualified candidate, set `KUNGFU_HUB_IMAGE` to another
 exact digest. Tags and floating references are rejected by the source contract.
@@ -30,13 +47,17 @@ development state only as a deliberate, separately reviewed action.
 
 ## What is real
 
-On an empty named volume, the container uses the packaged public Kungfu CLI to:
+On an empty named volume, the container uses the architecture-matched packaged
+public Kungfu CLI to:
 
-1. capture and admit a native Initiative and Assignment;
+1. capture and admit the course as a native Initiative and Assignment;
 2. claim a bounded execution lease and enter the executing phase;
-3. expose proof-bound Assignment and Episode state through a thin Web adapter;
-4. on request, append a completion claim, independent review, continuation
-   decision, and portable content-addressed state seal.
+3. reject an unproved completion claim through independent review and emit the
+   follow-up decision `request-evidence`;
+4. publish deterministic homework bytes and attach their payload reference to
+   a native Evidence Episode;
+5. accept the evidence-backed claim, close the Assignment, and create a portable
+   content-addressed state seal.
 
 The Web process does not read private storage records and does not own a second
 database. It invokes public JSON CLI commands and projects their receipts. The
@@ -49,8 +70,8 @@ const hub = new HubStarterClient();
 console.log(await hub.state());
 ```
 
-For one bounded course-domain extension, create a second disposable project
-with a different course name and port:
+For a second isolated course, create another disposable project with a
+different course name and port:
 
 ```sh
 COMPOSE_PROJECT_NAME=my-course HUB_PORT=8081 \
@@ -67,10 +88,10 @@ modifying Kungfu Core or constructing internal storage records.
 and [`release/runtime.lock.json`](release/runtime.lock.json) bind:
 
 - the exact Kungfu source commit;
-- the SHA-256 of `kungfu-episodes-cli-linux-x64.tar.gz`;
-- the immutable build-images consumer commit and build-image digest;
+- the SHA-256 of both x86-64 and ARM64 Linux CLI packages;
+- the digest-pinned multi-platform Node runtime base;
 - the exact published runtime image digest and its source revision;
-- the retained GitHub Actions qualification run.
+- the retained native amd64 and arm64 GitHub Actions qualification run.
 
 The Dockerfile consumes the already source-built package. It does not clone or
 compile Kungfu. The final stage copies only that package plus the small runtime

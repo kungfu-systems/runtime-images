@@ -14,7 +14,7 @@ services:
       - /tmp:size=64m,mode=1777
     environment:
       HUB_INSTANCE_LABEL: ${HUB_INSTANCE_LABEL:-local}
-      HUB_COURSE_NAME: ${HUB_COURSE_NAME:-AI Teaching Sprint}
+      HUB_COURSE_NAME: ${HUB_COURSE_NAME:-Agent/Kungfu Course}
     ports:
       - "127.0.0.1:${HUB_PORT:-8080}:8080"
     volumes:

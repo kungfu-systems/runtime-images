@@ -26,14 +26,17 @@ const lockText = await readFile(new URL('../release/runtime.lock.json', import.m
 const lock = JSON.parse(lockText);
 
 const dockerfile = await readFile(new URL('../Dockerfile', import.meta.url), 'utf8');
+const imageWorkflow = await readFile(new URL('../.github/workflows/image.yml', import.meta.url), 'utf8');
 for (const required of [
-  'FROM ${BUILD_IMAGE} AS package',
+  'FROM ${RUNTIME_IMAGE} AS package',
   'FROM ${RUNTIME_IMAGE} AS runtime',
+  'ARG TARGETARCH',
+  'kungfu-episodes-cli-linux-arm64.tar.gz',
   'sha256sum -c -',
   'USER node',
   'tech.kungfu.product.source',
-  'tech.kungfu.product.package.sha256',
-  'tech.kungfu.build-image.digest',
+  'tech.kungfu.product.package.amd64.sha256',
+  'tech.kungfu.product.package.arm64.sha256',
   'KUNGFU_INSTALL_SOURCE=archive',
   'KUNGFU_DIR=/opt/kungfu',
   'KUNGFU_UPGRADE_MANIFEST=/opt/kungfu/upgrade/kungfu-release-manifest.json',
@@ -45,21 +48,42 @@ for (const forbidden of ['COPY . ', 'git clone', 'npm install', 'pnpm install'])
   if (dockerfile.includes(forbidden)) throw new Error(`final build boundary contains forbidden source/toolchain action: ${forbidden}`);
 }
 
-if (!/^[0-9a-f]{40}$/u.test(lock.kungfuSourceSha)) throw new Error('Kungfu source is not an exact commit');
-if (!lock.buildImageDigest.startsWith('sha256:')) throw new Error('build image is not digest-pinned');
+for (const workflowInvariant of [
+  'platforms: linux/amd64,linux/arm64',
+  'runner: ubuntu-24.04-arm',
+  'docker-architecture: arm64',
+  'package-sha256-amd64',
+  'package-sha256-arm64',
+  'kungfu-episodes-cli-linux-arm64.tar.gz',
+]) {
+  if (!imageWorkflow.includes(workflowInvariant)) {
+    throw new Error(`multi-platform image workflow invariant missing: ${workflowInvariant}`);
+  }
+}
+
 if (contract.sourceBuild.kungfuSourceSha !== lock.kungfuSourceSha) {
   throw new Error('contract and runtime lock disagree on Kungfu source');
 }
-if (contract.sourceBuild.packageSha256 !== lock.kungfuPackageSha256) {
-  throw new Error('contract and runtime lock disagree on Kungfu package');
+if (contract.runtime.baseImage !== lock.runtimeBaseImage) {
+  throw new Error('contract and runtime lock disagree on the multi-platform runtime base');
 }
-if (contract.sourceBuild.buildImagesConsumerSha !== lock.buildImagesConsumerSha) {
-  throw new Error('contract and runtime lock disagree on build-images source');
-}
-if (!contract.sourceBuild.buildImage.endsWith(`@${lock.buildImageDigest}`)) {
-  throw new Error('contract and runtime lock disagree on build image digest');
+for (const platform of ['linux/amd64', 'linux/arm64']) {
+  const contractPackage = contract.sourceBuild.packages[platform];
+  const lockedPackage = lock.kungfuPackages[platform];
+  if (contractPackage.name !== lockedPackage.name || contractPackage.sha256 !== lockedPackage.sha256) {
+    throw new Error(`contract and runtime lock disagree on ${platform} Kungfu package`);
+  }
 }
 if (lock.status === 'qualified-development-candidate') {
+  if (!/^[0-9a-f]{40}$/u.test(lock.kungfuSourceSha)) throw new Error('Kungfu source is not an exact commit');
+  if (!lock.runtimeBaseImage.endsWith('@sha256:ae91dcc111a68c9d2d81ff2a17bda61be126426176fde6fe7d08ab13b7f50573')) {
+    throw new Error('qualified runtime base is not the reviewed multi-platform Node index');
+  }
+  for (const platform of ['linux/amd64', 'linux/arm64']) {
+    if (!/^[0-9a-f]{64}$/u.test(lock.kungfuPackages[platform].sha256)) {
+      throw new Error(`${platform} Kungfu package is not exact`);
+    }
+  }
   validateImageReference(lock.image);
   if (`${contractText}\n${lockText}`.includes('INPUT_')) {
     throw new Error('qualified identity files retain unresolved inputs');
@@ -71,8 +95,18 @@ if (lock.status === 'qualified-development-candidate') {
     throw new Error('Compose does not default to the qualified exact image');
   }
 }
-if (!compose.includes('HUB_COURSE_NAME: ${HUB_COURSE_NAME:-AI Teaching Sprint}')) {
+if (!compose.includes('HUB_COURSE_NAME: ${HUB_COURSE_NAME:-Agent/Kungfu Course}')) {
   throw new Error('bounded course-team extension seam is missing');
+}
+if (/docker\s+volume\s+rm|docker\s+compose\s+down\s+-v/u.test(smoke)) {
+  throw new Error('image smoke must retain named development state volumes');
+}
+for (const route of ['/api/coursework/claim', '/api/coursework/evidence']) {
+  if (!smoke.includes(route)) throw new Error(`coursework smoke route missing: ${route}`);
+}
+const page = await readFile(new URL('../web/index.html', import.meta.url), 'utf8');
+for (const productCopy of ['Selected homework', 'Agent submission', 'Independent check', 'Audit and developer details']) {
+  if (!page.includes(productCopy)) throw new Error(`coursework product copy missing: ${productCopy}`);
 }
 
 console.log('[verify] source, Compose, image boundary, and identity contracts passed');

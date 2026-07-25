@@ -3,38 +3,83 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Kungfu Hub Starter</title>
+    <title>Agent/Kungfu Course</title>
     <link rel="stylesheet" href="/style.css">
   </head>
   <body>
     <main>
-      <p class="eyebrow">KUNGFU / HUB STARTER</p>
-      <h1>Real work.<br><span>One local container.</span></h1>
-      <p class="boundary">Pre-Alpha development candidate. Localhost only. No authentication, multi-user isolation, HA, or production support.</p>
-      <section id="status" class="status">Opening the native Kungfu workspace…</section>
-      <section class="grid">
-        <article><p>Initiative</p><h2 id="initiative">—</h2><code id="initiative-root">—</code></article>
-        <article><p>Assignment</p><h2 id="assignment">—</h2><code id="assignment-root">—</code></article>
-        <article><p>Episode evidence</p><h2 id="episodes">—</h2><code id="query-root">—</code></article>
-        <article><p>Settlement cut</p><h2 id="settlement">Open</h2><code id="state-root">Not sealed</code></article>
-      </section>
-      <div class="actions">
-        <button id="settle">Review and settle the course-team walkthrough</button>
-        <button id="refresh" class="secondary">Refresh native state</button>
-      </div>
-      <details>
-        <summary>Developer extension seam</summary>
-        <pre><code>import { HubStarterClient } from '@kungfu-tech/hub-starter-runtime/client';
+      <header class="course-header">
+        <div>
+          <p class="eyebrow">MY LEARNING · PRE-ALPHA LOCAL DEMO</p>
+          <h1 id="course-title">Agent/Kungfu Course</h1>
+          <p id="course-subtitle" class="subtitle">A small course about evidence-based Agent work</p>
+        </div>
+        <div class="progress-card" aria-label="Course progress">
+          <span id="progress-label">1 of 3 lessons</span>
+          <div class="progress-track"><span id="progress-bar"></span></div>
+        </div>
+      </header>
 
-const hub = new HubStarterClient();
-const state = await hub.state();
-// The client calls the bounded HTTP adapter; Kungfu CLI remains authority.</code></pre>
-        <p>To change one bounded domain behavior without changing Core, start a
-        fresh Compose project with <code>HUB_COURSE_NAME</code> set to your
-        course name. The adapter admits that name through the public Assignment
-        request; it never edits internal records.</p>
+      <p class="boundary">Single-user coursework demo. The “Agent” is a deterministic simulator; the claim, evidence, independent review, follow-up, and accepted result are real Kungfu state.</p>
+      <section id="status" class="status">Opening your coursework…</section>
+
+      <div class="layout">
+        <aside class="lesson-list" aria-label="Course lessons">
+          <p class="section-label">Course</p>
+          <ol>
+            <li class="done"><span>1</span><div><strong>Claims</strong><small>Saying done is only a claim</small></div></li>
+            <li id="lesson-evidence"><span>2</span><div><strong>Evidence</strong><small>Make work independently checkable</small></div></li>
+            <li id="lesson-review"><span>3</span><div><strong>Review</strong><small>Let evidence drive the next action</small></div></li>
+          </ol>
+        </aside>
+
+        <section class="homework-card">
+          <div class="homework-heading">
+            <div>
+              <p class="section-label">Selected homework</p>
+              <h2 id="homework-title">Design the course outline</h2>
+              <p id="homework-instruction">Create a three-section outline with one learning objective per section.</p>
+            </div>
+            <span id="outcome" class="outcome ready">Ready for the Agent</span>
+          </div>
+
+          <div class="acceptance">
+            <strong>What will be checked</strong>
+            <ul>
+              <li><span id="sections-check">○</span> Three course sections</li>
+              <li><span id="objectives-check">○</span> Three learning objectives</li>
+              <li><span id="evidence-check">○</span> A sealed, reviewable artifact</li>
+            </ul>
+          </div>
+
+          <div class="story-grid">
+            <article>
+              <p class="section-label">Agent submission</p>
+              <h3 id="submission-title">No submission yet</h3>
+              <p id="submission-copy">The simulator is ready to make its first completion claim.</p>
+            </article>
+            <article>
+              <p class="section-label">Independent check</p>
+              <h3 id="review-title">Waiting</h3>
+              <p id="review-copy">A separate reviewer will inspect evidence, not trust the Agent’s words.</p>
+            </article>
+          </div>
+
+          <div id="explanation" class="explanation">The Agent can submit a claim, which will be checked independently.</div>
+          <button id="primary-action">Ask the Agent simulator to submit</button>
+          <p class="simulator-note"><strong id="simulator-label">Deterministic Agent simulator.</strong> <span id="simulator-copy"></span></p>
+
+          <ol id="timeline" class="timeline" aria-label="Homework progress"></ol>
+        </section>
+      </div>
+
+      <details class="audit">
+        <summary>Audit and developer details</summary>
+        <p>Episode identifiers, content roots, package identity, and raw native state live here so they do not obscure the learning flow.</p>
+        <dl id="audit-roots"></dl>
+        <button id="refresh" class="secondary">Refresh native state</button>
+        <pre id="raw" aria-label="Native state JSON"></pre>
       </details>
-      <pre id="raw" aria-label="Native state JSON"></pre>
     </main>
     <script type="module" src="/app.js"></script>
   </body>
