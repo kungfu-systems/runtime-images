@@ -12,9 +12,10 @@ localhost-only way to see real Kungfu-managed work in a browser.
 
 Requirements: Docker with Compose v2. This path is native on Apple Silicon Macs
 (`linux/arm64`) and Intel Macs or Linux x86-64 hosts (`linux/amd64`). Windows is
-supported through Docker Desktop's Linux-container mode; this is not a native
-Windows container. The checked-in Compose file pins the qualified development
-candidate by digest. Run:
+not qualified in this candidate. Its intended compatibility path is Docker
+Desktop's Linux-container mode, not a native Windows container, and remains a
+non-claim until an actual Windows smoke is retained. The checked-in Compose file
+pins the qualified development candidate by digest. Run:
 
 ```sh
 docker compose up

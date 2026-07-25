@@ -28,9 +28,11 @@ review/decision/close/seal sequence.
 
 Apple Silicon Macs pull the `linux/arm64` image member and Intel Macs pull the
 `linux/amd64` member through Docker Desktop. Linux hosts use the matching member
-directly. Windows support means Docker Desktop running Linux containers; it
-does not claim a Windows-native container, Windows-native Kungfu package, or
-Windows service installation.
+directly. This qualification set contains no Windows execution evidence.
+Docker Desktop running Linux containers is the intended future compatibility
+path, but Windows remains an explicit non-claim until that exact Compose path
+passes and retains an actual smoke. No Windows-native container, Windows-native
+Kungfu package, or Windows service installation is claimed.
 
 It does not prove production security, authentication, authorization, SSO,
 multi-user tenancy, public ingress, high availability, backup/restore,
