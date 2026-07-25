@@ -32,6 +32,8 @@ ai_provenance:
 - `scripts/verify.mjs` and `test/` — source and negative policy checks.
 - `scripts/smoke-image.sh` — two-instance, restart, and semantic coursework
   smoke.
+- `scripts/smoke-browser.sh` — real-browser three-state DOM assertions and
+  retained screenshots for the guided coursework path.
 - `.github/workflows/image.yml` — trusted dual-package consumption,
   multi-platform development publication, and native amd64/arm64 evidence.
 

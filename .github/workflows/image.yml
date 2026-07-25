@@ -179,10 +179,14 @@ jobs:
             fi
             sleep 2
           done
-          curl --fail --silent --request POST http://127.0.0.1:8080/api/coursework/claim \
-            | jq -e '.coursework.outcome == "needs-evidence" and .coursework.independentReview.verdict == "insufficient" and .settlement == null' >/dev/null
-          curl --fail --silent --request POST http://127.0.0.1:8080/api/coursework/evidence \
-            | jq -e '.coursework.outcome == "accepted" and .coursework.independentReview.verdict == "fit" and .coursework.followUp.action == "close" and (.coursework.evidence.episodeIds | length) == 1 and (.settlement.stateRoot | startswith("sha256:"))' >/dev/null
+          if [[ "${{ matrix.platform }}" == "linux/amd64" ]]; then
+            bash scripts/smoke-browser.sh http://127.0.0.1:8080 ".artifacts/${{ matrix.artifact-id }}/browser"
+          else
+            curl --fail --silent --request POST http://127.0.0.1:8080/api/coursework/claim \
+              | jq -e '.coursework.outcome.state == "needs-evidence" and .coursework.independentCheck.verdict == "insufficient" and .settlement == null' >/dev/null
+            curl --fail --silent --request POST http://127.0.0.1:8080/api/coursework/evidence \
+              | jq -e '.coursework.outcome.state == "accepted" and .coursework.independentCheck.verdict == "fit" and .coursework.audit.latestDecision == "close" and (.coursework.audit.evidenceEpisodeIds | length) == 1 and (.settlement.stateRoot | startswith("sha256:"))' >/dev/null
+          fi
           docker compose down
           trap - EXIT
       - name: Smoke isolated instances and restart
