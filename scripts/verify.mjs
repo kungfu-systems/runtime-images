@@ -27,6 +27,10 @@ const lock = JSON.parse(lockText);
 
 const dockerfile = await readFile(new URL('../Dockerfile', import.meta.url), 'utf8');
 const imageWorkflow = await readFile(new URL('../.github/workflows/image.yml', import.meta.url), 'utf8');
+const packageStageWorkflow = await readFile(
+  new URL('../.github/workflows/package-stage.yml', import.meta.url),
+  'utf8',
+);
 for (const required of [
   'FROM ${RUNTIME_IMAGE} AS package',
   'FROM ${RUNTIME_IMAGE} AS runtime',
@@ -58,6 +62,19 @@ for (const workflowInvariant of [
 ]) {
   if (!imageWorkflow.includes(workflowInvariant)) {
     throw new Error(`multi-platform image workflow invariant missing: ${workflowInvariant}`);
+  }
+}
+for (const stagingInvariant of [
+  'repos/kungfu-systems/kungfu/actions/runs/${KUNGFU_RUN_ID}',
+  'completed\\tsuccess\\t',
+  'pattern: kungfu-linux-x64-*',
+  'pattern: kungfu-hub-cli-linux-arm64-*',
+  'sha256sum -c -',
+  "'.sourceCommit == $source and .productVersion == $version",
+  'gh release create "${release_tag}"',
+]) {
+  if (!packageStageWorkflow.includes(stagingInvariant)) {
+    throw new Error(`package staging workflow invariant missing: ${stagingInvariant}`);
   }
 }
 

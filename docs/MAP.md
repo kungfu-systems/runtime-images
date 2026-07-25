@@ -36,6 +36,9 @@ ai_provenance:
   retained screenshots for the guided coursework path.
 - `.github/workflows/image.yml` — trusted dual-package consumption,
   multi-platform development publication, and native amd64/arm64 evidence.
+- `.github/workflows/package-stage.yml` — source/run/hash-bound transfer of the
+  exact public Kungfu Actions outputs into an immutable runtime prerelease,
+  without routing the large package bytes through a developer workstation.
 
 The upstream semantic concept remains in Kungfu at
 `framework/hub-starter/kungfu-hub-starter-docker.contract.json`. This
