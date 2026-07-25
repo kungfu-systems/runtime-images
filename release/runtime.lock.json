@@ -1,12 +1,12 @@
 {
   "schema": "kungfu.hub-starter-runtime-lock/v1",
-  "status": "awaiting-qualified-image",
-  "image": "ghcr.io/kungfu-systems/runtime-images/hub-starter@sha256:INPUT_IMAGE_DIGEST",
-  "imageSourceRevision": "INPUT_RUNTIME_SOURCE_SHA",
-  "kungfuSourceSha": "234ec973cbd06a883622332f7b1a90cb12862609",
-  "kungfuPackageSha256": "INPUT_PACKAGE_SHA256",
-  "kungfuPackageVersion": "INPUT_PACKAGE_VERSION",
+  "status": "qualified-development-candidate",
+  "image": "ghcr.io/kungfu-systems/runtime-images/hub-starter@sha256:5016b10da41984838ee3b815ea24f6e20be9f3fbd770fec321a40dfb2a64ba9b",
+  "imageSourceRevision": "58e4c650bdc64a1cd98132b2b335b6ec5a4c2ada",
+  "kungfuSourceSha": "f6e20f83a1d0acf1f5e3a3143c68082d775c8105",
+  "kungfuPackageSha256": "f4926d2f4d503f4f34c9ed3e0899c3f643fa247713a6a8a1a2ac7b9f2771734d",
+  "kungfuPackageVersion": "4.0.0-alpha.1",
   "buildImagesConsumerSha": "3056c23e70b83f5bb63062f04027a93e79039e4b",
   "buildImageDigest": "sha256:cb6d939d567c129903d6e3ad858e2c09a9475b3b8f81b1aad10279d0e63a920d",
-  "qualificationRun": "INPUT_QUALIFICATION_RUN_URL"
+  "qualificationRun": "https://github.com/kungfu-systems/runtime-images/actions/runs/30135228454"
 }
