@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       package-release-tag:
-        description: Immutable Kungfu release containing both exact Linux CLI packages
+        description: Immutable runtime-images prerelease containing both exact Linux CLI packages
         required: true
       package-sha256-amd64:
         description: Exact lowercase SHA-256 of kungfu-episodes-cli-linux-x64.tar.gz
@@ -50,7 +50,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ inputs.package-release-tag }}
         run: |
-          gh release download "${RELEASE_TAG}" --repo kungfu-systems/kungfu \
+          gh release download "${RELEASE_TAG}" --repo "${GITHUB_REPOSITORY}" \
             --pattern kungfu-episodes-cli-linux-x64.tar.gz \
             --pattern kungfu-episodes-cli-linux-arm64.tar.gz
       - name: Verify package checksums
