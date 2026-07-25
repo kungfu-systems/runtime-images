@@ -10,18 +10,19 @@ localhost-only way to see real Kungfu-managed work in a browser.
 
 ## Start the Hub
 
-Requirements: Docker Engine with Compose v2. Copy the exact candidate from
-[`release/runtime.lock.json`](release/runtime.lock.json) into `.env`, then run:
+Requirements: Docker Engine with Compose v2. The checked-in Compose file already
+pins the qualified development candidate by digest. Run:
 
 ```sh
-cp .env.example .env
-# Replace INPUT_IMAGE_DIGEST with release/runtime.lock.json.image.
 docker compose up
 ```
 
 Open <http://127.0.0.1:8080>. Pull time is excluded from the five-minute
 semantic-readiness target. The container does not mount the Docker socket,
 your Home directory, `~/.kungfu`, credentials, or host paths.
+
+To test a separately qualified candidate, set `KUNGFU_HUB_IMAGE` to another
+exact digest. Tags and floating references are rejected by the source contract.
 
 `docker compose down` stops the project while retaining its named state
 volume. This project never runs `docker compose down -v` automatically. Remove
