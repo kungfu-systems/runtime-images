@@ -187,13 +187,15 @@ export class CourseDomain {
     const result = await transaction(this.pool, { userId }, (client) => client.query(
       `SELECT p.id, p.title, p.target_learner, p.promised_outcome,
               p.updated_at, p.current_outline_version_id,
+              h.backend_kind,
               count(v.id)::integer AS version_count,
               max(v.version_number)::integer AS latest_version_number,
               max(v.created_at) AS latest_version_at
        FROM course.course_projects p
+       JOIN course.learner_homeworks h ON h.course_project_id = p.id
        LEFT JOIN course.course_outline_versions v ON v.course_project_id = p.id
        WHERE p.user_id = $1
-       GROUP BY p.id
+       GROUP BY p.id, h.backend_kind
        ORDER BY p.updated_at DESC`,
       [userId],
     ));
@@ -204,7 +206,7 @@ export class CourseDomain {
     const project = await transaction(this.pool, { userId }, async (client) => {
       const result = await client.query(
         `SELECT p.*, h.id AS homework_id, h.projected_status,
-                h.backend_binding_id, h.projection_version
+                h.backend_kind, h.backend_binding_id, h.projection_version
          FROM course.course_projects p
          JOIN course.learner_homeworks h ON h.course_project_id = p.id
          WHERE p.id = $1 AND p.user_id = $2`,
@@ -238,6 +240,7 @@ export class CourseDomain {
         creatorExpertise: project.creator_expertise,
         deliveryConstraints: project.delivery_constraints,
       },
+      backendKind: project.backend_kind,
       currentOutlineVersionId: project.current_outline_version_id,
       versions: project.versions.map((version) => ({
         id: version.id,
