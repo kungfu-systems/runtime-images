@@ -113,6 +113,15 @@ See [`docs/MAP.md`](docs/MAP.md) for review routes and
 [`docs/DEVELOPMENT-CANDIDATE.md`](docs/DEVELOPMENT-CANDIDATE.md) for the claim
 boundary and official-Alpha substitution seam.
 
+## Course business reference
+
+[`course-business-reference/`](course-business-reference/) is a separate,
+mock-backed PostgreSQL example for commercial Builders. It adds learner
+registration and login, private per-account homework, a durable command outbox,
+and a versioned Agent-work port without coupling the business schema or primary
+Web experience to the current Hub Starter internals. It runs as its own
+loopback-only Compose project and does not replace or share the Hub's state.
+
 ## License
 
 Apache-2.0. See [`LICENSE`](LICENSE). Project names and marks are addressed in

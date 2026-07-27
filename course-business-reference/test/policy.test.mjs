@@ -1,0 +1,41 @@
+// SPDX-License-Identifier: Apache-2.0
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import test from 'node:test';
+
+const read = (path) => readFile(new URL(path, import.meta.url), 'utf8');
+
+test('business routes do not import mock implementation details', async () => {
+  const [server, domain, outbox] = await Promise.all([
+    read('../src/server.mjs'),
+    read('../src/domain.mjs'),
+    read('../src/outbox.mjs'),
+  ]);
+  assert.equal(domain.includes('mock-agent-work-adapter'), false);
+  assert.equal(outbox.includes('mock-agent-work-adapter'), false);
+  assert.equal(server.includes('MockAgentWorkAdapter'), true);
+});
+
+test('mock namespace and UI remain explicitly simulated', async () => {
+  const [adapter, migration, html] = await Promise.all([
+    read('../src/mock-agent-work-adapter.mjs'),
+    read('../migrations/001_initial.sql'),
+    read('../web/index.html'),
+  ]);
+  assert.match(adapter, /simulated/u);
+  assert.match(adapter, /Not Kungfu evidence/u);
+  assert.match(migration, /mock_agent_work/u);
+  assert.match(html, /Simulated Agent Work backend/u);
+  assert.equal(adapter.includes('sha256:'), false);
+});
+
+test('qualification faults are explicit and absent without a run id', async () => {
+  const { createQualificationFaults } = await import('../src/qualification-faults.mjs');
+  const hooks = createQualificationFaults({
+    qualificationRunId: '',
+    outboxProcessingStaleSeconds: 30,
+  });
+  assert.equal(hooks.processingStaleSeconds, 30);
+  assert.equal(hooks.beforeExecute, undefined);
+  assert.equal(hooks.afterExecute, undefined);
+});

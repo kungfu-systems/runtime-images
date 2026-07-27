@@ -39,6 +39,9 @@ ai_provenance:
 - `.github/workflows/package-stage.yml` — source/run/hash-bound transfer of the
   exact public Kungfu Actions outputs into an immutable runtime prerelease,
   without routing the large package bytes through a developer workstation.
+- `course-business-reference/` — an independently rooted PostgreSQL course
+  business example with learner authentication, row isolation, transactional
+  outbox, and an explicitly simulated Agent Work adapter.
 
 The upstream semantic concept remains in Kungfu at
 `framework/hub-starter/kungfu-hub-starter-docker.contract.json`. This
