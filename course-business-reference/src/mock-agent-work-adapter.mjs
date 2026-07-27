@@ -32,17 +32,54 @@ function generateOutline(payload, revision) {
   const previous = payload.previousOutline && typeof payload.previousOutline === 'object'
     ? payload.previousOutline
     : null;
+  const alternative = !revision && Boolean(previous);
   const revisionNote = revision
     ? `This revision responds to: ${feedback}`
-    : 'This first draft turns the course brief into a teachable three-module path.';
-  return {
-    title,
-    positioning: `For ${targetLearner}, this course addresses ${learnerProblem}`,
-    audience: targetLearner,
-    promise: promisedOutcome,
-    delivery: constraints,
-    creatorAdvantage: creatorExpertise,
-    modules: [
+    : alternative
+      ? 'This alternative draft explores a project-led route through the same course promise.'
+      : 'This first draft turns the course brief into a teachable three-module path.';
+  const changes = revision
+    ? [
+      `Applied creator feedback: ${feedback}`,
+      'Strengthened the final module around revision and delivery readiness.',
+      'Kept the saved target learner, promise, and delivery constraints unchanged.',
+    ]
+    : alternative
+      ? [
+        'Reframed the learning path around one guided project.',
+        'Changed all three module titles and observable exercises.',
+        'Kept the saved target learner, promise, and delivery constraints unchanged.',
+      ]
+      : [
+        'Converted the saved course brief into a three-module teaching sequence.',
+        'Added one observable exercise to every module.',
+        'Identified three questions that still require the creator’s judgment.',
+      ];
+  const modules = alternative
+    ? [
+      {
+        number: 1,
+        title: 'Choose one valuable transformation',
+        outcome: `Define the smallest credible path from "${learnerProblem}" to "${promisedOutcome}".`,
+        lessons: ['Name the before state', 'Describe the after state', 'Remove outcomes the course cannot prove'],
+        exercise: 'Write one before-and-after learner story using language from a real customer conversation.',
+      },
+      {
+        number: 2,
+        title: 'Teach through one guided project',
+        outcome: 'Organize the creator’s expertise around a deliverable learners build step by step.',
+        lessons: ['Choose the final deliverable', 'Design three milestone reviews', 'Attach examples to each milestone'],
+        exercise: 'Prototype the final deliverable and mark the three points where a learner needs feedback.',
+      },
+      {
+        number: 3,
+        title: 'Pilot, measure, and prepare to sell',
+        outcome: 'Use one learner’s behavior to improve the course before expanding delivery.',
+        lessons: ['Run a small pilot', 'Measure completion and confusion', 'Revise the offer and learning path'],
+        exercise: 'Observe one learner completing the guided project and record every intervention required.',
+      },
+    ]
+    : [
       {
         number: 1,
         title: 'Define the learner and the real job',
@@ -64,13 +101,30 @@ function generateOutline(payload, revision) {
         lessons: ['Run a small pilot', 'Collect observable evidence', 'Revise the weakest step'],
         exercise: 'Ask one learner to complete the final task and document where they become blocked.',
       },
-    ],
+    ];
+  return {
+    title,
+    positioning: `For ${targetLearner}, this course addresses ${learnerProblem}`,
+    audience: targetLearner,
+    promise: promisedOutcome,
+    delivery: constraints,
+    creatorAdvantage: creatorExpertise,
+    modules,
     openQuestions: [
       'What will the learner be able to show at the end?',
       'What prior knowledge can the course safely assume?',
       `How will the course fit the constraint: ${constraints}?`,
     ],
     revisionNote,
+    agentContribution: {
+      role: 'Mock Course Designer',
+      summary: alternative
+        ? 'Designed an alternative project-led curriculum from the saved brief.'
+        : revision
+          ? 'Reworked the prior outline using the creator’s feedback.'
+          : 'Structured the creator’s brief into a teachable first draft.',
+      changes,
+    },
     previousVersionTitle: previous?.title ?? null,
   };
 }

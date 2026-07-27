@@ -16,6 +16,11 @@ The visible job is deliberately ordinary: turn a creator's expertise, target
 learner, promised outcome, and delivery constraints into a teachable
 three-module outline. The Mock Agent returns a real, inspectable draft so the
 port's purpose is understandable even before the future Kungfu adapter exists.
+Each saved version also shows a five-step work handoff: what the creator
+supplied, what the course app delegated, what the Mock Course Designer
+delivered, what PostgreSQL saved, and what remains for the creator to approve.
+The version history distinguishes first drafts, revisions, and alternatives,
+while an explicit change summary identifies the Agent's contribution.
 
 ## Run locally
 
@@ -84,7 +89,10 @@ idempotency keys. The mock records each delivered key before PostgreSQL
 acknowledges it, while `course.agent_runs.outbox_command_id` prevents a replay
 from creating a duplicate outline version. A restart or crash between adapter
 completion and outbox acknowledgement therefore replays safely. Stale
-processing locks are recovered after 30 seconds.
+processing locks are recovered after 30 seconds. Each visible outline version
+joins back to its owning `course.agent_runs` row so the UI can explain the
+action, prior-version input, creator feedback, backend, and transition that
+produced it.
 
 ## Validation
 

@@ -203,10 +203,14 @@ export class CourseDomain {
       );
       if (!result.rowCount) return null;
       const versions = await client.query(
-        `SELECT id, version_number, status, outline, change_summary, created_at, approved_at
-         FROM course.course_outline_versions
-         WHERE course_project_id = $1 AND user_id = $2
-         ORDER BY version_number DESC`,
+        `SELECT v.id, v.version_number, v.status, v.outline, v.change_summary,
+                v.created_at, v.approved_at, r.action AS agent_action,
+                r.backend_kind AS agent_backend, r.transition_id,
+                r.input AS agent_input, r.created_at AS agent_completed_at
+         FROM course.course_outline_versions v
+         JOIN course.agent_runs r ON r.id = v.source_run_id
+         WHERE v.course_project_id = $1 AND v.user_id = $2
+         ORDER BY v.version_number DESC`,
         [courseId, userId],
       );
       return { ...result.rows[0], versions: versions.rows };
@@ -234,6 +238,14 @@ export class CourseDomain {
         changeSummary: version.change_summary,
         createdAt: version.created_at,
         approvedAt: version.approved_at,
+        agentRun: {
+          action: version.agent_action,
+          backend: version.agent_backend,
+          transitionId: version.transition_id,
+          previousVersionId: version.agent_input?.previousVersionId ?? null,
+          feedback: version.agent_input?.feedback ?? '',
+          completedAt: version.agent_completed_at,
+        },
       })),
       agentWork: work,
       updatedAt: project.updated_at,
