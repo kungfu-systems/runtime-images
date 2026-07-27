@@ -48,12 +48,13 @@ for (const required of [
   'COURSE_LOCAL_MODEL_SHA256:',
   'Waiting for the user-installed local model.',
   'course-models:/models:ro',
+  'test ! -f /models/Qwen3-0.6B-Q4_K_M.gguf || curl -fsS',
 ]) {
   if (!interactive.includes(required)) {
     throw new Error(`Interactive local delivery invariant missing: ${required}`);
   }
 }
-if (interactive.includes('wget ') || interactive.includes('curl ')) {
+if (interactive.includes('wget -c') || interactive.includes('curl -o')) {
   throw new Error('Interactive local delivery must not download a model during Compose startup');
 }
 for (const required of [

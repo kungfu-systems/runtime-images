@@ -40,6 +40,14 @@ services:
       - course-models:/models:ro
     networks:
       - course-private
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - test ! -f /models/Qwen3-0.6B-Q4_K_M.gguf || curl -fsS http://127.0.0.1:8080/health
+      interval: 5s
+      timeout: 4s
+      start_period: 10s
+      retries: 24
 
   app:
     environment:
