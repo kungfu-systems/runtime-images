@@ -67,7 +67,38 @@ function scheduleRuntimePoll() {
     : null;
 }
 
+function initializeRuntimeMenu() {
+  if (runtimeMenu.dataset.initialized) return;
+  runtimeMenu.innerHTML = `
+    <button class="runtime-trigger" data-runtime-toggle aria-expanded="false">
+      <span class="runtime-dot mock"></span>
+      <span class="runtime-trigger-label">AI: Mock</span>
+      <span aria-hidden="true">⌄</span>
+    </button>
+    <section class="runtime-popover" aria-label="AI runtime">
+      <p class="step">AI runtime for new courses</p>
+      <h2>Choose how drafts are made</h2>
+      <button class="runtime-choice" data-runtime-select="mock">
+        <span><strong>Mock</strong><small>Instant deterministic simulation · no model download</small></span>
+        <em data-runtime-mock-action>Use mock</em>
+      </button>
+      <div class="runtime-install" data-runtime-install-panel hidden>
+        <div><strong>Local model</strong><small data-runtime-local-install-status></small></div>
+        <button data-runtime-install>Download & install</button>
+        <small data-runtime-auth-note hidden>Log in before installing on this instance.</small>
+        <progress data-runtime-progress max="100" value="0" hidden></progress>
+      </div>
+      <button class="runtime-choice" data-runtime-local-choice data-runtime-select="openai-compatible" hidden>
+        <span><strong>Local model</strong><small data-runtime-local-choice-status></small></span>
+        <em data-runtime-local-action>Use local</em>
+      </button>
+      <p class="runtime-note">The selection applies to courses you create next. Existing courses keep their original Agent binding.</p>
+    </section>`;
+  runtimeMenu.dataset.initialized = 'true';
+}
+
 function renderRuntimeMenu() {
+  initializeRuntimeMenu();
   const mock = runtimeState.backends.mock ?? backendState;
   const local = runtimeState.backends['openai-compatible'];
   const selected = runtimeState.backends[selectedBackend] ?? mock;
@@ -76,38 +107,84 @@ function renderRuntimeMenu() {
   const installing = ['downloading', 'verifying', 'checking'].includes(
     local?.modelInstall?.state,
   );
-  const installAction = !local
-    ? ''
-    : installed
-      ? `<button class="runtime-choice${selectedBackend === 'openai-compatible' ? ' selected' : ''}" data-runtime-select="openai-compatible" ${local.ready ? '' : 'disabled'}>
-          <span><strong>Local model</strong><small>${escapeHtml(localStatusCopy(local))}</small></span>
-          <em>${local.ready ? (selectedBackend === 'openai-compatible' ? 'In use' : 'Use local') : 'Starting…'}</em>
-        </button>`
-      : `<div class="runtime-install">
-          <div><strong>Local model</strong><small>${escapeHtml(localStatusCopy(local))}</small></div>
-          <button data-runtime-install ${installing || !session?.authenticated ? 'disabled' : ''}>
-            ${installing ? `${local.modelInstall.progress}%` : 'Download & install'}
-          </button>
-          ${session?.authenticated ? '' : '<small>Log in before installing on this instance.</small>'}
-          ${installing ? `<progress max="100" value="${local.modelInstall.progress}"></progress>` : ''}
-        </div>`;
-  runtimeMenu.innerHTML = `
-    <button class="runtime-trigger${runtimeMenuOpen ? ' active' : ''}" data-runtime-toggle aria-expanded="${runtimeMenuOpen}">
-      <span class="runtime-dot ${selectedBackend === 'mock' ? 'mock' : 'local'}"></span>
-      AI: ${escapeHtml(selectedBackend === 'mock' ? 'Mock' : 'Local model')}
-      <span aria-hidden="true">⌄</span>
-    </button>
-    <section class="runtime-popover${runtimeMenuOpen ? ' open' : ''}" aria-label="AI runtime">
-      <p class="step">AI runtime for new courses</p>
-      <h2>Choose how drafts are made</h2>
-      <button class="runtime-choice${selectedBackend === 'mock' ? ' selected' : ''}" data-runtime-select="mock">
-        <span><strong>Mock</strong><small>Instant deterministic simulation · no model download</small></span>
-        <em>${selectedBackend === 'mock' ? 'In use' : 'Use mock'}</em>
-      </button>
-      ${installAction}
-      <p class="runtime-note">The selection applies to courses you create next. Existing courses keep their original Agent binding.</p>
-    </section>`;
+
+  const trigger = runtimeMenu.querySelector('[data-runtime-toggle]');
+  const triggerDot = runtimeMenu.querySelector('.runtime-dot');
+  const triggerLabel = runtimeMenu.querySelector('.runtime-trigger-label');
+  const popover = runtimeMenu.querySelector('.runtime-popover');
+  const mockChoice = runtimeMenu.querySelector('[data-runtime-select="mock"]');
+  const mockAction = runtimeMenu.querySelector('[data-runtime-mock-action]');
+  const installPanel = runtimeMenu.querySelector('[data-runtime-install-panel]');
+  const installStatus = runtimeMenu.querySelector('[data-runtime-local-install-status]');
+  const installButton = runtimeMenu.querySelector('[data-runtime-install]');
+  const authNote = runtimeMenu.querySelector('[data-runtime-auth-note]');
+  const progress = runtimeMenu.querySelector('[data-runtime-progress]');
+  const localChoice = runtimeMenu.querySelector('[data-runtime-local-choice]');
+  const localChoiceStatus = runtimeMenu.querySelector('[data-runtime-local-choice-status]');
+  const localAction = runtimeMenu.querySelector('[data-runtime-local-action]');
+
+  trigger.classList.toggle('active', runtimeMenuOpen);
+  trigger.setAttribute('aria-expanded', String(runtimeMenuOpen));
+  triggerDot.classList.toggle('mock', selectedBackend === 'mock');
+  triggerDot.classList.toggle('local', selectedBackend !== 'mock');
+  triggerLabel.textContent = `AI: ${selectedBackend === 'mock' ? 'Mock' : 'Local model'}`;
+  popover.classList.toggle('open', runtimeMenuOpen);
+  mockChoice.classList.toggle('selected', selectedBackend === 'mock');
+  mockAction.textContent = selectedBackend === 'mock' ? 'In use' : 'Use mock';
+
+  installPanel.hidden = !local || installed;
+  localChoice.hidden = !local || !installed;
+  if (local) {
+    const status = localStatusCopy(local);
+    installStatus.textContent = status;
+    localChoiceStatus.textContent = status;
+    installButton.disabled = installing || !session?.authenticated;
+    installButton.textContent = installing ? `${local.modelInstall.progress}%` : 'Download & install';
+    authNote.hidden = Boolean(session?.authenticated);
+    progress.hidden = !installing;
+    progress.value = local.modelInstall.progress ?? 0;
+    localChoice.disabled = !local.ready;
+    localChoice.classList.toggle('selected', selectedBackend === 'openai-compatible');
+    localAction.textContent = local.ready
+      ? (selectedBackend === 'openai-compatible' ? 'In use' : 'Use local')
+      : 'Starting…';
+  }
   scheduleRuntimePoll();
+}
+
+function updateSelectedRuntimePanels() {
+  const runtime = backendPresentation(selectedBackend);
+  const dashboard = app.querySelector('[data-selected-runtime-panel="dashboard"]');
+  if (dashboard) {
+    dashboard.className = `runtime-context ${runtime.tone}`;
+    dashboard.querySelector('[data-selected-runtime-mark]').textContent =
+      runtime.simulated ? 'MOCK' : 'AI';
+    dashboard.querySelector('[data-selected-runtime-name]').textContent = runtime.name;
+    dashboard.querySelector('[data-selected-runtime-copy]').textContent = runtime.simulated
+      ? 'New courses use a deterministic simulation. Choose Local model in the header to create a course whose drafts come from real local inference.'
+      : 'New courses will generate their outlines with Qwen3 0.6B inside this Docker deployment. Existing courses keep the runtime shown on their card.';
+  }
+  const newCourse = app.querySelector('[data-selected-runtime-panel="new-course"]');
+  if (newCourse) {
+    newCourse.className = `new-course-runtime ${runtime.tone}`;
+    newCourse.querySelector('[data-selected-runtime-mark]').textContent =
+      runtime.simulated ? 'MOCK' : 'LOCAL AI';
+    newCourse.querySelector('[data-selected-runtime-name]').textContent = runtime.name;
+    newCourse.querySelector('[data-selected-runtime-copy]').textContent = runtime.simulated
+      ? 'Its outline will be a deterministic reference result, clearly labeled as Mock.'
+      : 'Qwen3 0.6B will generate the outline locally inside this Docker deployment.';
+  }
+  const courseNotice = app.querySelector('[data-course-runtime-notice]');
+  if (courseNotice) {
+    const courseRuntime = backendPresentation(courseNotice.dataset.courseBackend);
+    const differs = selectedBackend !== courseRuntime.kind;
+    courseNotice.hidden = !differs;
+    courseNotice.className = `course-runtime-notice ${runtime.tone}`;
+    courseNotice.querySelector('strong').textContent =
+      `${runtime.short} is selected for new courses.`;
+    courseNotice.querySelector('span').textContent =
+      `This course remains permanently ${courseRuntime.short}-bound. The header selection does not rewrite existing course history.`;
+  }
 }
 
 async function refreshRuntime({ keepOpen = false } = {}) {
@@ -135,6 +212,7 @@ function selectRuntime(kind) {
   localStorage.setItem('course-agent-backend', kind);
   runtimeMenuOpen = false;
   renderRuntimeMenu();
+  updateSelectedRuntimePanels();
 }
 
 runtimeMenu.addEventListener('click', async (event) => {
@@ -176,6 +254,27 @@ function activeAgentLabel() {
 function courseAgentLabel(course, selected = null) {
   return selected?.outline?.agentContribution?.role
     || (course.agentWork?.simulated ? 'Mock Course Designer' : activeAgentLabel());
+}
+
+function backendPresentation(kind) {
+  if (kind === 'openai-compatible') {
+    return {
+      kind: 'openai-compatible',
+      short: 'Local AI',
+      badge: 'Local AI course',
+      name: 'Local Qwen · Qwen3 0.6B',
+      tone: 'local',
+      simulated: false,
+    };
+  }
+  return {
+    kind: 'mock',
+    short: 'Mock',
+    badge: 'Mock course',
+    name: 'Deterministic Mock Agent',
+    tone: 'mock',
+    simulated: true,
+  };
 }
 
 async function request(path, options = {}) {
@@ -390,9 +489,13 @@ function courseCard(course) {
   const versionLabel = course.version_count
     ? `${course.version_count} saved ${course.version_count === 1 ? 'version' : 'versions'}`
     : 'Ready for a first draft';
+  const runtime = backendPresentation(course.backend_kind);
   return `
     <button class="course-card" data-course-id="${course.id}">
-      <span class="status">${course.current_outline_version_id ? 'approved course' : 'course in progress'}</span>
+      <div class="course-card-badges">
+        <span class="status">${course.current_outline_version_id ? 'approved course' : 'course in progress'}</span>
+        <span class="course-backend ${runtime.tone}">${escapeHtml(runtime.badge)}</span>
+      </div>
       <h2>${escapeHtml(course.title)}</h2>
       <p>For ${escapeHtml(course.target_learner)}</p>
       <div class="card-footer"><span>${escapeHtml(versionLabel)}</span><strong>Open course →</strong></div>
@@ -402,6 +505,7 @@ function courseCard(course) {
 async function showCourses(message = '') {
   wireAccount();
   const { courses } = await request('/api/courses');
+  const runtime = backendPresentation(selectedBackend);
   app.innerHTML = `
     <section class="dashboard-head">
       <div>
@@ -411,6 +515,16 @@ async function showCourses(message = '') {
       <button id="new-course" class="primary-action">Create a new course</button>
     </section>
     <p class="dashboard-copy">Generating again does not create another course or overwrite your work. It appends a new version inside the same course.</p>
+    <section class="runtime-context ${runtime.tone}" data-selected-runtime-panel="dashboard">
+      <span class="runtime-context-mark" data-selected-runtime-mark>${runtime.simulated ? 'MOCK' : 'AI'}</span>
+      <div>
+        <p class="step">Runtime selected for your next course</p>
+        <h2 data-selected-runtime-name>${escapeHtml(runtime.name)}</h2>
+        <p data-selected-runtime-copy>${runtime.simulated
+          ? 'New courses use a deterministic simulation. Choose Local model in the header to create a course whose drafts come from real local inference.'
+          : 'New courses will generate their outlines with Qwen3 0.6B inside this Docker deployment. Existing courses keep the runtime shown on their card.'}</p>
+      </div>
+    </section>
     <p class="success">${escapeHtml(message)}</p>
     <section class="course-list">
       ${courses.map(courseCard).join('') || `
@@ -427,12 +541,23 @@ async function showCourses(message = '') {
 }
 
 function showNewCourse(message = '') {
+  const runtime = backendPresentation(selectedBackend);
   app.innerHTML = `
     <button id="back" class="back">← My courses</button>
     <section class="editor-head">
       <p class="eyebrow">Create a course project</p>
       <h1>Give the Agent a useful brief.</h1>
       <p class="lede">These are durable business facts. The Agent will use them to generate a draft, but your application owns the brief and every approved version.</p>
+    </section>
+    <section class="new-course-runtime ${runtime.tone}" data-selected-runtime-panel="new-course">
+      <span data-selected-runtime-mark>${runtime.simulated ? 'MOCK' : 'LOCAL AI'}</span>
+      <div>
+        <p class="step">This course will use</p>
+        <h2 data-selected-runtime-name>${escapeHtml(runtime.name)}</h2>
+        <p data-selected-runtime-copy>${runtime.simulated
+          ? 'Its outline will be a deterministic reference result, clearly labeled as Mock.'
+          : 'Qwen3 0.6B will generate the outline locally inside this Docker deployment.'}</p>
+      </div>
     </section>
     <form id="course-form" class="brief-form panel">
       <p class="field-shortcut">Tip: focus an empty field and press <kbd>Tab</kbd> to use its example, then continue to the next field.</p>
@@ -505,6 +630,29 @@ function renderOutline(outline) {
         <ol>${(outline.openQuestions ?? []).map((question) => `<li>${escapeHtml(question)}</li>`).join('')}</ol>
       </div>
     </div>`;
+}
+
+function renderAIOutputHero(version, runtime) {
+  const inference = version.outline?.inference ?? {};
+  const modelName = inference.model || (runtime.simulated ? 'none' : 'Qwen3 0.6B');
+  return `
+    <section class="ai-output-hero ${runtime.tone}">
+      <div class="ai-output-symbol" aria-hidden="true">${runtime.simulated ? 'M' : 'AI'}</div>
+      <div>
+        <p class="step">${runtime.simulated ? 'Mock reference output' : 'Local AI generated · Qwen3 0.6B'}</p>
+        <h2>${runtime.simulated
+          ? 'This draft came from the deterministic simulation—not the local model.'
+          : 'The complete course draft below was generated by the local model.'}</h2>
+        <p>${runtime.simulated
+          ? 'It demonstrates the workflow and data boundary. Create a new course while Local model is selected to compare real inference.'
+          : 'Module names, outcomes, lessons, exercises, and open questions are model output produced from your saved brief inside this Docker deployment.'}</p>
+        <div class="ai-output-facts">
+          <span>${runtime.simulated ? 'Deterministic reference' : 'Runs locally in Docker'}</span>
+          <span>${escapeHtml(modelName)}</span>
+          <span>Saved as immutable version ${version.versionNumber}</span>
+        </div>
+      </div>
+    </section>`;
 }
 
 function agentVersionLabel(version) {
@@ -594,7 +742,14 @@ async function showCourse(id, message = '', selectedVersionId = null) {
     ?? null;
   const isCurrent = selected?.id === course.currentOutlineVersionId;
   const agentLabel = courseAgentLabel(course, selected);
-  const simulated = course.agentWork?.simulated ?? backendState.simulated;
+  const courseRuntime = backendPresentation(
+    course.backendKind
+      ?? selected?.agentRun?.backend
+      ?? (course.agentWork?.simulated === false ? 'openai-compatible' : 'mock'),
+  );
+  const selectedRuntime = backendPresentation(selectedBackend);
+  const runtimeDiffers = selectedBackend !== courseRuntime.kind;
+  const simulated = courseRuntime.simulated;
   app.innerHTML = `
     <button id="back" class="back">← My courses</button>
     <section class="course-head">
@@ -609,6 +764,15 @@ async function showCourse(id, message = '', selectedVersionId = null) {
       </div>
     </section>
     <p id="course-message" class="success">${escapeHtml(message)}</p>
+    <section
+      class="course-runtime-notice ${selectedRuntime.tone}"
+      data-course-runtime-notice
+      data-course-backend="${courseRuntime.kind}"
+      ${runtimeDiffers ? '' : 'hidden'}
+    >
+      <strong>${escapeHtml(selectedRuntime.short)} is selected for new courses.</strong>
+      <span>This course remains permanently ${escapeHtml(courseRuntime.short)}-bound. The header selection does not rewrite existing course history.</span>
+    </section>
     <section class="course-workspace">
       <aside>
         <div class="brief-card">
@@ -620,8 +784,9 @@ async function showCourse(id, message = '', selectedVersionId = null) {
             <dt>Constraints</dt><dd>${escapeHtml(course.brief.deliveryConstraints)}</dd>
           </dl>
         </div>
-        <div class="agent-card">
+        <div class="agent-card ${courseRuntime.tone}">
           <p class="step">Delegated work</p>
+          <span class="course-backend ${courseRuntime.tone}">${escapeHtml(courseRuntime.badge)}</span>
           <h2>${selected ? 'Ask the Agent for another pass' : 'Ask the Agent for a first draft'}</h2>
           <p>${selected
             ? 'A revision becomes a new immutable version. The version you are viewing stays intact.'
@@ -646,10 +811,11 @@ async function showCourse(id, message = '', selectedVersionId = null) {
       </aside>
       <article class="draft-panel">
         ${selected ? `
+          ${renderAIOutputHero(selected, courseRuntime)}
           <div class="draft-toolbar">
             <div>
               <span class="status">${isCurrent ? 'current approved version' : selected.status}</span>
-              <strong class="generated-by">Generated by ${escapeHtml(agentLabel)}</strong>
+              <strong class="generated-by">${courseRuntime.simulated ? 'Simulated by' : 'Generated by local AI'} · ${escapeHtml(agentLabel)}</strong>
               <p>Version ${selected.versionNumber} · ${escapeHtml(agentVersionLabel(selected))}</p>
             </div>
             ${isCurrent
@@ -657,12 +823,20 @@ async function showCourse(id, message = '', selectedVersionId = null) {
               : `<button id="approve" class="approve-action">Approve version ${selected.versionNumber}</button>`}
           </div>
           ${renderHandoff(selected, isCurrent)}
-          ${renderOutline(selected.outline)}
+          <section class="ai-generated-content ${courseRuntime.tone}" aria-label="${courseRuntime.simulated ? 'Mock reference content' : 'Local AI generated content'}">
+            <p class="ai-content-label">${courseRuntime.simulated ? 'Mock reference content' : 'Local AI generated content'}</p>
+            ${renderOutline(selected.outline)}
+          </section>
         ` : `
-          <div class="empty-draft">
-            <p class="eyebrow">No outline yet</p>
-            <h2>Your brief belongs to the business app. The next step delegates one bounded job to the Agent.</h2>
-            <p>The Agent will return a draft; it cannot approve the result for you.</p>
+          <div class="empty-draft ${courseRuntime.tone}">
+            <span class="empty-runtime-mark">${courseRuntime.simulated ? 'MOCK' : 'LOCAL AI'}</span>
+            <p class="eyebrow">${escapeHtml(courseRuntime.name)} · ready</p>
+            <h2>${courseRuntime.simulated
+              ? 'Generate a deterministic reference outline in the right pane.'
+              : 'Ask local Qwen to generate the first course outline in this right pane.'}</h2>
+            <p>${courseRuntime.simulated
+              ? 'The result will be visibly marked as Mock and saved as a version in PostgreSQL.'
+              : 'The generated modules, lessons, exercises, and questions will appear here with local-model provenance.'}</p>
           </div>`}
       </article>
     </section>
