@@ -6,14 +6,26 @@ import { fileURLToPath } from 'node:url';
 import { loadConfig } from './config.mjs';
 import { initializeDatabase } from './db.mjs';
 import { CourseDomain } from './domain.mjs';
+import { AgentWorkRouter } from './agent-work-router.mjs';
 import { MockAgentWorkAdapter } from './mock-agent-work-adapter.mjs';
+import { OpenAICompatibleAgentWorkAdapter } from './openai-compatible-agent-work-adapter.mjs';
 import { OutboxDispatcher } from './outbox.mjs';
 import { createQualificationFaults } from './qualification-faults.mjs';
 import { createRateLimiter } from './security.mjs';
 
 const config = loadConfig();
 const pool = await initializeDatabase(config);
-const agentWorkPort = new MockAgentWorkAdapter(pool);
+const adapters = { mock: new MockAgentWorkAdapter(pool) };
+if (config.backend === 'openai-compatible') {
+  adapters['openai-compatible'] = new OpenAICompatibleAgentWorkAdapter(
+    pool,
+    config.inference,
+  );
+}
+const agentWorkPort = new AgentWorkRouter({
+  defaultBackend: config.backend,
+  adapters,
+});
 const dispatcher = new OutboxDispatcher(pool, agentWorkPort, createQualificationFaults(config));
 const domain = new CourseDomain(pool, agentWorkPort, dispatcher, config);
 const webRoot = fileURLToPath(new URL('../web/', import.meta.url));
@@ -58,6 +70,18 @@ function headers(extra = {}) {
 function json(res, status, value, extra = {}) {
   res.writeHead(status, headers({ 'content-type': 'application/json; charset=utf-8', ...extra }));
   res.end(JSON.stringify(value));
+}
+
+function backendDescription() {
+  const {
+    kind,
+    label,
+    provider,
+    model,
+    simulated,
+    delivery,
+  } = config.inference;
+  return { kind, label, provider, model, simulated, delivery };
 }
 
 function sessionCookie(token, clear = false) {
@@ -124,13 +148,31 @@ const server = createServer(async (req, res) => {
     }
     if (req.method === 'GET' && url.pathname === '/readyz') {
       await pool.query('SELECT 1');
-      return json(res, ready ? 200 : 503, { ready, database: 'ready', migrations: 'ready', backend: 'mock-simulated' });
+      let inference = 'ready';
+      try {
+        await agentWorkPort.health();
+      } catch {
+        inference = 'unavailable';
+      }
+      const isReady = ready && inference === 'ready';
+      return json(res, isReady ? 200 : 503, {
+        ready: isReady,
+        database: 'ready',
+        migrations: 'ready',
+        inference,
+        agentBackend: backendDescription(),
+      });
     }
     if (req.method === 'GET' && url.pathname === '/api/session') {
       const auth = await domain.authenticate(cookies(req).course_session);
       return json(res, 200, auth
-        ? { authenticated: true, user: auth.user, csrfToken: auth.csrfToken, backend: 'mock-simulated' }
-        : { authenticated: false, backend: 'mock-simulated' });
+        ? {
+          authenticated: true,
+          user: auth.user,
+          csrfToken: auth.csrfToken,
+          agentBackend: backendDescription(),
+        }
+        : { authenticated: false, agentBackend: backendDescription() });
     }
     if (req.method === 'POST' && ['/api/register', '/api/login'].includes(url.pathname)) {
       requireOrigin(req);
@@ -146,7 +188,7 @@ const server = createServer(async (req, res) => {
         authenticated: true,
         user: result.user,
         csrfToken: result.csrfToken,
-        backend: 'mock-simulated',
+        agentBackend: backendDescription(),
       }, { 'set-cookie': sessionCookie(result.token) });
     }
     if (req.method === 'POST' && url.pathname === '/api/logout') {
@@ -240,7 +282,7 @@ const server = createServer(async (req, res) => {
 });
 
 server.listen(config.port, '0.0.0.0', () => {
-  console.log(`[course-reference] listening on ${config.port}; backend=mock-simulated`);
+  console.log(`[course-reference] listening on ${config.port}; backend=${config.backend}`);
 });
 
 for (const signal of ['SIGINT', 'SIGTERM']) {

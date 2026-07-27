@@ -119,9 +119,12 @@ boundary and official-Alpha substitution seam.
 mock-backed PostgreSQL example for commercial Builders. It adds creator
 registration and login, a private per-account course collection, immutable
 course-outline versions, a durable command outbox, and a versioned Agent-work
-port without coupling the business schema or primary Web experience to the
-current Hub Starter internals. It runs as its own
-loopback-only Compose project and does not replace or share the Hub's state.
+port without coupling the business schema or primary Web experience to one
+inference engine. The small core image defaults to an explicit deterministic
+simulation. An OpenAI-compatible adapter can instead use a hosted endpoint or
+the optional local llama.cpp delivery pack without changing the course schema.
+It runs as its own loopback-only Compose project and does not replace or share
+the Hub's state.
 
 ## License
 

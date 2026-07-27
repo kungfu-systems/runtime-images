@@ -159,8 +159,14 @@ export class CourseDomain {
       const homework = await client.query(
         `INSERT INTO course.learner_homeworks
           (user_id, enrollment_id, definition_id, backend_kind, course_project_id)
-         VALUES ($1, $2, $3, 'mock', $4) RETURNING id`,
-        [userId, enrollment.rows[0].id, HOMEWORK_ID, project.rows[0].id],
+         VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+        [
+          userId,
+          enrollment.rows[0].id,
+          HOMEWORK_ID,
+          this.config.backend,
+          project.rows[0].id,
+        ],
       );
       await client.query(
         `INSERT INTO course.command_outbox

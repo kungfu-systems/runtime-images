@@ -2,11 +2,37 @@ import { randomUuid } from './random-uuid.js';
 
 const app = document.querySelector('#app');
 const account = document.querySelector('#account');
+const backendBanner = document.querySelector('#backend-banner');
 let session = null;
+let backendState = {
+  kind: 'mock',
+  label: 'Visible Mock Agent',
+  provider: 'deterministic simulation',
+  model: 'none',
+  simulated: true,
+  delivery: 'bundled',
+};
 
 const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/gu, (char) => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
 })[char]);
+
+function updateBackend(value) {
+  if (value) backendState = value;
+  backendBanner.classList.toggle('is-real', !backendState.simulated);
+  backendBanner.textContent = backendState.simulated
+    ? 'Visible Mock Agent · deterministic development simulation · approved versions stay in PostgreSQL'
+    : `${backendState.label} · ${backendState.delivery} inference · approved versions stay in PostgreSQL`;
+}
+
+function activeAgentLabel() {
+  return backendState.label || (backendState.simulated ? 'Visible Mock Agent' : 'Course Designer');
+}
+
+function courseAgentLabel(course, selected = null) {
+  return selected?.outline?.agentContribution?.role
+    || (course.agentWork?.simulated ? 'Mock Course Designer' : activeAgentLabel());
+}
 
 async function request(path, options = {}) {
   const headers = { ...(options.headers ?? {}) };
@@ -88,7 +114,7 @@ async function showWorkflowStep(overlay, index, total, text, tone = 'active') {
 }
 
 async function runVisibleWorkflow({
-  eyebrow = 'Visible workflow · Mock Agent simulation',
+  eyebrow = `Visible workflow · ${activeAgentLabel()}`,
   title,
   steps,
   success,
@@ -170,7 +196,7 @@ function showAuth(message = '') {
       <div>
         <p class="eyebrow">Course Outline Copilot</p>
         <h1>Turn your expertise into a course people can <em>actually finish.</em></h1>
-        <p class="lede">Describe who you teach and the result you promise. A simulated Agent turns that brief into a visible outline you can review, improve, and approve.</p>
+        <p class="lede">Describe who you teach and the result you promise. ${escapeHtml(activeAgentLabel())} turns that brief into a visible outline you can review, improve, and approve.</p>
         <div class="flow-strip">
           <span>1 · Brief</span><span>2 · Agent draft</span><span>3 · Your feedback</span><span>4 · Approved version</span>
         </div>
@@ -206,6 +232,7 @@ function showAuth(message = '') {
       const data = Object.fromEntries(new FormData(event.currentTarget));
       try {
         session = await request(`/api/${mode}`, { method: 'POST', body: data });
+        updateBackend(session.agentBackend);
         await showCourses();
       } catch (error) {
         document.querySelector('#auth-error').textContent = error.message;
@@ -361,6 +388,8 @@ function renderHandoff(version, isCurrent) {
       : version.agentRun?.previousVersionId
         ? 'Generated another outline from the same saved brief.'
         : 'Structured the creator’s brief into a teachable first draft.');
+  const agentLabel = contribution.role
+    || (version.agentRun?.backend === 'mock' ? 'Mock Course Designer' : 'Course Designer');
   return `
     <section class="handoff-panel">
       <div class="handoff-heading">
@@ -368,7 +397,7 @@ function renderHandoff(version, isCurrent) {
           <p class="step">Work handoff · version ${version.versionNumber}</p>
           <h2>Who did what?</h2>
         </div>
-        <span class="agent-badge">Mock Agent</span>
+        <span class="agent-badge">${escapeHtml(agentLabel)}</span>
       </div>
       <ol class="handoff-flow">
         <li>
@@ -381,7 +410,7 @@ function renderHandoff(version, isCurrent) {
         </li>
         <li class="agent-step">
           <span>3</span>
-          <div><strong>Mock Course Designer delivered</strong><p>${escapeHtml(delivered)}</p></div>
+          <div><strong>${escapeHtml(agentLabel)} delivered</strong><p>${escapeHtml(delivered)}</p></div>
         </li>
         <li>
           <span>4</span>
@@ -416,6 +445,8 @@ async function showCourse(id, message = '', selectedVersionId = null) {
     ?? course.versions[0]
     ?? null;
   const isCurrent = selected?.id === course.currentOutlineVersionId;
+  const agentLabel = courseAgentLabel(course, selected);
+  const simulated = course.agentWork?.simulated ?? backendState.simulated;
   app.innerHTML = `
     <button id="back" class="back">← My courses</button>
     <section class="course-head">
@@ -446,7 +477,7 @@ async function showCourse(id, message = '', selectedVersionId = null) {
           <h2>${selected ? 'Ask the Agent for another pass' : 'Ask the Agent for a first draft'}</h2>
           <p>${selected
             ? 'A revision becomes a new immutable version. The version you are viewing stays intact.'
-            : 'The simulation will turn your saved brief into a visible three-module outline.'}</p>
+            : `${escapeHtml(agentLabel)} will turn your saved brief into a visible three-module outline.`}</p>
           ${selected ? `
             <form id="revise-form">
               <p class="field-shortcut">Press <kbd>Tab</kbd> in the empty field to use the suggested feedback.</p>
@@ -470,7 +501,7 @@ async function showCourse(id, message = '', selectedVersionId = null) {
           <div class="draft-toolbar">
             <div>
               <span class="status">${isCurrent ? 'current approved version' : selected.status}</span>
-              <strong class="generated-by">Generated by Mock Course Designer</strong>
+              <strong class="generated-by">Generated by ${escapeHtml(agentLabel)}</strong>
               <p>Version ${selected.versionNumber} · ${escapeHtml(agentVersionLabel(selected))}</p>
             </div>
             ${isCurrent
@@ -489,9 +520,12 @@ async function showCourse(id, message = '', selectedVersionId = null) {
     </section>
     <details class="technical-details">
       <summary>How this result was produced</summary>
-      <p>This development build uses a deterministic Mock Agent. It proves the replaceable port, version ownership, and audit boundary; it does not claim real AI or Kungfu execution.</p>
+      <p>${simulated
+        ? 'This course uses a deterministic Mock Agent. It proves the replaceable port, version ownership, and audit boundary; it does not claim real AI or Kungfu execution.'
+        : `${escapeHtml(agentLabel)} generated the draft through an OpenAI-compatible endpoint. PostgreSQL still owns the saved versions and your approval decision.`}</p>
       <dl class="technical">
         <dt>Contract</dt><dd>${escapeHtml(course.agentWork?.contract ?? 'provisioning')}</dd>
+        <dt>Backend</dt><dd>${escapeHtml(course.agentWork?.backend ?? backendState.kind)}</dd>
         <dt>Binding</dt><dd>${escapeHtml(course.agentWork?.bindingId ?? 'provisioning')}</dd>
         <dt>Transition</dt><dd>${escapeHtml(course.agentWork?.transitionId ?? 'provisioning')}</dd>
       </dl>
@@ -500,13 +534,21 @@ async function showCourse(id, message = '', selectedVersionId = null) {
   for (const button of document.querySelectorAll('[data-version-id]')) {
     button.addEventListener('click', () => showCourse(id, '', button.dataset.versionId));
   }
-  document.querySelector('#generate')?.addEventListener('click', () => runAgentAction(id, 'generate', {}, false));
-  document.querySelector('#generate-again')?.addEventListener('click', () => runAgentAction(id, 'generate', {}, true));
+  document.querySelector('#generate')?.addEventListener('click', () =>
+    runAgentAction(id, 'generate', {}, false, agentLabel));
+  document.querySelector('#generate-again')?.addEventListener('click', () =>
+    runAgentAction(id, 'generate', {}, true, agentLabel));
   const reviseForm = document.querySelector('#revise-form');
   if (reviseForm) wireTabPlaceholderAcceptance(reviseForm);
   reviseForm?.addEventListener('submit', (event) => {
     event.preventDefault();
-    runAgentAction(id, 'revise', Object.fromEntries(new FormData(event.currentTarget)));
+    runAgentAction(
+      id,
+      'revise',
+      Object.fromEntries(new FormData(event.currentTarget)),
+      true,
+      agentLabel,
+    );
   });
   document.querySelector('#approve')?.addEventListener('click', async (event) => {
     event.currentTarget.disabled = true;
@@ -532,11 +574,18 @@ async function showCourse(id, message = '', selectedVersionId = null) {
   });
 }
 
-async function runAgentAction(id, action, body, hasExistingVersion = true) {
+async function runAgentAction(
+  id,
+  action,
+  body,
+  hasExistingVersion = true,
+  requestedAgentLabel = activeAgentLabel(),
+) {
   const controls = app.querySelectorAll('button, textarea');
   controls.forEach((control) => { control.disabled = true; });
   try {
     const revising = action === 'revise';
+    const agentLabel = requestedAgentLabel;
     const { course } = await runVisibleWorkflow({
       title: revising
         ? 'Improving your course outline'
@@ -547,7 +596,7 @@ async function runAgentAction(id, action, body, hasExistingVersion = true) {
         ? [
           'Reading your saved course brief',
           'Comparing your feedback with the latest version',
-          'Mock Course Designer is reshaping the learning path',
+          `${agentLabel} is reshaping the learning path`,
           'Preparing a new immutable outline version',
         ]
         : [
@@ -555,7 +604,7 @@ async function runAgentAction(id, action, body, hasExistingVersion = true) {
           hasExistingVersion
             ? 'Finding a different teaching route'
             : 'Finding a clear teaching route',
-          'Mock Course Designer is structuring the modules',
+          `${agentLabel} is structuring the modules`,
           'Preparing a new immutable outline version',
         ],
       success: 'New outline version saved to your course collection',
@@ -569,7 +618,7 @@ async function runAgentAction(id, action, body, hasExistingVersion = true) {
     await showCourse(
       id,
       action === 'generate'
-        ? `The simulated Agent created version ${newest.versionNumber}.`
+        ? `${courseAgentLabel(course, newest)} created version ${newest.versionNumber}.`
         : `Your feedback produced version ${newest.versionNumber}; the previous version is unchanged.`,
       newest.id,
     );
@@ -580,6 +629,7 @@ async function runAgentAction(id, action, body, hasExistingVersion = true) {
 
 try {
   session = await request('/api/session');
+  updateBackend(session.agentBackend);
   if (session.authenticated) await showCourses();
   else showAuth();
 } catch (error) {

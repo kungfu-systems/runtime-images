@@ -33,7 +33,7 @@ export class OutboxDispatcher {
           [this.processingStaleSeconds],
         );
         const selected = await client.query(
-          `SELECT o.*, h.backend_binding_id, h.course_project_id
+          `SELECT o.*, h.backend_binding_id, h.backend_kind, h.course_project_id
            FROM course.command_outbox o
            JOIN course.learner_homeworks h ON h.id = o.learner_homework_id
            WHERE o.state = 'pending' AND o.available_at <= now()
@@ -59,6 +59,7 @@ export class OutboxDispatcher {
           idempotencyKey: message.idempotency_key,
           sourceIdentity: `course-homework:${message.learner_homework_id}`,
           bindingId: message.backend_binding_id,
+          backendKind: message.backend_kind,
           payload: message.payload,
         });
         await this.hooks.afterExecute?.(message, view);
@@ -69,9 +70,9 @@ export class OutboxDispatcher {
           ) {
             const run = await client.query(
               `INSERT INTO course.agent_runs
-                (user_id, course_project_id, outbox_command_id, action, backend_kind,
+               (user_id, course_project_id, outbox_command_id, action, backend_kind,
                  backend_binding_id, transition_id, input, output)
-               VALUES ($1, $2, $3, $4, 'mock', $5, $6, $7::jsonb, $8::jsonb)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9::jsonb)
                ON CONFLICT (outbox_command_id) DO UPDATE
                  SET outbox_command_id = EXCLUDED.outbox_command_id
                RETURNING id`,
@@ -80,6 +81,7 @@ export class OutboxDispatcher {
                 message.course_project_id,
                 message.id,
                 message.command_type,
+                message.backend_kind,
                 view.bindingId,
                 view.transitionId,
                 JSON.stringify(message.payload),
@@ -104,7 +106,7 @@ export class OutboxDispatcher {
                   message.course_project_id,
                   run.rows[0].id,
                   JSON.stringify(view.latestOutput),
-                  String(view.latestOutput.revisionNote ?? 'A new mock-generated course outline.'),
+                  String(view.latestOutput.revisionNote ?? 'A new Agent-generated course outline.'),
                 ],
               );
             }

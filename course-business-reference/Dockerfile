@@ -11,12 +11,12 @@ RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
 FROM ${RUNTIME_IMAGE} AS runtime
 ARG SOURCE_REVISION
 LABEL org.opencontainers.image.title="Kungfu course business reference" \
-      org.opencontainers.image.description="Bounded PostgreSQL course example with a deterministic mock Agent Work adapter" \
+      org.opencontainers.image.description="Bounded PostgreSQL course example with replaceable Agent Work delivery" \
       org.opencontainers.image.source="https://github.com/kungfu-systems/runtime-images" \
       org.opencontainers.image.revision="${SOURCE_REVISION}" \
       org.opencontainers.image.licenses="Apache-2.0" \
       tech.kungfu.course-business-reference.contract="course.agent-work-port/v2" \
-      tech.kungfu.course-business-reference.backend="mock-non-kungfu"
+      tech.kungfu.course-business-reference.backends="mock,openai-compatible"
 ENV NODE_ENV=production \
     PORT=8090 \
     AGENT_WORK_BACKEND=mock \

@@ -1,0 +1,18 @@
+name: kungfu-course-business-reference
+
+services:
+  app:
+    environment:
+      AGENT_WORK_BACKEND: openai-compatible
+      AGENT_WORK_BASE_URL: ${COURSE_AGENT_BASE_URL:?set COURSE_AGENT_BASE_URL}
+      AGENT_WORK_MODEL: ${COURSE_AGENT_MODEL:?set COURSE_AGENT_MODEL}
+      AGENT_WORK_PROVIDER_LABEL: ${COURSE_AGENT_PROVIDER_LABEL:-Hosted Agent}
+      AGENT_WORK_DELIVERY: hosted
+      AGENT_WORK_API_KEY_FILE: /run/secrets/course-agent-api-key
+      AGENT_WORK_TIMEOUT_MS: ${COURSE_AGENT_TIMEOUT_MS:-120000}
+    secrets:
+      - course-agent-api-key
+
+secrets:
+  course-agent-api-key:
+    file: ${COURSE_AGENT_API_KEY_FILE:?set COURSE_AGENT_API_KEY_FILE}

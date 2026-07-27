@@ -27,6 +27,10 @@ export const VIEW_ACTIONS = new Set([
 ]);
 
 export class AgentWorkPort {
+  async health() {
+    throw new Error('AgentWorkPort.health must be implemented');
+  }
+
   async execute(_command) {
     throw new Error('AgentWorkPort.execute must be implemented');
   }
@@ -40,6 +44,13 @@ export function assertCommand(command) {
   if (command?.contract !== AGENT_WORK_CONTRACT) throw new Error('unsupported AgentWorkPort contract');
   if (!COMMANDS.has(command.type)) throw new Error('unsupported AgentWorkPort command');
   if (!command.idempotencyKey || !command.sourceIdentity) throw new Error('command identity is required');
+}
+
+export function backendKindForBinding(bindingId) {
+  const value = String(bindingId ?? '');
+  if (value.startsWith('mock:')) return 'mock';
+  if (value.startsWith('openai:')) return 'openai-compatible';
+  throw new Error('unsupported AgentWorkPort binding');
 }
 
 export function assertAgentWorkView(view) {
