@@ -35,7 +35,7 @@ jobs:
 
   buildchain:
     name: Buildchain contract
-    uses: kungfu-systems/buildchain/.github/workflows/check.yml@8e7955851381b50f0081008bc0655c4cf8aa92aa
+    uses: kungfu-systems/buildchain/.github/workflows/check.yml@9e904de2c85dbea7c799780ee166510b3336d812
     with:
       require-version-state: true
       upload-artifacts: true
