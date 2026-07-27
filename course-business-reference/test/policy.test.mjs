@@ -58,4 +58,5 @@ test('course UI makes Agent contribution and work handoff visible', async () => 
   assert.match(browser, /What the Agent changed/u);
   assert.match(browser, /version\.agentRun\?\.action/u);
   assert.match(browser, /Immutable version/u);
+  assert.match(browser, /predates structured per-change reporting/u);
 });

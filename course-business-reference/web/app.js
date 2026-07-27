@@ -213,9 +213,13 @@ function agentVersionLabel(version) {
 
 function renderHandoff(version, isCurrent) {
   const contribution = version.outline.agentContribution ?? {};
-  const changes = contribution.changes?.length
+  const hasStructuredContribution = Boolean(contribution.changes?.length);
+  const changes = hasStructuredContribution
     ? contribution.changes
-    : [version.changeSummary];
+    : [
+      version.changeSummary,
+      'This earlier version predates structured per-change reporting.',
+    ];
   const supplied = version.agentRun?.feedback
     ? `Saved course brief plus your feedback: “${version.agentRun.feedback}”`
     : 'Saved target learner, problem, promise, expertise, and delivery constraints';
@@ -224,6 +228,12 @@ function renderHandoff(version, isCurrent) {
     : version.agentRun?.previousVersionId
       ? 'Generate an alternative route from the same saved brief'
       : 'Turn the saved brief into a first teachable outline';
+  const delivered = contribution.summary
+    ?? (version.agentRun?.action === 'revise_outline'
+      ? 'Reworked the prior outline using the creator’s feedback.'
+      : version.agentRun?.previousVersionId
+        ? 'Generated another outline from the same saved brief.'
+        : 'Structured the creator’s brief into a teachable first draft.');
   return `
     <section class="handoff-panel">
       <div class="handoff-heading">
@@ -244,7 +254,7 @@ function renderHandoff(version, isCurrent) {
         </li>
         <li class="agent-step">
           <span>3</span>
-          <div><strong>Mock Course Designer delivered</strong><p>${escapeHtml(contribution.summary ?? version.changeSummary)}</p></div>
+          <div><strong>Mock Course Designer delivered</strong><p>${escapeHtml(delivered)}</p></div>
         </li>
         <li>
           <span>4</span>
