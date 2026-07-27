@@ -176,6 +176,11 @@ assertAgentWorkView(firstDraft.agentWork);
 assert.equal(firstDraft.versions[0].versionNumber, 1);
 assert.equal(firstDraft.versions[0].outline.modules.length, 3);
 assert.equal(firstDraft.versions[0].outline.audience, brief('ignored').targetLearner);
+assert.equal(firstDraft.versions[0].agentRun.action, 'generate_outline');
+assert.equal(firstDraft.versions[0].agentRun.backend, 'mock');
+assert.equal(firstDraft.versions[0].agentRun.previousVersionId, null);
+assert.equal(firstDraft.versions[0].outline.agentContribution.role, 'Mock Course Designer');
+assert.equal(firstDraft.versions[0].outline.agentContribution.changes.length, 3);
 
 const reviseKey = `qualification:${nonce}:revise`;
 const [firstRevise, duplicateRevise] = await Promise.all([
@@ -196,6 +201,13 @@ const revised = await waitForCourse(first, firstId, 2);
 assert.equal(revised.versions[0].versionNumber, 2);
 assert.equal(revised.versions[1].versionNumber, 1);
 assert.notDeepEqual(revised.versions[0].outline, revised.versions[1].outline);
+assert.equal(revised.versions[0].agentRun.action, 'revise_outline');
+assert.equal(revised.versions[0].agentRun.previousVersionId, revised.versions[1].id);
+assert.equal(
+  revised.versions[0].agentRun.feedback,
+  'Make validation and observable exercises more explicit.',
+);
+assert.match(revised.versions[0].outline.agentContribution.summary, /feedback/u);
 
 const approved = await first.call(
   `/api/courses/${firstId}/versions/${revised.versions[0].id}/approve`,

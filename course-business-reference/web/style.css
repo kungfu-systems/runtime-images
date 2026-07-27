@@ -67,12 +67,35 @@ button:disabled { opacity: .55; cursor: wait; }
 .version-history { margin-top: 18px; }
 .version-button { width: 100%; display: flex; justify-content: space-between; margin-top: 8px; background: transparent; color: var(--ink); border: 1px solid var(--line); border-radius: 10px; }
 .version-button.active, .version-button:hover { color: white; background: var(--teal); }
-.version-button strong { text-transform: capitalize; }
+.version-button > span { display: grid; gap: 3px; text-align: left; }
+.version-button small { color: var(--muted); font-size: 11px; }
+.version-button em { align-self: center; font-size: 11px; font-style: normal; text-transform: capitalize; }
+.version-button.active small, .version-button:hover small { color: #d7e6e1; }
 .draft-panel { padding: 0; overflow: hidden; }
 .draft-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 24px 28px; border-bottom: 1px solid var(--line); background: #f0ece2; }
 .draft-toolbar p { margin: 10px 0 0; color: var(--muted); font-size: 13px; }
+.generated-by { display: block; margin-top: 12px; color: var(--ink); font-family: Georgia, serif; font-size: 20px; }
 .approved-mark { color: var(--teal); font-weight: 900; white-space: nowrap; }
 .approve-action { background: var(--teal); white-space: nowrap; }
+.handoff-live { display: grid; gap: 5px; margin-top: 16px; padding: 14px; border-radius: 10px; background: #edf5f2; color: var(--teal); }
+.handoff-live[hidden] { display: none; }
+.handoff-live span { color: var(--muted); font-size: 12px; line-height: 1.45; }
+.handoff-panel { padding: 28px 34px 30px; border-bottom: 1px solid var(--line); background: #fffdf7; }
+.handoff-heading { display: flex; align-items: start; justify-content: space-between; gap: 20px; }
+.handoff-heading h2 { margin-top: 5px; font-family: Georgia, serif; font-size: 30px; }
+.agent-badge { padding: 6px 10px; border-radius: 999px; background: #fee4d9; color: #9b2f22; font-size: 11px; font-weight: 900; text-transform: uppercase; white-space: nowrap; }
+.handoff-flow { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; padding: 0; list-style: none; }
+.handoff-flow li { position: relative; min-width: 0; padding: 14px 12px; border: 1px solid var(--line); border-radius: 12px; background: white; }
+.handoff-flow li > span { display: grid; place-items: center; width: 24px; height: 24px; margin-bottom: 10px; border-radius: 50%; background: var(--ink); color: white; font-size: 11px; font-weight: 900; }
+.handoff-flow li strong { display: block; font-size: 12px; }
+.handoff-flow li p { margin: 7px 0 0; color: var(--muted); font-size: 11px; line-height: 1.45; overflow-wrap: anywhere; }
+.handoff-flow .agent-step { border-color: var(--accent); background: #fff5f0; }
+.handoff-flow .agent-step > span { background: var(--accent); }
+.handoff-flow .decision-complete { border-color: var(--teal); background: #edf5f2; }
+.handoff-flow .decision-complete > span { background: var(--teal); }
+.agent-changes { margin-top: 18px; padding: 16px 18px; border-left: 3px solid var(--accent); background: #fff5f0; }
+.agent-changes ul { margin: 8px 0 0; padding-left: 20px; }
+.agent-changes li { margin-top: 6px; color: var(--muted); line-height: 1.45; }
 .outline-intro { padding: 34px; background: var(--ink); color: white; }
 .outline-intro h2 { font-family: Georgia, serif; font-size: 40px; }
 .outline-intro p { color: #d7e6e1; line-height: 1.55; }
@@ -119,4 +142,6 @@ details p, pre { color: var(--muted); line-height: 1.5; white-space: pre-wrap; o
   h1 { font-size: 44px; }
   .course-metric { display: none; }
   .draft-toolbar { align-items: flex-start; flex-direction: column; }
+  .handoff-heading { align-items: flex-start; flex-direction: column; }
+  .handoff-flow { grid-template-columns: 1fr; }
 }
