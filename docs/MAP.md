@@ -15,7 +15,8 @@
   development publication, and retained evidence.
 - `course-business-reference/` — an independently rooted PostgreSQL course
   business example with learner authentication, row isolation, transactional
-  outbox, and an explicitly simulated Agent Work adapter.
+  outbox, an explicit simulation, an OpenAI-compatible adapter, and an optional
+  digest-pinned local llama.cpp delivery pack.
 
 The upstream semantic concept remains in Kungfu at
 `framework/hub-starter/kungfu-hub-starter-docker.contract.json`. This

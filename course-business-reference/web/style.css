@@ -17,6 +17,7 @@ button, input, textarea { font: inherit; }
 .brand span { color: var(--accent); font-weight: 500; }
 #account { display: flex; gap: 18px; align-items: center; }
 .simulation-banner { padding: 8px 5vw; background: var(--ink); color: #f8d7bd; text-align: center; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+.simulation-banner.is-real { background: var(--teal); color: white; }
 main { width: min(1180px, 90vw); margin: 0 auto; padding: 64px 0 100px; }
 .hero, .work-layout { display: grid; grid-template-columns: 1.45fr 1fr; gap: 48px; align-items: start; }
 h1 { font-family: Georgia, serif; font-size: clamp(42px, 6vw, 76px); line-height: .98; letter-spacing: -.04em; margin: 12px 0 24px; font-weight: 500; }

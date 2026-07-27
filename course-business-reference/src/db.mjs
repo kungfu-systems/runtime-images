@@ -42,10 +42,11 @@ export async function initializeDatabase(config) {
       }
     }
     await client.query('GRANT CONNECT ON DATABASE course_reference TO course_app');
-    await client.query('GRANT USAGE ON SCHEMA course, mock_agent_work TO course_app');
-    await client.query('GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA course, mock_agent_work TO course_app');
+    await client.query('GRANT USAGE ON SCHEMA course, mock_agent_work, agent_work TO course_app');
+    await client.query('GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA course, mock_agent_work, agent_work TO course_app');
     await client.query('ALTER DEFAULT PRIVILEGES IN SCHEMA course GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO course_app');
     await client.query('ALTER DEFAULT PRIVILEGES IN SCHEMA mock_agent_work GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO course_app');
+    await client.query('ALTER DEFAULT PRIVILEGES IN SCHEMA agent_work GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO course_app');
   } finally {
     client.release();
     await migrationPool.end();

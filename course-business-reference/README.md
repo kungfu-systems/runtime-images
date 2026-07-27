@@ -7,17 +7,19 @@ engine?
 It is a complete, bounded vertical slice, not a general LMS or production SaaS.
 Course creators can register, maintain a private collection of course projects,
 delegate outline generation and revision, preserve every generated version, and
-approve one version as the current business result. The current Agent-work
+approve one version as the current business result. The default Agent-work
 backend is a persistent, deterministic **simulation**. It does not run an AI
 model or Kungfu and cannot produce Kungfu evidence, reviews, decisions,
-receipts, roots, or seals.
+receipts, roots, or seals. The same image can select a schema-constrained
+OpenAI-compatible endpoint, either hosted or supplied by the optional local
+llama.cpp delivery pack.
 
 The visible job is deliberately ordinary: turn a creator's expertise, target
 learner, promised outcome, and delivery constraints into a teachable
-three-module outline. The Mock Agent returns a real, inspectable draft so the
-port's purpose is understandable even before the future Kungfu adapter exists.
+three-module outline. Every backend returns an inspectable draft through the
+same port, so its purpose remains understandable before a future Kungfu adapter.
 Each saved version also shows a five-step work handoff: what the creator
-supplied, what the course app delegated, what the Mock Course Designer
+supplied, what the course app delegated, what the selected Course Designer
 delivered, what PostgreSQL saved, and what remains for the creator to approve.
 The version history distinguishes first drafts, revisions, and alternatives,
 while an explicit change summary identifies the Agent's contribution.
@@ -48,6 +50,52 @@ data, account recovery, email verification, MFA, billing, organizations,
 teacher roles, and production security certification are intentionally out of
 scope.
 
+## Delivery modes
+
+The core image contains no model and remains the same in every mode:
+
+| Mode | Additional download | Configuration | Result label |
+| --- | ---: | --- | --- |
+| default simulation | none | database development secrets only | `Visible Mock Agent` |
+| hosted endpoint | no local model | endpoint, model, and a secret file | configured provider |
+| optional local pack | about 704 MB compressed beyond the core image | one Compose overlay | `Local Qwen Course Designer` |
+
+The local pack pins the multi-platform llama.cpp server image by OCI digest and
+pins `Qwen3-0.6B-Q4_K_M.gguf` to an exact repository revision plus SHA-256. The
+model initializer downloads it once into a named cache volume and verifies the
+checksum. Later application rebuilds do not download it again. llama.cpp is
+reachable only on the private Compose network; it has no host port.
+
+Start the local delivery pack:
+
+```bash
+COURSE_DB_MIGRATION_PASSWORD=synthetic_migration_42 \
+COURSE_DB_APP_PASSWORD=synthetic_runtime_42 \
+docker compose -f compose.yaml -f compose.offline.yaml up --build --detach
+```
+
+The first start downloads and loads the model, so readiness takes longer than
+the default simulation. Existing courses retain their original backend binding;
+new courses use the currently selected backend. This preserves old mock-backed
+versions instead of silently relabeling them as model-generated.
+
+For a hosted OpenAI-compatible endpoint, keep the bearer token in a local file
+rather than Compose environment metadata:
+
+```bash
+COURSE_DB_MIGRATION_PASSWORD=synthetic_migration_42 \
+COURSE_DB_APP_PASSWORD=synthetic_runtime_42 \
+COURSE_AGENT_BASE_URL=https://provider.example/v1 \
+COURSE_AGENT_MODEL=provider-model-id \
+COURSE_AGENT_API_KEY_FILE=/absolute/path/to/local-token \
+docker compose -f compose.yaml -f compose.hosted.yaml up --build --detach
+```
+
+The public image never embeds a provider credential. A distribution-operated
+zero-configuration hosted experience must issue a bounded installation or
+account token from its gateway; it must not bake a long-lived API key into the
+image.
+
 ## Authority boundary
 
 | Fact | Authority |
@@ -57,15 +105,16 @@ scope.
 | generated outline versions and the approved-version pointer | PostgreSQL |
 | Agent run input/output provenance and delivery intent | PostgreSQL |
 | backend binding, delivery intent, rebuildable status | PostgreSQL |
-| delegated generation/revision execution and live work state | `AgentWorkPort/v2` backend |
+| delegated generation/revision execution and live work state | selected `AgentWorkPort/v2` backend |
 
 `course.course_outline_versions` is append-only for content: generating or
 revising inserts another version instead of overwriting a previous outline.
 Approval changes only version status and
 `course.course_projects.current_outline_version_id`. Mock execution state lives
-in the explicitly named `mock_agent_work` schema. The Web and domain layers
-depend on `AgentWorkPort/v2`; only the composition root selects
-`MockAgentWorkAdapter`.
+in the explicitly named `mock_agent_work` schema. OpenAI-compatible delivery
+state and idempotency records use the separate `agent_work` schema. The Web and
+domain layers depend on `AgentWorkPort/v2`; only the composition root selects
+and routes adapters.
 
 ## Security model
 
@@ -90,14 +139,17 @@ not a production authentication certification.
 
 Creating a course project creates its private work binding and provisioning
 outbox message in one PostgreSQL transaction. Generation and revision use stable
-idempotency keys. The mock records each delivered key before PostgreSQL
-acknowledges it, while `course.agent_runs.outbox_command_id` prevents a replay
+idempotency keys. Each adapter records delivered keys before PostgreSQL
+acknowledges them, while `course.agent_runs.outbox_command_id` prevents a replay
 from creating a duplicate outline version. A restart or crash between adapter
 completion and outbox acknowledgement therefore replays safely. Stale
 processing locks are recovered after 30 seconds. Each visible outline version
 joins back to its owning `course.agent_runs` row so the UI can explain the
 action, prior-version input, creator feedback, backend, and transition that
-produced it.
+produced it. External providers also receive the stable idempotency key. If a
+provider does not honor that header, a crash before the adapter stores the
+response may repeat inference, but the business outbox still commits at most
+one course version.
 
 ## Validation
 
@@ -140,8 +192,8 @@ The later real integration is intentionally small and separate:
 | `revise_outline` | generate another version from the brief, prior version, and feedback |
 | `status`, `nextAction`, `audit` | public read model and typed next action |
 
-These mappings are provisional until the independent Hub Starter coursework
-delivery is complete. A successor must implement a new adapter and shared
+The OpenAI-compatible adapter proves this substitution seam without coupling
+the domain to one provider. A future Kungfu adapter must still use shared
 contract tests; it must not redesign accounts, enrollments, ownership, routes,
-or business-owned outline versions, and must fail closed rather than silently
-falling back to the mock.
+or business-owned outline versions. Every real adapter fails closed rather than
+silently falling back to the mock.

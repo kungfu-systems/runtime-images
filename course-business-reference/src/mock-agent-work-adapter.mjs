@@ -154,6 +154,15 @@ export class MockAgentWorkAdapter extends AgentWorkPort {
     this.pool = pool;
   }
 
+  async health() {
+    return {
+      kind: 'mock',
+      provider: 'deterministic simulation',
+      model: 'none',
+      delivery: 'bundled',
+    };
+  }
+
   async execute(command) {
     assertCommand(command);
     const client = await this.pool.connect();
