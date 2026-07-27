@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.7
 # SPDX-License-Identifier: Apache-2.0
 
-ARG RUNTIME_IMAGE=node:24-trixie-slim@sha256:5301bbf5e8046148348b1dea15436326f43c579031f8d76654a631225bdfe467
+ARG RUNTIME_IMAGE=node:24-trixie-slim@sha256:ae91dcc111a68c9d2d81ff2a17bda61be126426176fde6fe7d08ab13b7f50573
 
 FROM ${RUNTIME_IMAGE} AS dependencies
 WORKDIR /build

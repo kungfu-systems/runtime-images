@@ -28,3 +28,14 @@ test('mock namespace and UI remain explicitly simulated', async () => {
   assert.match(html, /Simulated Agent Work backend/u);
   assert.equal(adapter.includes('sha256:'), false);
 });
+
+test('qualification faults are explicit and absent without a run id', async () => {
+  const { createQualificationFaults } = await import('../src/qualification-faults.mjs');
+  const hooks = createQualificationFaults({
+    qualificationRunId: '',
+    outboxProcessingStaleSeconds: 30,
+  });
+  assert.equal(hooks.processingStaleSeconds, 30);
+  assert.equal(hooks.beforeExecute, undefined);
+  assert.equal(hooks.afterExecute, undefined);
+});

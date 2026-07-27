@@ -82,11 +82,14 @@ npm run check
 bash -n course-business-reference/scripts/compose-qualification.sh
 ```
 
-The isolated Compose qualification starts on port `18090`, registers two
-learners, proves per-account UUID isolation and Origin rejection, drives the
-two-round golden path, repeats every idempotency key, verifies logout
-revocation, restarts the application, and stops containers while preserving
-volumes:
+The isolated Compose qualification starts on port `18090` and uses only
+synthetic accounts. It proves a crash after adapter completion, timeout retry,
+concurrent duplicate actions, per-account UUID and direct-RLS isolation,
+Origin/CSRF/body-size/rate-limit/session-expiry controls, the two-round golden
+path, database and application restart recovery, and a PostgreSQL
+backup/restore round trip. It stops containers while preserving named volumes
+and retains a machine-readable evidence JSON plus a run-specific database dump
+under the ignored `.artifacts/` directory:
 
 ```bash
 bash course-business-reference/scripts/compose-qualification.sh
