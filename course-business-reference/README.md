@@ -5,10 +5,17 @@ normal customer-facing PostgreSQL application compose with an Agent-work
 engine?
 
 It is a complete, bounded vertical slice, not a general LMS or production SaaS.
-Learners can register, log in, receive one private course homework, complete a
-two-round workflow, and log out. The current Agent-work backend is a persistent,
-deterministic **simulation**. It does not run Kungfu and cannot produce Kungfu
-evidence, reviews, decisions, receipts, roots, or seals.
+Course creators can register, maintain a private collection of course projects,
+delegate outline generation and revision, preserve every generated version, and
+approve one version as the current business result. The current Agent-work
+backend is a persistent, deterministic **simulation**. It does not run an AI
+model or Kungfu and cannot produce Kungfu evidence, reviews, decisions,
+receipts, roots, or seals.
+
+The visible job is deliberately ordinary: turn a creator's expertise, target
+learner, promised outcome, and delivery constraints into a teachable
+three-module outline. The Mock Agent returns a real, inspectable draft so the
+port's purpose is understandable even before the future Kungfu adapter exists.
 
 ## Run locally
 
@@ -36,14 +43,19 @@ scope.
 | Fact | Authority |
 | --- | --- |
 | learner identity, password credential, session | PostgreSQL |
-| course, enrollment, homework ownership | PostgreSQL |
+| course project, saved brief, collection ownership | PostgreSQL |
+| generated outline versions and the approved-version pointer | PostgreSQL |
+| Agent run input/output provenance and delivery intent | PostgreSQL |
 | backend binding, delivery intent, rebuildable status | PostgreSQL |
-| attempt, artifact evidence, review, outcome, seal | `AgentWorkPort/v1` backend |
+| delegated generation/revision execution and live work state | `AgentWorkPort/v2` backend |
 
-`course.learner_homeworks` deliberately stores only the backend binding and a
-rebuildable projection. Mock execution bytes live in the explicitly named
-`mock_agent_work` schema. The Web and domain layers depend on
-`AgentWorkPort/v1`; only the composition root selects `MockAgentWorkAdapter`.
+`course.course_outline_versions` is append-only for content: generating or
+revising inserts another version instead of overwriting a previous outline.
+Approval changes only version status and
+`course.course_projects.current_outline_version_id`. Mock execution state lives
+in the explicitly named `mock_agent_work` schema. The Web and domain layers
+depend on `AgentWorkPort/v2`; only the composition root selects
+`MockAgentWorkAdapter`.
 
 ## Security model
 
@@ -66,11 +78,13 @@ not a production authentication certification.
 
 ## Durable coordination
 
-Registration creates the account, enrollment, homework, and provisioning
-outbox message in one PostgreSQL transaction. Delivery uses stable idempotency
-keys. The mock records each delivered key before PostgreSQL acknowledges it, so
-a restart or a crash between adapter completion and outbox acknowledgement
-replays safely. Stale processing locks are recovered after 30 seconds.
+Creating a course project creates its private work binding and provisioning
+outbox message in one PostgreSQL transaction. Generation and revision use stable
+idempotency keys. The mock records each delivered key before PostgreSQL
+acknowledges it, while `course.agent_runs.outbox_command_id` prevents a replay
+from creating a duplicate outline version. A restart or crash between adapter
+completion and outbox acknowledgement therefore replays safely. Stale
+processing locks are recovered after 30 seconds.
 
 ## Validation
 
@@ -103,20 +117,18 @@ qualification.
 
 The later real integration is intentionally small and separate:
 
-| `AgentWorkPort/v1` field/action | Provisional future Hub mapping |
+| `AgentWorkPort/v2` field/action | Provisional future Hub mapping |
 | --- | --- |
-| `sourceIdentity` | stable external business/homework identity |
+| `sourceIdentity` | stable external course-project identity |
 | `bindingId` | public Hub work binding coordinate |
 | `transitionId` | public current work transition/version |
-| `provision` | create/admit bounded learner work |
-| `run_first_submission` | execute first bounded work round |
-| `submit_evidence` | attach public artifact evidence reference |
-| `request_review` | request/observe fresh independent review |
-| `seal` | close the accepted work lifecycle |
+| `provision` | create/admit bounded course-outline work |
+| `generate_outline` | generate a first visible outline from the saved brief |
+| `revise_outline` | generate another version from the brief, prior version, and feedback |
 | `status`, `nextAction`, `audit` | public read model and typed next action |
 
 These mappings are provisional until the independent Hub Starter coursework
 delivery is complete. A successor must implement a new adapter and shared
 contract tests; it must not redesign accounts, enrollments, ownership, routes,
-or the primary page, and must fail closed rather than silently falling back to
-the mock.
+or business-owned outline versions, and must fail closed rather than silently
+falling back to the mock.

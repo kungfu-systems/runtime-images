@@ -16,16 +16,19 @@ test('business routes do not import mock implementation details', async () => {
   assert.equal(server.includes('MockAgentWorkAdapter'), true);
 });
 
-test('mock namespace and UI remain explicitly simulated', async () => {
-  const [adapter, migration, html] = await Promise.all([
+test('mock namespace, business-owned versions, and UI remain explicitly bounded', async () => {
+  const [adapter, migration, projectsMigration, html] = await Promise.all([
     read('../src/mock-agent-work-adapter.mjs'),
     read('../migrations/001_initial.sql'),
+    read('../migrations/003_course_projects.sql'),
     read('../web/index.html'),
   ]);
   assert.match(adapter, /simulated/u);
   assert.match(adapter, /Not Kungfu evidence/u);
   assert.match(migration, /mock_agent_work/u);
-  assert.match(html, /Simulated Agent Work backend/u);
+  assert.match(projectsMigration, /course_outline_versions/u);
+  assert.match(projectsMigration, /FORCE ROW LEVEL SECURITY/u);
+  assert.match(html, /Visible Mock Agent/u);
   assert.equal(adapter.includes('sha256:'), false);
 });
 

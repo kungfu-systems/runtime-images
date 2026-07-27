@@ -29,6 +29,8 @@ export function loadConfig() {
   const qualificationTimeoutOnce = process.env.COURSE_QUALIFICATION_TIMEOUT_ONCE?.trim() ?? '';
   if (qualificationTimeoutOnce && ![
     'provision',
+    'generate_outline',
+    'revise_outline',
     'run_first_submission',
     'submit_evidence',
     'request_review',
