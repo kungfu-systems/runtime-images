@@ -66,6 +66,10 @@ model initializer downloads it once into a named cache volume and verifies the
 checksum. Later application rebuilds do not download it again. llama.cpp is
 reachable only on the private Compose network; it has no host port.
 
+For an air-gapped host, load a trusted llama.cpp image archive and set
+`COURSE_LLAMA_IMAGE` to its local tag before starting Compose. The default
+remains the digest-pinned GHCR image.
+
 Start the local delivery pack:
 
 ```bash
