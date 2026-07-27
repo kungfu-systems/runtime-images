@@ -59,6 +59,8 @@ services:
       - --jinja
       - --reasoning
       - "off"
+      - --chat-template-kwargs
+      - '{"enable_thinking":false}'
     depends_on:
       model-init:
         condition: service_completed_successfully
