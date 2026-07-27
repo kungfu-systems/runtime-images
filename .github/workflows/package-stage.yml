@@ -1,0 +1,136 @@
+name: Stage Kungfu packages
+
+on:
+  workflow_dispatch:
+    inputs:
+      kungfu-run-id:
+        description: Successful kungfu-systems/kungfu Build run containing both exact Linux CLI packages
+        required: true
+      kungfu-source-sha:
+        description: Exact Kungfu source commit built by the run
+        required: true
+      package-version:
+        description: Exact product version recorded inside both packages
+        required: true
+      package-sha256-amd64:
+        description: Exact lowercase SHA-256 of kungfu-episodes-cli-linux-x64.tar.gz
+        required: true
+      package-sha256-arm64:
+        description: Exact lowercase SHA-256 of kungfu-episodes-cli-linux-arm64.tar.gz
+        required: true
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  stage:
+    name: Retain exact source-built packages
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Validate exact upstream run identity
+        env:
+          GH_TOKEN: ${{ secrets.KUNGFU_GITHUB_TOKEN }}
+          KUNGFU_RUN_ID: ${{ inputs.kungfu-run-id }}
+          KUNGFU_SOURCE_SHA: ${{ inputs.kungfu-source-sha }}
+          PACKAGE_SHA256_AMD64: ${{ inputs.package-sha256-amd64 }}
+          PACKAGE_SHA256_ARM64: ${{ inputs.package-sha256-arm64 }}
+        run: |
+          set -euo pipefail
+          [[ "${KUNGFU_RUN_ID}" =~ ^[0-9]+$ ]]
+          [[ "${KUNGFU_SOURCE_SHA}" =~ ^[0-9a-f]{40}$ ]]
+          [[ "${PACKAGE_SHA256_AMD64}" =~ ^[0-9a-f]{64}$ ]]
+          [[ "${PACKAGE_SHA256_ARM64}" =~ ^[0-9a-f]{64}$ ]]
+          gh api "repos/kungfu-systems/kungfu/actions/runs/${KUNGFU_RUN_ID}" \
+            --jq '[.status, .conclusion, .head_sha] | @tsv' \
+            | grep -Fx $'completed\tsuccess\t'"${KUNGFU_SOURCE_SHA}"
+
+      - name: Download exact Linux amd64 package artifact
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          github-token: ${{ secrets.KUNGFU_GITHUB_TOKEN }}
+          repository: kungfu-systems/kungfu
+          run-id: ${{ inputs.kungfu-run-id }}
+          pattern: kungfu-linux-x64-*
+          path: upstream/linux-amd64
+          merge-multiple: true
+
+      - name: Download exact Linux arm64 package artifact
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          github-token: ${{ secrets.KUNGFU_GITHUB_TOKEN }}
+          repository: kungfu-systems/kungfu
+          run-id: ${{ inputs.kungfu-run-id }}
+          pattern: kungfu-hub-cli-linux-arm64-*
+          path: upstream/linux-arm64
+          merge-multiple: true
+
+      - name: Verify and normalize package bytes
+        env:
+          KUNGFU_RUN_ID: ${{ inputs.kungfu-run-id }}
+          KUNGFU_SOURCE_SHA: ${{ inputs.kungfu-source-sha }}
+          PACKAGE_VERSION: ${{ inputs.package-version }}
+          PACKAGE_SHA256_AMD64: ${{ inputs.package-sha256-amd64 }}
+          PACKAGE_SHA256_ARM64: ${{ inputs.package-sha256-arm64 }}
+        run: |
+          set -euo pipefail
+          mkdir -p stage
+          mapfile -t amd64_matches < <(find upstream/linux-amd64 -type f -name kungfu-episodes-cli-linux-x64.tar.gz -print)
+          mapfile -t arm64_matches < <(find upstream/linux-arm64 -type f -name kungfu-episodes-cli-linux-arm64.tar.gz -print)
+          test "${#amd64_matches[@]}" -eq 1
+          test "${#arm64_matches[@]}" -eq 1
+          cp "${amd64_matches[0]}" stage/kungfu-episodes-cli-linux-x64.tar.gz
+          cp "${arm64_matches[0]}" stage/kungfu-episodes-cli-linux-arm64.tar.gz
+          echo "${PACKAGE_SHA256_AMD64}  stage/kungfu-episodes-cli-linux-x64.tar.gz" | sha256sum -c -
+          echo "${PACKAGE_SHA256_ARM64}  stage/kungfu-episodes-cli-linux-arm64.tar.gz" | sha256sum -c -
+          verify_manifest() {
+            local archive="$1"
+            local architecture="$2"
+            local manifest_path
+            mapfile -t manifest_matches < <(tar -tzf "${archive}" | grep '/kungfu-release-manifest.json$')
+            test "${#manifest_matches[@]}" -eq 1
+            manifest_path="${manifest_matches[0]}"
+            tar -xOzf "${archive}" "${manifest_path}" \
+              | jq -e \
+                --arg source "${KUNGFU_SOURCE_SHA}" \
+                --arg version "${PACKAGE_VERSION}" \
+                --arg architecture "${architecture}" \
+                '.sourceCommit == $source and .productVersion == $version and .platform == "linux" and .architecture == $architecture' \
+                >/dev/null
+          }
+          verify_manifest stage/kungfu-episodes-cli-linux-x64.tar.gz x64
+          verify_manifest stage/kungfu-episodes-cli-linux-arm64.tar.gz arm64
+          jq -n \
+            --arg schema 'kungfu.hub-starter.package-stage/v1' \
+            --arg repository 'kungfu-systems/kungfu' \
+            --arg runId "${KUNGFU_RUN_ID}" \
+            --arg sourceSha "${KUNGFU_SOURCE_SHA}" \
+            --arg version "${PACKAGE_VERSION}" \
+            --arg amd64 "${PACKAGE_SHA256_AMD64}" \
+            --arg arm64 "${PACKAGE_SHA256_ARM64}" \
+            '{schema:$schema,source:{repository:$repository,runId:$runId,sha:$sourceSha},packageVersion:$version,packages:{"linux/amd64":{name:"kungfu-episodes-cli-linux-x64.tar.gz",sha256:$amd64},"linux/arm64":{name:"kungfu-episodes-cli-linux-arm64.tar.gz",sha256:$arm64}}}' \
+            >stage/package-stage.json
+
+      - name: Publish immutable package prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+          KUNGFU_RUN_ID: ${{ inputs.kungfu-run-id }}
+          KUNGFU_SOURCE_SHA: ${{ inputs.kungfu-source-sha }}
+        run: |
+          set -euo pipefail
+          release_tag="hub-runtime-${KUNGFU_SOURCE_SHA:0:12}-run-${KUNGFU_RUN_ID}"
+          if gh release view "${release_tag}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
+            echo "release tag already exists: ${release_tag}" >&2
+            exit 1
+          fi
+          gh release create "${release_tag}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --target "${GITHUB_SHA}" \
+            --prerelease \
+            --title "Hub Starter package input ${KUNGFU_SOURCE_SHA:0:12}" \
+            --notes "Exact dual-architecture Kungfu CLI input retained from kungfu-systems/kungfu Actions run ${KUNGFU_RUN_ID}." \
+            stage/kungfu-episodes-cli-linux-x64.tar.gz \
+            stage/kungfu-episodes-cli-linux-arm64.tar.gz \
+            stage/package-stage.json
+          echo "package-release-tag=${release_tag}" >>"${GITHUB_STEP_SUMMARY}"

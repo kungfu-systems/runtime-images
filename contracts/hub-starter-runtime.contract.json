@@ -8,14 +8,21 @@
     "secondaryDatabase": false
   },
   "sourceBuild": {
-    "kungfuSourceSha": "f6e20f83a1d0acf1f5e3a3143c68082d775c8105",
-    "packageName": "kungfu-episodes-cli-linux-x64.tar.gz",
-    "packageSha256": "f4926d2f4d503f4f34c9ed3e0899c3f643fa247713a6a8a1a2ac7b9f2771734d",
-    "buildImagesConsumerSha": "3056c23e70b83f5bb63062f04027a93e79039e4b",
-    "buildImage": "ghcr.io/kungfu-systems/build-images/kungfu-verify@sha256:cb6d939d567c129903d6e3ad858e2c09a9475b3b8f81b1aad10279d0e63a920d"
+    "kungfuSourceSha": "pending",
+    "packages": {
+      "linux/amd64": {
+        "name": "kungfu-episodes-cli-linux-x64.tar.gz",
+        "sha256": "pending"
+      },
+      "linux/arm64": {
+        "name": "kungfu-episodes-cli-linux-arm64.tar.gz",
+        "sha256": "pending"
+      }
+    }
   },
   "runtime": {
-    "baseImage": "node:24-trixie-slim@sha256:5301bbf5e8046148348b1dea15436326f43c579031f8d76654a631225bdfe467",
+    "baseImage": "node:24-trixie-slim@sha256:ae91dcc111a68c9d2d81ff2a17bda61be126426176fde6fe7d08ab13b7f50573",
+    "platforms": ["linux/amd64", "linux/arm64"],
     "user": "node",
     "readOnlyRoot": true,
     "writablePaths": ["/state", "/tmp"],
@@ -41,6 +48,7 @@
     "not authenticated",
     "not multi-user",
     "not highly available",
+    "not a native Windows container",
     "not an official Kungfu Alpha or stable release"
   ]
 }
