@@ -13,6 +13,9 @@
 - `scripts/smoke-image.sh` — GitHub-hosted two-instance/restart smoke.
 - `.github/workflows/image.yml` — trusted manual package consumption,
   development publication, and retained evidence.
+- `course-business-reference/` — an independently rooted PostgreSQL course
+  business example with learner authentication, row isolation, transactional
+  outbox, and an explicitly simulated Agent Work adapter.
 
 The upstream semantic concept remains in Kungfu at
 `framework/hub-starter/kungfu-hub-starter-docker.contract.json`. This

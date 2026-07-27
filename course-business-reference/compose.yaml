@@ -1,0 +1,74 @@
+name: kungfu-course-business-reference
+
+services:
+  database:
+    image: postgres:17.6-bookworm@sha256:f3bd19c606e442c3d7bdfa8002e03fe260a1023351e0ea4598032022b68dd6e3
+    restart: unless-stopped
+    user: postgres
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    environment:
+      POSTGRES_DB: course_reference
+      POSTGRES_USER: course_migrator
+      POSTGRES_PASSWORD: ${COURSE_DB_MIGRATION_PASSWORD:?set COURSE_DB_MIGRATION_PASSWORD}
+    volumes:
+      - course-postgres:/var/lib/postgresql/data
+    networks:
+      - course-private
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U course_migrator -d course_reference"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
+  app:
+    build:
+      context: ..
+      dockerfile: course-business-reference/Dockerfile
+      args:
+        SOURCE_REVISION: ${SOURCE_REVISION:-development}
+    image: ${COURSE_REFERENCE_IMAGE:-kungfu-course-business-reference:local}
+    restart: unless-stopped
+    read_only: true
+    user: node
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp:size=32m,mode=1777
+    environment:
+      PORT: "8090"
+      PUBLIC_ORIGIN: ${COURSE_PUBLIC_ORIGIN:-http://127.0.0.1:8090}
+      DATABASE_URL: postgresql://course_migrator:${COURSE_DB_MIGRATION_PASSWORD}@database:5432/course_reference
+      APP_DATABASE_URL: postgresql://course_app:${COURSE_DB_APP_PASSWORD:?set COURSE_DB_APP_PASSWORD}@database:5432/course_reference
+      COURSE_DB_APP_PASSWORD: ${COURSE_DB_APP_PASSWORD}
+      AGENT_WORK_BACKEND: mock
+      SESSION_SECURE: ${COURSE_SESSION_SECURE:-false}
+    depends_on:
+      database:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${COURSE_PORT:-8090}:8090"
+    volumes:
+      - course-app-state:/state
+    networks:
+      - course-private
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8090/readyz').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 4s
+      start_period: 30s
+      retries: 24
+
+networks:
+  course-private:
+    driver: bridge
+
+volumes:
+  course-postgres:
+    name: ${COMPOSE_PROJECT_NAME:-kungfu-course-business-reference}-postgres
+  course-app-state:
+    name: ${COMPOSE_PROJECT_NAME:-kungfu-course-business-reference}-app-state
