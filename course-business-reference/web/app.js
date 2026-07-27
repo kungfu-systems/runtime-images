@@ -152,6 +152,41 @@ function renderRuntimeMenu() {
   scheduleRuntimePoll();
 }
 
+function updateSelectedRuntimePanels() {
+  const runtime = backendPresentation(selectedBackend);
+  const dashboard = app.querySelector('[data-selected-runtime-panel="dashboard"]');
+  if (dashboard) {
+    dashboard.className = `runtime-context ${runtime.tone}`;
+    dashboard.querySelector('[data-selected-runtime-mark]').textContent =
+      runtime.simulated ? 'MOCK' : 'AI';
+    dashboard.querySelector('[data-selected-runtime-name]').textContent = runtime.name;
+    dashboard.querySelector('[data-selected-runtime-copy]').textContent = runtime.simulated
+      ? 'New courses use a deterministic simulation. Choose Local model in the header to create a course whose drafts come from real local inference.'
+      : 'New courses will generate their outlines with Qwen3 0.6B inside this Docker deployment. Existing courses keep the runtime shown on their card.';
+  }
+  const newCourse = app.querySelector('[data-selected-runtime-panel="new-course"]');
+  if (newCourse) {
+    newCourse.className = `new-course-runtime ${runtime.tone}`;
+    newCourse.querySelector('[data-selected-runtime-mark]').textContent =
+      runtime.simulated ? 'MOCK' : 'LOCAL AI';
+    newCourse.querySelector('[data-selected-runtime-name]').textContent = runtime.name;
+    newCourse.querySelector('[data-selected-runtime-copy]').textContent = runtime.simulated
+      ? 'Its outline will be a deterministic reference result, clearly labeled as Mock.'
+      : 'Qwen3 0.6B will generate the outline locally inside this Docker deployment.';
+  }
+  const courseNotice = app.querySelector('[data-course-runtime-notice]');
+  if (courseNotice) {
+    const courseRuntime = backendPresentation(courseNotice.dataset.courseBackend);
+    const differs = selectedBackend !== courseRuntime.kind;
+    courseNotice.hidden = !differs;
+    courseNotice.className = `course-runtime-notice ${runtime.tone}`;
+    courseNotice.querySelector('strong').textContent =
+      `${runtime.short} is selected for new courses.`;
+    courseNotice.querySelector('span').textContent =
+      `This course remains permanently ${courseRuntime.short}-bound. The header selection does not rewrite existing course history.`;
+  }
+}
+
 async function refreshRuntime({ keepOpen = false } = {}) {
   const { runtime } = await request('/api/runtime');
   runtimeState = runtime;
@@ -177,6 +212,7 @@ function selectRuntime(kind) {
   localStorage.setItem('course-agent-backend', kind);
   runtimeMenuOpen = false;
   renderRuntimeMenu();
+  updateSelectedRuntimePanels();
 }
 
 runtimeMenu.addEventListener('click', async (event) => {
@@ -479,12 +515,12 @@ async function showCourses(message = '') {
       <button id="new-course" class="primary-action">Create a new course</button>
     </section>
     <p class="dashboard-copy">Generating again does not create another course or overwrite your work. It appends a new version inside the same course.</p>
-    <section class="runtime-context ${runtime.tone}">
-      <span class="runtime-context-mark">${runtime.simulated ? 'MOCK' : 'AI'}</span>
+    <section class="runtime-context ${runtime.tone}" data-selected-runtime-panel="dashboard">
+      <span class="runtime-context-mark" data-selected-runtime-mark>${runtime.simulated ? 'MOCK' : 'AI'}</span>
       <div>
         <p class="step">Runtime selected for your next course</p>
-        <h2>${escapeHtml(runtime.name)}</h2>
-        <p>${runtime.simulated
+        <h2 data-selected-runtime-name>${escapeHtml(runtime.name)}</h2>
+        <p data-selected-runtime-copy>${runtime.simulated
           ? 'New courses use a deterministic simulation. Choose Local model in the header to create a course whose drafts come from real local inference.'
           : 'New courses will generate their outlines with Qwen3 0.6B inside this Docker deployment. Existing courses keep the runtime shown on their card.'}</p>
       </div>
@@ -513,12 +549,12 @@ function showNewCourse(message = '') {
       <h1>Give the Agent a useful brief.</h1>
       <p class="lede">These are durable business facts. The Agent will use them to generate a draft, but your application owns the brief and every approved version.</p>
     </section>
-    <section class="new-course-runtime ${runtime.tone}">
-      <span>${runtime.simulated ? 'MOCK' : 'LOCAL AI'}</span>
+    <section class="new-course-runtime ${runtime.tone}" data-selected-runtime-panel="new-course">
+      <span data-selected-runtime-mark>${runtime.simulated ? 'MOCK' : 'LOCAL AI'}</span>
       <div>
         <p class="step">This course will use</p>
-        <h2>${escapeHtml(runtime.name)}</h2>
-        <p>${runtime.simulated
+        <h2 data-selected-runtime-name>${escapeHtml(runtime.name)}</h2>
+        <p data-selected-runtime-copy>${runtime.simulated
           ? 'Its outline will be a deterministic reference result, clearly labeled as Mock.'
           : 'Qwen3 0.6B will generate the outline locally inside this Docker deployment.'}</p>
       </div>
@@ -728,11 +764,15 @@ async function showCourse(id, message = '', selectedVersionId = null) {
       </div>
     </section>
     <p id="course-message" class="success">${escapeHtml(message)}</p>
-    ${runtimeDiffers ? `
-      <section class="course-runtime-notice ${selectedRuntime.tone}">
-        <strong>${escapeHtml(selectedRuntime.short)} is selected for new courses.</strong>
-        <span>This course remains permanently ${escapeHtml(courseRuntime.short)}-bound. The header selection does not rewrite existing course history.</span>
-      </section>` : ''}
+    <section
+      class="course-runtime-notice ${selectedRuntime.tone}"
+      data-course-runtime-notice
+      data-course-backend="${courseRuntime.kind}"
+      ${runtimeDiffers ? '' : 'hidden'}
+    >
+      <strong>${escapeHtml(selectedRuntime.short)} is selected for new courses.</strong>
+      <span>This course remains permanently ${escapeHtml(courseRuntime.short)}-bound. The header selection does not rewrite existing course history.</span>
+    </section>
     <section class="course-workspace">
       <aside>
         <div class="brief-card">
