@@ -33,7 +33,7 @@ export class OutboxDispatcher {
           [this.processingStaleSeconds],
         );
         const selected = await client.query(
-          `SELECT o.*, h.backend_binding_id
+          `SELECT o.*, h.backend_binding_id, h.course_project_id
            FROM course.command_outbox o
            JOIN course.learner_homeworks h ON h.id = o.learner_homework_id
            WHERE o.state = 'pending' AND o.available_at <= now()
@@ -63,6 +63,56 @@ export class OutboxDispatcher {
         });
         await this.hooks.afterExecute?.(message, view);
         await transaction(this.pool, { userId }, async (client) => {
+          if (
+            ['generate_outline', 'revise_outline'].includes(message.command_type)
+            && view.latestOutput
+          ) {
+            const run = await client.query(
+              `INSERT INTO course.agent_runs
+                (user_id, course_project_id, outbox_command_id, action, backend_kind,
+                 backend_binding_id, transition_id, input, output)
+               VALUES ($1, $2, $3, $4, 'mock', $5, $6, $7::jsonb, $8::jsonb)
+               ON CONFLICT (outbox_command_id) DO UPDATE
+                 SET outbox_command_id = EXCLUDED.outbox_command_id
+               RETURNING id`,
+              [
+                userId,
+                message.course_project_id,
+                message.id,
+                message.command_type,
+                view.bindingId,
+                view.transitionId,
+                JSON.stringify(message.payload),
+                JSON.stringify(view.latestOutput),
+              ],
+            );
+            const priorVersion = await client.query(
+              'SELECT id FROM course.course_outline_versions WHERE source_run_id = $1',
+              [run.rows[0].id],
+            );
+            if (!priorVersion.rowCount) {
+              await client.query(
+                `INSERT INTO course.course_outline_versions
+                  (user_id, course_project_id, version_number, source_run_id,
+                   outline, change_summary)
+                 SELECT $1, $2, COALESCE(max(version_number), 0) + 1, $3,
+                        $4::jsonb, $5
+                 FROM course.course_outline_versions
+                 WHERE course_project_id = $2`,
+                [
+                  userId,
+                  message.course_project_id,
+                  run.rows[0].id,
+                  JSON.stringify(view.latestOutput),
+                  String(view.latestOutput.revisionNote ?? 'A new mock-generated course outline.'),
+                ],
+              );
+            }
+            await client.query(
+              'UPDATE course.course_projects SET updated_at = now() WHERE id = $1',
+              [message.course_project_id],
+            );
+          }
           await client.query(
             `UPDATE course.learner_homeworks
              SET backend_binding_id = $2, projected_status = $3,

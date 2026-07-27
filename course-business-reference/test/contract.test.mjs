@@ -8,10 +8,12 @@ import {
   assertCommand,
 } from '../src/agent-work-port.mjs';
 
-test('AgentWorkPort v1 exposes only the bounded course commands', () => {
-  assert.equal(AGENT_WORK_CONTRACT, 'course.agent-work-port/v1');
+test('AgentWorkPort v2 exposes bounded outline generation plus the legacy migration path', () => {
+  assert.equal(AGENT_WORK_CONTRACT, 'course.agent-work-port/v2');
   assert.deepEqual([...COMMANDS], [
     'provision',
+    'generate_outline',
+    'revise_outline',
     'run_first_submission',
     'submit_evidence',
     'request_review',
@@ -37,8 +39,8 @@ test('AgentWorkPort validates the same read model used by the mock qualification
     bindingId: 'mock:contract-test',
     transitionId: 'mock-transition:contract-test:1',
     status: 'ready',
-    allowedActions: ['run_first_submission'],
-    nextAction: 'Run the first simulated submission.',
+    allowedActions: ['generate_outline'],
+    nextAction: 'Generate the first visible course outline.',
     evidence: [],
     audit: [],
     simulated: true,

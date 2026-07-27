@@ -7,7 +7,7 @@ const [compose, dockerfile, migration, contract, server] = await Promise.all([
   read('compose.yaml'),
   read('Dockerfile'),
   read('migrations/001_initial.sql'),
-  read('contracts/agent-work-port.v1.json'),
+  read('contracts/agent-work-port.v2.json'),
   read('src/server.mjs'),
 ]);
 JSON.parse(contract);
@@ -29,7 +29,7 @@ const databaseService = compose.match(/^  database:\n([\s\S]*?)(?=^  app:)/mu)?.
 if (!databaseService || /^\s{4}ports:/mu.test(databaseService)) {
   throw new Error('PostgreSQL must exist without publishing a host port');
 }
-for (const required of ['USER node', 'course.agent-work-port/v1', 'ENTRYPOINT']) {
+for (const required of ['USER node', 'course.agent-work-port/v2', 'ENTRYPOINT']) {
   if (!dockerfile.includes(required)) throw new Error(`Dockerfile invariant missing: ${required}`);
 }
 for (const required of ['ENABLE ROW LEVEL SECURITY', 'FORCE ROW LEVEL SECURITY', "current_setting('app.user_id'", 'mock_agent_work']) {

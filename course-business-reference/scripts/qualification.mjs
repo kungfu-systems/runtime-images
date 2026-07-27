@@ -75,65 +75,80 @@ async function login(browser, email) {
   return result.value.user;
 }
 
-async function waitForHomework(browser, homeworkId, expected, timeoutMs = 15_000) {
+function brief(title) {
+  return {
+    title,
+    targetLearner: 'Small-business experts without curriculum-design experience',
+    learnerProblem: 'They cannot turn valuable expertise into a teachable sequence.',
+    promisedOutcome: 'Publish and validate a three-module course outline.',
+    creatorExpertise: 'Real client cases, workshop notes, and a repeatable method.',
+    deliveryConstraints: 'Three weeks, practical exercises, and one live session each week.',
+  };
+}
+
+async function createCourse(browser, title) {
+  return browser.call('/api/courses', { method: 'POST', body: brief(title) });
+}
+
+async function waitForCourse(browser, courseId, versionCount, timeoutMs = 15_000) {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
-    const result = await browser.call(`/api/homeworks/${homeworkId}`);
-    if (result.status === 200 && result.value.homework.agentWork?.status === expected) {
-      return result.value.homework;
+    const result = await browser.call(`/api/courses/${courseId}`);
+    if (result.status === 200 && result.value.course.versions.length === versionCount) {
+      return result.value.course;
     }
     await sleep(250);
   }
-  throw new Error(`homework did not reach ${expected}`);
+  throw new Error(`course did not reach ${versionCount} versions`);
 }
 
 const crashEmail = `crash-${nonce}@example.test`;
 const crashAttempt = new Browser();
+await register(crashAttempt, 'Crash recovery', crashEmail);
 let crashDisconnected = false;
 try {
-  await register(crashAttempt, 'Crash recovery', crashEmail);
+  await createCourse(crashAttempt, 'Crash-safe course');
 } catch {
   crashDisconnected = true;
 }
-assert.equal(crashDisconnected, true);
 await waitForReady();
 const recovered = new Browser();
 await login(recovered, crashEmail);
-const recoveredList = await recovered.call('/api/homeworks');
+const recoveredList = await recovered.call('/api/courses');
 assert.equal(recoveredList.status, 200);
-assert.equal(recoveredList.value.homeworks.length, 1);
-const recoveredHomework = await waitForHomework(
-  recovered,
-  recoveredList.value.homeworks[0].id,
-  'ready',
-);
-assertAgentWorkView(recoveredHomework.agentWork);
-assert.equal(recoveredHomework.agentWork.audit.filter((item) => item.type === 'provisioned').length, 1);
+assert.equal(recoveredList.value.courses.length, 1);
+const recoveredCourse = await waitForCourse(recovered, recoveredList.value.courses[0].id, 0);
+assertAgentWorkView(recoveredCourse.agentWork);
+assert.equal(recoveredCourse.agentWork.audit.filter((item) => item.type === 'provisioned').length, 1);
 
 const first = new Browser();
 const second = new Browser();
 const firstUser = await register(first, 'Alpha');
 const secondUser = await register(second, 'Beta');
 assert.notEqual(firstUser.id, secondUser.id);
-
-const firstList = await first.call('/api/homeworks');
-const secondList = await second.call('/api/homeworks');
-assert.equal(firstList.value.homeworks.length, 1);
-assert.equal(secondList.value.homeworks.length, 1);
-const firstId = firstList.value.homeworks[0].id;
-const secondId = secondList.value.homeworks[0].id;
+const firstCreated = await createCourse(first, 'Alpha course');
+const secondCreated = await createCourse(second, 'Beta course');
+assert.equal(firstCreated.status, 201);
+assert.equal(secondCreated.status, 201);
+const firstId = firstCreated.value.course.id;
+const secondId = secondCreated.value.course.id;
 assert.notEqual(firstId, secondId);
 
-const idor = await first.call(`/api/homeworks/${secondId}`);
+const firstList = await first.call('/api/courses');
+const secondList = await second.call('/api/courses');
+assert.equal(firstList.value.courses.length, 1);
+assert.equal(secondList.value.courses.length, 1);
+
+const idor = await first.call(`/api/courses/${secondId}`);
 assert.equal(idor.status, 404);
-const rejectedOrigin = await first.call(`/api/homeworks/${firstId}/actions/first-submission`, {
+const rejectedOrigin = await first.call(`/api/courses/${firstId}/actions/generate`, {
   method: 'POST',
   key: `origin:${nonce}`,
   body: {},
   originHeader: 'http://attacker.invalid',
 });
 assert.equal(rejectedOrigin.status, 403);
-const rejectedCsrf = await first.call(`/api/homeworks/${firstId}/actions/first-submission`, {
+const rejectedCsrf = await first.call(`/api/courses/${firstId}/actions/generate`, {
   method: 'POST',
   key: `csrf:${nonce}`,
   body: {},
@@ -141,54 +156,77 @@ const rejectedCsrf = await first.call(`/api/homeworks/${firstId}/actions/first-s
 });
 assert.equal(rejectedCsrf.status, 403);
 
-const actions = [
-  ['first-submission', {}],
-  ['evidence', {
-    title: 'Qualified course outline',
-    content: 'Audience: builders\nOutcome: tested course\nModule 1: audience\nModule 2: curriculum\nModule 3: validation\nExercise: review one outline',
-  }],
-  ['review', {}],
-  ['seal', {}],
-];
-const states = [];
-for (const [action, payload] of actions) {
-  const key = `qualification:${nonce}:${action}`;
-  const injectedPayload = {
-    ...payload,
-    userId: secondUser.id,
-    learnerHomeworkId: secondId,
-    backendBindingId: 'mock:substitution-must-be-ignored',
-  };
-  const [firstClick, duplicateClick] = await Promise.all([
-    first.call(`/api/homeworks/${firstId}/actions/${action}`, {
-      method: 'POST',
-      body: injectedPayload,
-      key,
-    }),
-    first.call(`/api/homeworks/${firstId}/actions/${action}`, {
-      method: 'POST',
-      body: injectedPayload,
-      key,
-    }),
-  ]);
-  assert.equal(firstClick.status, 200);
-  assert.equal(duplicateClick.status, 200);
-  const expected = {
-    'first-submission': 'needs_evidence',
-    evidence: 'evidence_submitted',
-    review: 'accepted',
-    seal: 'sealed',
-  }[action];
-  const settled = await waitForHomework(first, firstId, expected);
-  assertAgentWorkView(settled.agentWork);
-  assert.equal(settled.agentWork.bindingId.startsWith('mock:'), true);
-  states.push(settled.agentWork.status);
-}
-assert.deepEqual(states, ['needs_evidence', 'evidence_submitted', 'accepted', 'sealed']);
+const generateKey = `qualification:${nonce}:generate`;
+const [firstGenerate, duplicateGenerate] = await Promise.all([
+  first.call(`/api/courses/${firstId}/actions/generate`, {
+    method: 'POST',
+    body: { userId: secondUser.id, courseId: secondId },
+    key: generateKey,
+  }),
+  first.call(`/api/courses/${firstId}/actions/generate`, {
+    method: 'POST',
+    body: { userId: secondUser.id, courseId: secondId },
+    key: generateKey,
+  }),
+]);
+assert.equal(firstGenerate.status, 200);
+assert.equal(duplicateGenerate.status, 200);
+const firstDraft = await waitForCourse(first, firstId, 1);
+assertAgentWorkView(firstDraft.agentWork);
+assert.equal(firstDraft.versions[0].versionNumber, 1);
+assert.equal(firstDraft.versions[0].outline.modules.length, 3);
+assert.equal(firstDraft.versions[0].outline.audience, brief('ignored').targetLearner);
+assert.equal(firstDraft.versions[0].agentRun.action, 'generate_outline');
+assert.equal(firstDraft.versions[0].agentRun.backend, 'mock');
+assert.equal(firstDraft.versions[0].agentRun.previousVersionId, null);
+assert.equal(firstDraft.versions[0].outline.agentContribution.role, 'Mock Course Designer');
+assert.equal(firstDraft.versions[0].outline.agentContribution.changes.length, 3);
+
+const reviseKey = `qualification:${nonce}:revise`;
+const [firstRevise, duplicateRevise] = await Promise.all([
+  first.call(`/api/courses/${firstId}/actions/revise`, {
+    method: 'POST',
+    body: { feedback: 'Make validation and observable exercises more explicit.' },
+    key: reviseKey,
+  }),
+  first.call(`/api/courses/${firstId}/actions/revise`, {
+    method: 'POST',
+    body: { feedback: 'Make validation and observable exercises more explicit.' },
+    key: reviseKey,
+  }),
+]);
+assert.equal(firstRevise.status, 200);
+assert.equal(duplicateRevise.status, 200);
+const revised = await waitForCourse(first, firstId, 2);
+assert.equal(revised.versions[0].versionNumber, 2);
+assert.equal(revised.versions[1].versionNumber, 1);
+assert.notDeepEqual(revised.versions[0].outline, revised.versions[1].outline);
+assert.equal(revised.versions[0].agentRun.action, 'revise_outline');
+assert.equal(revised.versions[0].agentRun.previousVersionId, revised.versions[1].id);
+assert.equal(
+  revised.versions[0].agentRun.feedback,
+  'Make validation and observable exercises more explicit.',
+);
+assert.match(revised.versions[0].outline.agentContribution.summary, /feedback/u);
+
+const approved = await first.call(
+  `/api/courses/${firstId}/versions/${revised.versions[0].id}/approve`,
+  { method: 'POST', body: {} },
+);
+assert.equal(approved.status, 200);
+assert.equal(approved.value.course.currentOutlineVersionId, revised.versions[0].id);
+assert.equal(approved.value.course.versions[0].status, 'approved');
+assert.equal(approved.value.course.versions[1].status, 'draft');
+
+const crossAccountVersion = await first.call(
+  `/api/courses/${firstId}/versions/${secondCreated.value.course.id}/approve`,
+  { method: 'POST', body: {} },
+);
+assert.equal(crossAccountVersion.status, 404);
 
 const logout = await second.call('/api/logout', { method: 'POST', body: {} });
 assert.equal(logout.status, 200);
-const revoked = await second.call('/api/homeworks');
+const revoked = await second.call('/api/courses');
 assert.equal(revoked.status, 401);
 
 const oversized = await fetch(`${origin}/api/register`, {
@@ -223,14 +261,16 @@ const rateLimited = await enumeration.call('/api/login', {
 assert.equal(rateLimited.status, 429);
 
 await sleep(expiryWaitMs);
-const expired = await first.call('/api/homeworks');
+const expired = await first.call('/api/courses');
 assert.equal(expired.status, 401);
 
 const evidence = {
-  schema: 'course-business-reference.qualification/v1',
+  schema: 'course-business-reference.qualification/v2',
   origin,
   learners: 3,
-  perAccountHomework: true,
+  perAccountCourseCollection: true,
+  immutableVersionNumbers: revised.versions.map((version) => version.versionNumber),
+  approvedVersionOwnedByBusinessDomain: true,
   idorStatus: idor.status,
   originRejectionStatus: rejectedOrigin.status,
   csrfRejectionStatus: rejectedCsrf.status,
@@ -238,10 +278,10 @@ const evidence = {
   authNonEnumerating: true,
   rateLimitStatus: rateLimited.status,
   crashAfterAdapterRecovered: true,
+  crashResponseDisconnected: crashDisconnected,
   adapterTimeoutRetried: true,
   concurrentDuplicateStable: true,
   duplicateDeliveryStable: true,
-  goldenPathStates: states,
   logoutRevoked: revoked.status === 401,
   sessionExpired: expired.status === 401,
   backend: 'mock-simulated',

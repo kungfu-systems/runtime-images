@@ -160,6 +160,49 @@ const server = createServer(async (req, res) => {
       const auth = await requireAuth(req);
       return json(res, 200, { homeworks: await domain.listHomeworks(auth.user.id) });
     }
+    if (req.method === 'GET' && url.pathname === '/api/courses') {
+      const auth = await requireAuth(req);
+      return json(res, 200, { courses: await domain.listCourses(auth.user.id) });
+    }
+    if (req.method === 'POST' && url.pathname === '/api/courses') {
+      requireOrigin(req);
+      const auth = await requireAuth(req);
+      requireCsrf(req, auth);
+      const course = await domain.createCourse(auth.user.id, await body(req));
+      return json(res, 201, { course });
+    }
+    const courseMatch = url.pathname.match(/^\/api\/courses\/([0-9a-f-]{36})$/u);
+    if (req.method === 'GET' && courseMatch) {
+      const auth = await requireAuth(req);
+      const course = await domain.course(auth.user.id, courseMatch[1]);
+      return course ? json(res, 200, { course }) : json(res, 404, { error: 'Not found.' });
+    }
+    const courseActionMatch = url.pathname.match(
+      /^\/api\/courses\/([0-9a-f-]{36})\/actions\/(generate|revise)$/u,
+    );
+    if (req.method === 'POST' && courseActionMatch) {
+      requireOrigin(req);
+      const auth = await requireAuth(req);
+      requireCsrf(req, auth);
+      const course = await domain.enqueueCourseAction(
+        auth.user.id,
+        courseActionMatch[1],
+        courseActionMatch[2] === 'generate' ? 'generate_outline' : 'revise_outline',
+        req.headers['idempotency-key'],
+        await body(req),
+      );
+      return json(res, 200, { course });
+    }
+    const approveMatch = url.pathname.match(
+      /^\/api\/courses\/([0-9a-f-]{36})\/versions\/([0-9a-f-]{36})\/approve$/u,
+    );
+    if (req.method === 'POST' && approveMatch) {
+      requireOrigin(req);
+      const auth = await requireAuth(req);
+      requireCsrf(req, auth);
+      const course = await domain.approveVersion(auth.user.id, approveMatch[1], approveMatch[2]);
+      return json(res, 200, { course });
+    }
     const homeworkMatch = url.pathname.match(/^\/api\/homeworks\/([0-9a-f-]{36})$/u);
     if (req.method === 'GET' && homeworkMatch) {
       const auth = await requireAuth(req);
