@@ -72,8 +72,11 @@ request is made until an authenticated creator clicks **Download & install**.
 The application streams the server-controlled pinned source into a partial
 file, exposes progress, verifies the exact size and SHA-256, and atomically
 installs it. The private inference process starts only after that verified file
-appears. The creator can then select **Use local**; courses created afterward
-bind to that backend, while existing courses keep their original binding.
+appears. The creator can then select **Use local** as the default for new
+courses. Every course page separately shows its current binding and can switch
+future Generate and Improve actions between Mock and a ready local model.
+Previously saved versions retain their original backend, binding, and
+transition provenance.
 
 Start the click-to-install delivery:
 
@@ -101,9 +104,10 @@ docker compose -f compose.yaml -f compose.offline.yaml up --build --detach
 ```
 
 The first start downloads and loads the model, so readiness takes longer than
-the default simulation. Existing courses retain their original backend binding;
-new courses use the currently selected backend. This preserves old mock-backed
-versions instead of silently relabeling them as model-generated.
+the default simulation. New courses use the currently selected default backend;
+an existing course can switch its own current binding without rewriting prior
+versions. This preserves old mock-backed versions instead of silently
+relabeling them as model-generated.
 
 For a hosted OpenAI-compatible endpoint, keep the bearer token in a local file
 rather than Compose environment metadata:
@@ -130,7 +134,7 @@ image.
 | course project, saved brief, collection ownership | PostgreSQL |
 | generated outline versions and the approved-version pointer | PostgreSQL |
 | Agent run input/output provenance and delivery intent | PostgreSQL |
-| backend binding, delivery intent, rebuildable status | PostgreSQL |
+| current backend binding, switch audit, delivery intent, rebuildable status | PostgreSQL |
 | delegated generation/revision execution and live work state | selected `AgentWorkPort/v2` backend |
 
 `course.course_outline_versions` is append-only for content: generating or
@@ -165,7 +169,10 @@ not a production authentication certification.
 
 Creating a course project creates its private work binding and provisioning
 outbox message in one PostgreSQL transaction. Generation and revision use stable
-idempotency keys. Each adapter records delivered keys before PostgreSQL
+idempotency keys. A course-level backend switch rejects concurrent pending work,
+records an auditable switch row, and provisions the target binding. Every
+outbox command snapshots its backend and binding so a later switch cannot
+reroute or relabel historical work. Each adapter records delivered keys before PostgreSQL
 acknowledges them, while `course.agent_runs.outbox_command_id` prevents a replay
 from creating a duplicate outline version. A restart or crash between adapter
 completion and outbox acknowledgement therefore replays safely. Stale

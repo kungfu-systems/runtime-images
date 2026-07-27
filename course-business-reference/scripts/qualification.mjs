@@ -94,7 +94,12 @@ async function waitForCourse(browser, courseId, versionCount, timeoutMs = 15_000
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
     const result = await browser.call(`/api/courses/${courseId}`);
-    if (result.status === 200 && result.value.course.versions.length === versionCount) {
+    if (
+      result.status === 200
+      && result.value.course.versions.length === versionCount
+      && result.value.course.backendStatus === 'ready'
+      && result.value.course.agentWork
+    ) {
       return result.value.course;
     }
     await sleep(250);
