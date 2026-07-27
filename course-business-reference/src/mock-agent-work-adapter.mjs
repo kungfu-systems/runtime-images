@@ -1,6 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 import { createHash } from 'node:crypto';
-import { AGENT_WORK_CONTRACT, AgentWorkPort, assertCommand } from './agent-work-port.mjs';
+import {
+  AGENT_WORK_CONTRACT,
+  AgentWorkPort,
+  assertAgentWorkView,
+  assertCommand,
+} from './agent-work-port.mjs';
 
 const bindingFor = (source) => `mock:${createHash('sha256').update(source).digest('hex').slice(0, 24)}`;
 const transitionFor = (binding, version) => `mock-transition:${binding.slice(5)}:${version}`;
@@ -21,7 +26,7 @@ function toView(row) {
     accepted: 'Seal the completed simulated work.',
     sealed: null,
   }[row.status];
-  return {
+  return assertAgentWorkView({
     contract: AGENT_WORK_CONTRACT,
     backend: 'mock-agent-work/v1',
     bindingId: row.binding_id,
@@ -33,7 +38,7 @@ function toView(row) {
     audit: row.audit,
     simulated: true,
     authorityNotice: 'Deterministic development simulation. Not Kungfu evidence, review, decision, or seal.',
-  };
+  });
 }
 
 export class MockAgentWorkAdapter extends AgentWorkPort {
