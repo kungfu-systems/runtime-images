@@ -123,7 +123,7 @@ async function showCourses(message = '') {
           <p>The Agent needs a real learner, a real problem, and a result worth teaching.</p>
         </div>`}
     </section>`;
-  document.querySelector('#new-course').addEventListener('click', showNewCourse);
+  document.querySelector('#new-course').addEventListener('click', () => showNewCourse());
   for (const button of document.querySelectorAll('[data-course-id]')) {
     button.addEventListener('click', () => showCourse(button.dataset.courseId));
   }
@@ -321,7 +321,7 @@ async function showCourse(id, message = '', selectedVersionId = null) {
 }
 
 async function runAgentAction(id, action, body) {
-  const controls = document.querySelectorAll('button, textarea');
+  const controls = app.querySelectorAll('button, textarea');
   controls.forEach((control) => { control.disabled = true; });
   try {
     const { course } = await request(`/api/courses/${id}/actions/${action}`, {

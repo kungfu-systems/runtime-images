@@ -42,3 +42,11 @@ test('qualification faults are explicit and absent without a run id', async () =
   assert.equal(hooks.beforeExecute, undefined);
   assert.equal(hooks.afterExecute, undefined);
 });
+
+test('course UI keeps event objects out of messages and only disables workspace controls', async () => {
+  const browser = await read('../web/app.js');
+  assert.match(browser, /addEventListener\('click', \(\) => showNewCourse\(\)\)/u);
+  assert.match(browser, /app\.querySelectorAll\('button, textarea'\)/u);
+  assert.equal(browser.includes("addEventListener('click', showNewCourse)"), false);
+  assert.equal(browser.includes("document.querySelectorAll('button, textarea')"), false);
+});
