@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import assert from 'node:assert/strict';
 import { writeFile } from 'node:fs/promises';
+import { assertAgentWorkView } from '../src/agent-work-port.mjs';
 
 const origin = process.env.COURSE_ORIGIN ?? 'http://127.0.0.1:8090';
 const nonce = Date.now();
@@ -106,6 +107,7 @@ const recoveredHomework = await waitForHomework(
   recoveredList.value.homeworks[0].id,
   'ready',
 );
+assertAgentWorkView(recoveredHomework.agentWork);
 assert.equal(recoveredHomework.agentWork.audit.filter((item) => item.type === 'provisioned').length, 1);
 
 const first = new Browser();
@@ -178,6 +180,7 @@ for (const [action, payload] of actions) {
     seal: 'sealed',
   }[action];
   const settled = await waitForHomework(first, firstId, expected);
+  assertAgentWorkView(settled.agentWork);
   assert.equal(settled.agentWork.bindingId.startsWith('mock:'), true);
   states.push(settled.agentWork.status);
 }
