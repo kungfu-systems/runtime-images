@@ -60,3 +60,25 @@ test('course UI makes Agent contribution and work handoff visible', async () => 
   assert.match(browser, /Immutable version/u);
   assert.match(browser, /predates structured per-change reporting/u);
 });
+
+test('course UI accepts placeholder examples with Tab and explains staged actions', async () => {
+  const [browser, styles] = await Promise.all([
+    read('../web/app.js'),
+    read('../web/style.css'),
+  ]);
+  const tabHandler = browser.slice(
+    browser.indexOf('function wireTabPlaceholderAcceptance'),
+    browser.indexOf('function updateWorkflowProgress'),
+  );
+  assert.match(browser, /wireTabPlaceholderAcceptance/u);
+  assert.match(browser, /event\.key !== 'Tab'/u);
+  assert.match(browser, /field\.value = field\.placeholder/u);
+  assert.equal(tabHandler.includes('preventDefault'), false);
+  assert.match(browser, /runVisibleWorkflow/u);
+  assert.match(browser, /hidden model reasoning/u);
+  assert.match(browser, /Approving version/u);
+  assert.match(browser, /Improving your course outline/u);
+  assert.match(styles, /workflowStageIn/u);
+  assert.match(styles, /workflowStageOut/u);
+  assert.match(styles, /prefers-reduced-motion/u);
+});

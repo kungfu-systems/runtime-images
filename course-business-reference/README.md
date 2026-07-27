@@ -21,6 +21,11 @@ supplied, what the course app delegated, what the Mock Course Designer
 delivered, what PostgreSQL saved, and what remains for the creator to approve.
 The version history distinguishes first drafts, revisions, and alternatives,
 while an explicit change summary identifies the Agent's contribution.
+Empty course-brief and feedback fields accept their visible example when the
+creator presses Tab, then continue normal keyboard navigation. Generate,
+improve, and approve actions show one visible lifecycle stage per second with
+entry and exit motion while the real request runs; these stages explain the
+application workflow and never claim to expose hidden model reasoning.
 
 ## Run locally
 

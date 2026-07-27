@@ -27,6 +27,131 @@ function idempotencyKey(action) {
   return `${action}:${randomUuid()}`;
 }
 
+const wait = (milliseconds) => new Promise((resolve) => {
+  setTimeout(resolve, milliseconds);
+});
+
+function wireTabPlaceholderAcceptance(root) {
+  for (const field of root.querySelectorAll('input[placeholder], textarea[placeholder]')) {
+    field.addEventListener('keydown', (event) => {
+      if (
+        event.key !== 'Tab'
+        || event.shiftKey
+        || event.altKey
+        || event.ctrlKey
+        || event.metaKey
+        || field.value.trim()
+      ) return;
+      field.value = field.placeholder;
+      field.dispatchEvent(new Event('input', { bubbles: true }));
+      field.classList.remove('tab-accepted');
+      void field.offsetWidth;
+      field.classList.add('tab-accepted');
+      setTimeout(() => field.classList.remove('tab-accepted'), 650);
+    });
+  }
+}
+
+function updateWorkflowProgress(overlay, activeIndex) {
+  for (const [index, dot] of [...overlay.querySelectorAll('.workflow-dot')].entries()) {
+    dot.classList.toggle('is-complete', index < activeIndex);
+    dot.classList.toggle('is-active', index === activeIndex);
+  }
+}
+
+async function showWorkflowStep(overlay, index, total, text, tone = 'active') {
+  const stage = overlay.querySelector('.workflow-stage');
+  if (stage.hasChildNodes()) {
+    stage.classList.add('is-leaving');
+    await wait(240);
+  }
+  stage.className = `workflow-stage workflow-${tone}`;
+  stage.innerHTML = `
+    <span>${tone === 'waiting' ? '…' : String(index + 1).padStart(2, '0')}</span>
+    <div>
+      <small>${tone === 'active'
+        ? `Step ${index + 1} of ${total}`
+        : tone === 'waiting'
+          ? 'Confirming result'
+          : 'Workflow result'}</small>
+      <strong>${escapeHtml(text)}</strong>
+    </div>`;
+  updateWorkflowProgress(
+    overlay,
+    ['active', 'waiting'].includes(tone) ? Math.min(index, total - 1) : total,
+  );
+  void stage.offsetWidth;
+  stage.classList.add('is-entering');
+  await wait(stage.dataset.initialized ? 760 : 1000);
+  stage.dataset.initialized = 'true';
+  stage.classList.remove('is-entering');
+}
+
+async function runVisibleWorkflow({
+  eyebrow = 'Visible workflow · Mock Agent simulation',
+  title,
+  steps,
+  success,
+  task,
+}) {
+  const overlay = document.createElement('section');
+  overlay.className = 'workflow-overlay';
+  overlay.setAttribute('role', 'dialog');
+  overlay.setAttribute('aria-modal', 'true');
+  overlay.setAttribute('aria-labelledby', 'workflow-title');
+  overlay.innerHTML = `
+    <div class="workflow-card">
+      <p class="step">${escapeHtml(eyebrow)}</p>
+      <h2 id="workflow-title">${escapeHtml(title)}</h2>
+      <p class="workflow-copy">These are the application’s visible lifecycle stages, not hidden model reasoning.</p>
+      <div class="workflow-dots" aria-hidden="true">
+        ${steps.map(() => '<span class="workflow-dot"></span>').join('')}
+      </div>
+      <div class="workflow-stage" aria-live="polite"></div>
+    </div>`;
+  document.body.append(overlay);
+  void overlay.offsetWidth;
+  overlay.classList.add('is-visible');
+  overlay.querySelector('.workflow-card').setAttribute('tabindex', '-1');
+  overlay.querySelector('.workflow-card').focus();
+
+  let settledOutcome = null;
+  const outcomePromise = Promise.resolve()
+    .then(task)
+    .then(
+      (value) => ({ ok: true, value }),
+      (error) => ({ ok: false, error }),
+    );
+  outcomePromise.then((outcome) => { settledOutcome = outcome; });
+
+  for (const [index, step] of steps.entries()) {
+    await showWorkflowStep(overlay, index, steps.length, step);
+    if (settledOutcome && !settledOutcome.ok) break;
+  }
+  if (!settledOutcome) {
+    await showWorkflowStep(
+      overlay,
+      steps.length,
+      steps.length,
+      'Waiting for the course service to confirm the result…',
+      'waiting',
+    );
+  }
+  const outcome = settledOutcome ?? await outcomePromise;
+  await showWorkflowStep(
+    overlay,
+    steps.length,
+    steps.length,
+    outcome.ok ? success : `Stopped: ${outcome.error.message}`,
+    outcome.ok ? 'success' : 'error',
+  );
+  overlay.classList.add('is-closing');
+  await wait(320);
+  overlay.remove();
+  if (!outcome.ok) throw outcome.error;
+  return outcome.value;
+}
+
 function wireAccount() {
   account.innerHTML = `
     <span>${escapeHtml(session.user.displayName)}</span>
@@ -138,6 +263,7 @@ function showNewCourse(message = '') {
       <p class="lede">These are durable business facts. The Agent will use them to generate a draft, but your application owns the brief and every approved version.</p>
     </section>
     <form id="course-form" class="brief-form panel">
+      <p class="field-shortcut">Tip: focus an empty field and press <kbd>Tab</kbd> to use its example, then continue to the next field.</p>
       <label>Course working title
         <input name="title" maxlength="120" placeholder="AI course creation for small-business experts" required>
       </label>
@@ -160,6 +286,7 @@ function showNewCourse(message = '') {
       <button type="submit" class="primary-action">Create course project</button>
     </form>`;
   document.querySelector('#back').addEventListener('click', () => showCourses());
+  wireTabPlaceholderAcceptance(document.querySelector('#course-form'));
   document.querySelector('#course-form').addEventListener('submit', async (event) => {
     event.preventDefault();
     const button = event.currentTarget.querySelector('button[type="submit"]');
@@ -322,6 +449,7 @@ async function showCourse(id, message = '', selectedVersionId = null) {
             : 'The simulation will turn your saved brief into a visible three-module outline.'}</p>
           ${selected ? `
             <form id="revise-form">
+              <p class="field-shortcut">Press <kbd>Tab</kbd> in the empty field to use the suggested feedback.</p>
               <label>What should improve?
                 <textarea name="feedback" rows="4" maxlength="1000" placeholder="Make the exercises more concrete and strengthen the validation step." required></textarea>
               </label>
@@ -372,18 +500,30 @@ async function showCourse(id, message = '', selectedVersionId = null) {
   for (const button of document.querySelectorAll('[data-version-id]')) {
     button.addEventListener('click', () => showCourse(id, '', button.dataset.versionId));
   }
-  document.querySelector('#generate')?.addEventListener('click', () => runAgentAction(id, 'generate', {}));
-  document.querySelector('#generate-again')?.addEventListener('click', () => runAgentAction(id, 'generate', {}));
-  document.querySelector('#revise-form')?.addEventListener('submit', (event) => {
+  document.querySelector('#generate')?.addEventListener('click', () => runAgentAction(id, 'generate', {}, false));
+  document.querySelector('#generate-again')?.addEventListener('click', () => runAgentAction(id, 'generate', {}, true));
+  const reviseForm = document.querySelector('#revise-form');
+  if (reviseForm) wireTabPlaceholderAcceptance(reviseForm);
+  reviseForm?.addEventListener('submit', (event) => {
     event.preventDefault();
     runAgentAction(id, 'revise', Object.fromEntries(new FormData(event.currentTarget)));
   });
   document.querySelector('#approve')?.addEventListener('click', async (event) => {
     event.currentTarget.disabled = true;
     try {
-      const result = await request(`/api/courses/${id}/versions/${selected.id}/approve`, {
-        method: 'POST',
-        body: {},
+      const result = await runVisibleWorkflow({
+        eyebrow: 'Visible workflow · Business decision',
+        title: `Approving version ${selected.versionNumber}`,
+        steps: [
+          'Checking that this version belongs to your account',
+          'Recording your approval decision',
+          'Updating the course’s current-version pointer',
+        ],
+        success: `Version ${selected.versionNumber} is approved`,
+        task: () => request(`/api/courses/${id}/versions/${selected.id}/approve`, {
+          method: 'POST',
+          body: {},
+        }),
       });
       await showCourse(id, `Version ${selected.versionNumber} is now the approved business result.`, result.course.currentOutlineVersionId);
     } catch (error) {
@@ -392,23 +532,38 @@ async function showCourse(id, message = '', selectedVersionId = null) {
   });
 }
 
-async function runAgentAction(id, action, body) {
-  const live = document.querySelector('#handoff-live');
-  if (live) {
-    live.hidden = false;
-    live.innerHTML = `
-      <strong>Handing work to the Mock Agent…</strong>
-      <span>${action === 'revise'
-        ? 'Brief + prior version + your feedback → revised outline'
-        : 'Saved brief → generated outline → new saved version'}</span>`;
-  }
+async function runAgentAction(id, action, body, hasExistingVersion = true) {
   const controls = app.querySelectorAll('button, textarea');
   controls.forEach((control) => { control.disabled = true; });
   try {
-    const { course } = await request(`/api/courses/${id}/actions/${action}`, {
-      method: 'POST',
-      headers: { 'idempotency-key': idempotencyKey(action) },
-      body,
+    const revising = action === 'revise';
+    const { course } = await runVisibleWorkflow({
+      title: revising
+        ? 'Improving your course outline'
+        : hasExistingVersion
+          ? 'Generating another course outline'
+          : 'Generating your first course outline',
+      steps: revising
+        ? [
+          'Reading your saved course brief',
+          'Comparing your feedback with the latest version',
+          'Mock Course Designer is reshaping the learning path',
+          'Preparing a new immutable outline version',
+        ]
+        : [
+          'Reading your saved course brief',
+          hasExistingVersion
+            ? 'Finding a different teaching route'
+            : 'Finding a clear teaching route',
+          'Mock Course Designer is structuring the modules',
+          'Preparing a new immutable outline version',
+        ],
+      success: 'New outline version saved to your course collection',
+      task: () => request(`/api/courses/${id}/actions/${action}`, {
+        method: 'POST',
+        headers: { 'idempotency-key': idempotencyKey(action) },
+        body,
+      }),
     });
     const newest = course.versions[0];
     await showCourse(
