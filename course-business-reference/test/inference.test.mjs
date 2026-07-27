@@ -120,6 +120,7 @@ test('OpenAI-compatible request pins a structured course-outline response', () =
   assert.equal(request.response_format.json_schema.strict, true);
   assert.equal(request.response_format.json_schema.schema.properties.modules.minItems, 3);
   assert.equal(request.response_format.json_schema.schema.properties.modules.maxItems, 3);
+  assert.equal(request.response_format.json_schema.schema.properties.positioning.maxLength, undefined);
   assert.equal(request.seed, createOutlineRequest(inferenceConfig, command).seed);
   assert.match(request.messages[1].content, /untrusted course data/u);
 });
