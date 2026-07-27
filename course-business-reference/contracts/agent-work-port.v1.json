@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kungfu.tech/contracts/course-agent-work-port-v1.json",
+  "title": "Course AgentWorkPort v1 view",
+  "type": "object",
+  "required": ["contract", "backend", "bindingId", "transitionId", "status", "allowedActions", "simulated"],
+  "properties": {
+    "contract": { "const": "course.agent-work-port/v1" },
+    "backend": { "type": "string", "minLength": 1 },
+    "bindingId": { "type": "string", "minLength": 1 },
+    "transitionId": { "type": "string", "minLength": 1 },
+    "status": {
+      "enum": ["ready", "needs_evidence", "evidence_submitted", "accepted", "sealed"]
+    },
+    "allowedActions": {
+      "type": "array",
+      "items": {
+        "enum": ["run_first_submission", "submit_evidence", "request_review", "seal"]
+      },
+      "uniqueItems": true
+    },
+    "simulated": { "type": "boolean" },
+    "nextAction": { "type": ["string", "null"] },
+    "evidence": { "type": "array", "items": { "type": "object" } },
+    "audit": { "type": "array", "items": { "type": "object" } }
+  },
+  "additionalProperties": true
+}
