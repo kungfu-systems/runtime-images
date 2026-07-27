@@ -15,7 +15,7 @@ project_name=${COMPOSE_PROJECT_NAME:-kungfu-course-reference-qualification}
 : "${COURSE_SESSION_HOURS:=0.01}"
 : "${COURSE_EXPIRY_WAIT_MS:=38000}"
 : "${COURSE_OUTBOX_PROCESSING_STALE_SECONDS:=1}"
-: "${COURSE_QUALIFICATION_TIMEOUT_ONCE:=run_first_submission}"
+: "${COURSE_QUALIFICATION_TIMEOUT_ONCE:=generate_outline}"
 : "${COURSE_QUALIFICATION_CRASH_AFTER_ADAPTER_ONCE:=true}"
 : "${COURSE_EVIDENCE_PATH:=${repo_dir}/.artifacts/course-reference-qualification.json}"
 export COURSE_DB_MIGRATION_PASSWORD COURSE_DB_APP_PASSWORD COURSE_PORT COURSE_PUBLIC_ORIGIN
@@ -63,23 +63,23 @@ app_psql() {
     psql -X -qAt -U course_app -d course_reference "$@"
 }
 
-COURSE_RLS_UNSCOPED=$(app_psql -c 'SELECT count(*) FROM course.learner_homeworks')
+COURSE_RLS_UNSCOPED=$(app_psql -c 'SELECT count(*) FROM course.course_projects')
 COURSE_RLS_VISIBLE=$(app_psql -c \
   "SELECT set_config('app.user_id', (SELECT id::text FROM course.users ORDER BY created_at LIMIT 1), false);
-   SELECT count(*) FROM course.learner_homeworks;" | tail -1)
+   SELECT count(*) FROM course.course_projects;" | tail -1)
 COURSE_RLS_CROSS_ACCOUNT=$(app_psql -c \
   "SELECT set_config('app.user_id', (SELECT id::text FROM course.users ORDER BY created_at LIMIT 1), false);
-   SELECT count(*) FROM course.learner_homeworks
+   SELECT count(*) FROM course.course_projects
    WHERE user_id = (SELECT id FROM course.users ORDER BY created_at OFFSET 1 LIMIT 1);" | tail -1)
 test "${COURSE_RLS_UNSCOPED}" = "0"
-test "${COURSE_RLS_VISIBLE}" = "1"
+test "${COURSE_RLS_VISIBLE}" -ge "1"
 test "${COURSE_RLS_CROSS_ACCOUNT}" = "0"
 COURSE_CRASH_ATTEMPTS=$(compose exec -T database psql -X -qAt -U course_migrator \
   -d course_reference -c \
   "SELECT max(attempts) FROM course.command_outbox WHERE command_type = 'provision';")
 COURSE_TIMEOUT_ATTEMPTS=$(compose exec -T database psql -X -qAt -U course_migrator \
   -d course_reference -c \
-  "SELECT max(attempts) FROM course.command_outbox WHERE command_type = 'run_first_submission';")
+  "SELECT max(attempts) FROM course.command_outbox WHERE command_type = 'generate_outline';")
 test "${COURSE_CRASH_ATTEMPTS}" -ge 2
 test "${COURSE_TIMEOUT_ATTEMPTS}" -ge 2
 
@@ -92,13 +92,15 @@ compose exec -T database pg_restore -U course_migrator -d "${restore_database}" 
 COURSE_PRIMARY_COUNTS=$(compose exec -T database psql -X -qAt -U course_migrator \
   -d course_reference -c \
   "SELECT concat((SELECT count(*) FROM course.users), ':',
-                 (SELECT count(*) FROM course.learner_homeworks), ':',
+                 (SELECT count(*) FROM course.course_projects), ':',
+                 (SELECT count(*) FROM course.course_outline_versions), ':',
                  (SELECT count(*) FROM mock_agent_work.works), ':',
                  (SELECT count(*) FROM mock_agent_work.deliveries));")
 COURSE_RESTORED_COUNTS=$(compose exec -T database psql -X -qAt -U course_migrator \
   -d "${restore_database}" -c \
   "SELECT concat((SELECT count(*) FROM course.users), ':',
-                 (SELECT count(*) FROM course.learner_homeworks), ':',
+                 (SELECT count(*) FROM course.course_projects), ':',
+                 (SELECT count(*) FROM course.course_outline_versions), ':',
                  (SELECT count(*) FROM mock_agent_work.works), ':',
                  (SELECT count(*) FROM mock_agent_work.deliveries));")
 test "${COURSE_PRIMARY_COUNTS}" = "${COURSE_RESTORED_COUNTS}"

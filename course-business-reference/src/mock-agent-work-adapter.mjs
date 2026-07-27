@@ -10,30 +10,83 @@ import {
 const bindingFor = (source) => `mock:${createHash('sha256').update(source).digest('hex').slice(0, 24)}`;
 const transitionFor = (binding, version) => `mock-transition:${binding.slice(5)}:${version}`;
 
-function allowedActions(status) {
-  if (status === 'ready') return ['run_first_submission'];
-  if (status === 'needs_evidence') return ['submit_evidence'];
-  if (status === 'evidence_submitted') return ['request_review'];
-  if (status === 'accepted') return ['seal'];
-  return [];
+function allowedActions(row) {
+  return row.latest_output
+    ? ['revise_outline', 'generate_outline']
+    : ['generate_outline'];
+}
+
+function text(value, fallback) {
+  const normalized = String(value ?? '').trim();
+  return normalized || fallback;
+}
+
+function generateOutline(payload, revision) {
+  const title = text(payload.title, 'Untitled course');
+  const targetLearner = text(payload.targetLearner, 'A clearly defined learner');
+  const learnerProblem = text(payload.learnerProblem, 'A costly problem worth solving');
+  const promisedOutcome = text(payload.promisedOutcome, 'A concrete, observable result');
+  const creatorExpertise = text(payload.creatorExpertise, 'Practical experience from the creator');
+  const constraints = text(payload.deliveryConstraints, 'A focused, testable delivery format');
+  const feedback = text(payload.feedback, 'Make the learning path more concrete and testable.');
+  const previous = payload.previousOutline && typeof payload.previousOutline === 'object'
+    ? payload.previousOutline
+    : null;
+  const revisionNote = revision
+    ? `This revision responds to: ${feedback}`
+    : 'This first draft turns the course brief into a teachable three-module path.';
+  return {
+    title,
+    positioning: `For ${targetLearner}, this course addresses ${learnerProblem}`,
+    audience: targetLearner,
+    promise: promisedOutcome,
+    delivery: constraints,
+    creatorAdvantage: creatorExpertise,
+    modules: [
+      {
+        number: 1,
+        title: 'Define the learner and the real job',
+        outcome: `Turn "${learnerProblem}" into one observable learner goal.`,
+        lessons: ['Identify the learner context', 'Choose one costly problem', 'Write a measurable success statement'],
+        exercise: 'Interview or observe one representative learner and record the exact language they use.',
+      },
+      {
+        number: 2,
+        title: 'Build the smallest useful learning path',
+        outcome: `Sequence the creator's expertise into steps that lead toward "${promisedOutcome}".`,
+        lessons: ['Select only essential knowledge', 'Order practice before explanation', 'Define one deliverable per lesson'],
+        exercise: 'Create one before-and-after example that a learner can reproduce.',
+      },
+      {
+        number: 3,
+        title: revision ? 'Validate, revise, and prepare delivery' : 'Validate with a real learner',
+        outcome: 'Test whether the promised result is understandable, achievable, and worth paying for.',
+        lessons: ['Run a small pilot', 'Collect observable evidence', 'Revise the weakest step'],
+        exercise: 'Ask one learner to complete the final task and document where they become blocked.',
+      },
+    ],
+    openQuestions: [
+      'What will the learner be able to show at the end?',
+      'What prior knowledge can the course safely assume?',
+      `How will the course fit the constraint: ${constraints}?`,
+    ],
+    revisionNote,
+    previousVersionTitle: previous?.title ?? null,
+  };
 }
 
 function toView(row) {
-  const next = {
-    ready: 'Run the first simulated submission.',
-    needs_evidence: 'Add the required course-outline artifact.',
-    evidence_submitted: 'Request a fresh simulated review.',
-    accepted: 'Seal the completed simulated work.',
-    sealed: null,
-  }[row.status];
   return assertAgentWorkView({
     contract: AGENT_WORK_CONTRACT,
     backend: 'mock-agent-work/v1',
     bindingId: row.binding_id,
     transitionId: transitionFor(row.binding_id, row.version),
     status: row.status,
-    allowedActions: allowedActions(row.status),
-    nextAction: next,
+    allowedActions: allowedActions(row),
+    nextAction: row.latest_output
+      ? 'Revise the visible draft or generate another version.'
+      : 'Generate the first visible course outline.',
+    latestOutput: row.latest_output,
     evidence: row.evidence,
     audit: row.audit,
     simulated: true,
@@ -79,7 +132,19 @@ export class MockAgentWorkAdapter extends AgentWorkPort {
       let status = row.status;
       const evidence = row.evidence;
       const audit = row.audit;
-      if (command.type === 'run_first_submission' && status === 'ready') {
+      let latestOutput = row.latest_output;
+      if (command.type === 'generate_outline' || command.type === 'revise_outline') {
+        const revision = command.type === 'revise_outline';
+        latestOutput = generateOutline(command.payload ?? {}, revision);
+        status = 'ready';
+        audit.push({
+          type: revision ? 'outline-revised' : 'outline-generated',
+          label: 'simulated',
+          detail: revision
+            ? 'The mock used the saved brief, previous version, and creator feedback to produce a new draft.'
+            : 'The mock used the saved course brief to produce a visible first draft.',
+        });
+      } else if (command.type === 'run_first_submission' && status === 'ready') {
         status = 'needs_evidence';
         audit.push({
           type: 'review',
@@ -118,10 +183,22 @@ export class MockAgentWorkAdapter extends AgentWorkPort {
       }
       const updated = await client.query(
         `UPDATE mock_agent_work.works
-         SET status = $2, evidence = $3::jsonb, audit = $4::jsonb,
-             version = version + CASE WHEN status = $2 THEN 0 ELSE 1 END, updated_at = now()
+         SET status = $2, evidence = $3::jsonb, audit = $4::jsonb, latest_output = $5::jsonb,
+             version = version + CASE
+               WHEN $6::boolean THEN 1
+               WHEN status = $2 AND latest_output IS NOT DISTINCT FROM $5::jsonb THEN 0
+               ELSE 1
+             END,
+             updated_at = now()
          WHERE binding_id = $1 RETURNING *`,
-        [row.binding_id, status, JSON.stringify(evidence), JSON.stringify(audit)],
+        [
+          row.binding_id,
+          status,
+          JSON.stringify(evidence),
+          JSON.stringify(audit),
+          latestOutput ? JSON.stringify(latestOutput) : null,
+          ['generate_outline', 'revise_outline'].includes(command.type),
+        ],
       );
       const result = toView(updated.rows[0]);
       await client.query(

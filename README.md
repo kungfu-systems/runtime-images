@@ -94,10 +94,11 @@ boundary and official-Alpha substitution seam.
 ## Course business reference
 
 [`course-business-reference/`](course-business-reference/) is a separate,
-mock-backed PostgreSQL example for commercial Builders. It adds learner
-registration and login, private per-account homework, a durable command outbox,
-and a versioned Agent-work port without coupling the business schema or primary
-Web experience to the current Hub Starter internals. It runs as its own
+mock-backed PostgreSQL example for commercial Builders. It adds creator
+registration and login, a private per-account course collection, immutable
+course-outline versions, a durable command outbox, and a versioned Agent-work
+port without coupling the business schema or primary Web experience to the
+current Hub Starter internals. It runs as its own
 loopback-only Compose project and does not replace or share the Hub's state.
 
 ## License

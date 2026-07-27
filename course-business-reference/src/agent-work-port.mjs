@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-export const AGENT_WORK_CONTRACT = 'course.agent-work-port/v1';
+export const AGENT_WORK_CONTRACT = 'course.agent-work-port/v2';
 export const STATUSES = new Set([
   'ready',
   'needs_evidence',
@@ -10,12 +10,16 @@ export const STATUSES = new Set([
 ]);
 export const COMMANDS = new Set([
   'provision',
+  'generate_outline',
+  'revise_outline',
   'run_first_submission',
   'submit_evidence',
   'request_review',
   'seal',
 ]);
 export const VIEW_ACTIONS = new Set([
+  'generate_outline',
+  'revise_outline',
   'run_first_submission',
   'submit_evidence',
   'request_review',

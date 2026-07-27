@@ -17,6 +17,25 @@ function publicUser(row) {
   return { id: row.id, email: row.email_normalized, displayName: row.display_name };
 }
 
+function bounded(value, name, minimum, maximum) {
+  const normalized = String(value ?? '').trim();
+  if (normalized.length < minimum || normalized.length > maximum) {
+    throw new Error(`invalid ${name}`);
+  }
+  return normalized;
+}
+
+function projectInput(input) {
+  return {
+    title: bounded(input.title, 'course title', 1, 120),
+    targetLearner: bounded(input.targetLearner, 'target learner', 1, 500),
+    learnerProblem: bounded(input.learnerProblem, 'learner problem', 1, 1000),
+    promisedOutcome: bounded(input.promisedOutcome, 'promised outcome', 1, 1000),
+    creatorExpertise: bounded(input.creatorExpertise, 'creator expertise', 1, 2000),
+    deliveryConstraints: bounded(input.deliveryConstraints, 'delivery constraints', 1, 1000),
+  };
+}
+
 async function createSession(client, userId, hours) {
   const token = randomToken(32);
   const csrfToken = randomToken(24);
@@ -56,21 +75,9 @@ export class CourseDomain {
          VALUES ($1, $2) RETURNING id`,
         [user.id, COURSE_ID],
       );
-      const homework = await client.query(
-        `INSERT INTO course.learner_homeworks
-          (user_id, enrollment_id, definition_id, backend_kind)
-         VALUES ($1, $2, $3, 'mock') RETURNING id`,
-        [user.id, enrollment.rows[0].id, HOMEWORK_ID],
-      );
-      await client.query(
-        `INSERT INTO course.command_outbox
-          (user_id, learner_homework_id, command_type, idempotency_key)
-         VALUES ($1, $2, 'provision', $3)`,
-        [user.id, homework.rows[0].id, `provision:${homework.rows[0].id}`],
-      );
+      if (!enrollment.rowCount) throw new Error('enrollment could not be created');
       return { user, session: await createSession(client, user.id, this.config.sessionHours) };
     });
-    await this.dispatcher.drainUser(created.user.id);
     return { user: publicUser(created.user), ...created.session };
   }
 
@@ -123,6 +130,209 @@ export class CourseDomain {
   async logout(auth) {
     await transaction(this.pool, { userId: auth.user.id, sessionHash: auth.tokenHash }, (client) =>
       client.query('UPDATE course.sessions SET revoked_at = now() WHERE id = $1', [auth.sessionId]));
+  }
+
+  async createCourse(userId, input) {
+    const values = projectInput(input);
+    const created = await transaction(this.pool, { userId }, async (client) => {
+      const enrollment = await client.query(
+        'SELECT id FROM course.enrollments WHERE user_id = $1 AND course_id = $2',
+        [userId, COURSE_ID],
+      );
+      if (!enrollment.rowCount) throw new Error('course enrollment is missing');
+      const project = await client.query(
+        `INSERT INTO course.course_projects
+          (user_id, title, target_learner, learner_problem, promised_outcome,
+           creator_expertise, delivery_constraints)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         RETURNING id`,
+        [
+          userId,
+          values.title,
+          values.targetLearner,
+          values.learnerProblem,
+          values.promisedOutcome,
+          values.creatorExpertise,
+          values.deliveryConstraints,
+        ],
+      );
+      const homework = await client.query(
+        `INSERT INTO course.learner_homeworks
+          (user_id, enrollment_id, definition_id, backend_kind, course_project_id)
+         VALUES ($1, $2, $3, 'mock', $4) RETURNING id`,
+        [userId, enrollment.rows[0].id, HOMEWORK_ID, project.rows[0].id],
+      );
+      await client.query(
+        `INSERT INTO course.command_outbox
+          (user_id, learner_homework_id, command_type, idempotency_key)
+         VALUES ($1, $2, 'provision', $3)`,
+        [userId, homework.rows[0].id, `provision:${homework.rows[0].id}`],
+      );
+      return project.rows[0].id;
+    });
+    await this.dispatcher.drainUser(userId);
+    return this.course(userId, created);
+  }
+
+  async listCourses(userId) {
+    const result = await transaction(this.pool, { userId }, (client) => client.query(
+      `SELECT p.id, p.title, p.target_learner, p.promised_outcome,
+              p.updated_at, p.current_outline_version_id,
+              count(v.id)::integer AS version_count,
+              max(v.version_number)::integer AS latest_version_number,
+              max(v.created_at) AS latest_version_at
+       FROM course.course_projects p
+       LEFT JOIN course.course_outline_versions v ON v.course_project_id = p.id
+       WHERE p.user_id = $1
+       GROUP BY p.id
+       ORDER BY p.updated_at DESC`,
+      [userId],
+    ));
+    return result.rows;
+  }
+
+  async course(userId, courseId) {
+    const project = await transaction(this.pool, { userId }, async (client) => {
+      const result = await client.query(
+        `SELECT p.*, h.id AS homework_id, h.projected_status,
+                h.backend_binding_id, h.projection_version
+         FROM course.course_projects p
+         JOIN course.learner_homeworks h ON h.course_project_id = p.id
+         WHERE p.id = $1 AND p.user_id = $2`,
+        [courseId, userId],
+      );
+      if (!result.rowCount) return null;
+      const versions = await client.query(
+        `SELECT id, version_number, status, outline, change_summary, created_at, approved_at
+         FROM course.course_outline_versions
+         WHERE course_project_id = $1 AND user_id = $2
+         ORDER BY version_number DESC`,
+        [courseId, userId],
+      );
+      return { ...result.rows[0], versions: versions.rows };
+    });
+    if (!project) return null;
+    const work = project.backend_binding_id
+      ? await this.agentWorkPort.read(project.backend_binding_id)
+      : null;
+    return {
+      id: project.id,
+      title: project.title,
+      brief: {
+        targetLearner: project.target_learner,
+        learnerProblem: project.learner_problem,
+        promisedOutcome: project.promised_outcome,
+        creatorExpertise: project.creator_expertise,
+        deliveryConstraints: project.delivery_constraints,
+      },
+      currentOutlineVersionId: project.current_outline_version_id,
+      versions: project.versions.map((version) => ({
+        id: version.id,
+        versionNumber: version.version_number,
+        status: version.status,
+        outline: version.outline,
+        changeSummary: version.change_summary,
+        createdAt: version.created_at,
+        approvedAt: version.approved_at,
+      })),
+      agentWork: work,
+      updatedAt: project.updated_at,
+    };
+  }
+
+  async enqueueCourseAction(userId, courseId, type, clientKey, input = {}) {
+    if (!['generate_outline', 'revise_outline'].includes(type)) {
+      throw new Error('unsupported course action');
+    }
+    const key = String(clientKey ?? randomUUID());
+    if (!/^[A-Za-z0-9._:-]{8,128}$/u.test(key)) throw new Error('invalid idempotency key');
+    await transaction(this.pool, { userId }, async (client) => {
+      const owned = await client.query(
+        `SELECT p.*, h.id AS homework_id
+         FROM course.course_projects p
+         JOIN course.learner_homeworks h ON h.course_project_id = p.id
+         WHERE p.id = $1 AND p.user_id = $2`,
+        [courseId, userId],
+      );
+      if (!owned.rowCount) {
+        const error = new Error('not found');
+        error.code = 'NOT_FOUND';
+        throw error;
+      }
+      const project = owned.rows[0];
+      const latest = await client.query(
+        `SELECT id, outline
+         FROM course.course_outline_versions
+         WHERE course_project_id = $1
+         ORDER BY version_number DESC LIMIT 1`,
+        [courseId],
+      );
+      if (type === 'revise_outline' && !latest.rowCount) {
+        throw new Error('generate the first outline before revising it');
+      }
+      const payload = {
+        title: project.title,
+        targetLearner: project.target_learner,
+        learnerProblem: project.learner_problem,
+        promisedOutcome: project.promised_outcome,
+        creatorExpertise: project.creator_expertise,
+        deliveryConstraints: project.delivery_constraints,
+        previousVersionId: latest.rows[0]?.id ?? null,
+        previousOutline: latest.rows[0]?.outline ?? null,
+        feedback: type === 'revise_outline'
+          ? bounded(input.feedback, 'revision feedback', 1, 1000)
+          : '',
+      };
+      await client.query(
+        `INSERT INTO course.command_outbox
+          (user_id, learner_homework_id, command_type, idempotency_key, payload)
+         VALUES ($1, $2, $3, $4, $5::jsonb)
+         ON CONFLICT (idempotency_key) DO NOTHING`,
+        [
+          userId,
+          project.homework_id,
+          type,
+          `${type}:${courseId}:${key}`,
+          JSON.stringify(payload),
+        ],
+      );
+    });
+    await this.dispatcher.drainUser(userId);
+    return this.course(userId, courseId);
+  }
+
+  async approveVersion(userId, courseId, versionId) {
+    await transaction(this.pool, { userId }, async (client) => {
+      const version = await client.query(
+        `SELECT id FROM course.course_outline_versions
+         WHERE id = $1 AND course_project_id = $2 AND user_id = $3`,
+        [versionId, courseId, userId],
+      );
+      if (!version.rowCount) {
+        const error = new Error('not found');
+        error.code = 'NOT_FOUND';
+        throw error;
+      }
+      await client.query(
+        `UPDATE course.course_outline_versions
+         SET status = 'superseded'
+         WHERE course_project_id = $1 AND user_id = $2 AND status = 'approved' AND id <> $3`,
+        [courseId, userId, versionId],
+      );
+      await client.query(
+        `UPDATE course.course_outline_versions
+         SET status = 'approved', approved_at = COALESCE(approved_at, now())
+         WHERE id = $1`,
+        [versionId],
+      );
+      await client.query(
+        `UPDATE course.course_projects
+         SET current_outline_version_id = $2, updated_at = now()
+         WHERE id = $1 AND user_id = $3`,
+        [courseId, versionId, userId],
+      );
+    });
+    return this.course(userId, courseId);
   }
 
   async listHomeworks(userId) {
