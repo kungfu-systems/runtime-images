@@ -72,6 +72,39 @@ function inferenceConfig(backend) {
   });
 }
 
+function localModelConfig(enabled, inferences) {
+  if (!enabled) return Object.freeze({ enabled: false });
+  const inference = inferences['openai-compatible'];
+  if (!inference || inference.delivery !== 'local') {
+    throw new Error('local model management requires a local OpenAI-compatible backend');
+  }
+  const path = required('COURSE_LOCAL_MODEL_PATH');
+  if (!/^\/models\/[A-Za-z0-9._-]+\.gguf$/u.test(path)) {
+    throw new Error('COURSE_LOCAL_MODEL_PATH must be a GGUF file directly under /models');
+  }
+  const url = new URL(required('COURSE_LOCAL_MODEL_URL'));
+  if (url.protocol !== 'https:' || url.username || url.password) {
+    throw new Error('COURSE_LOCAL_MODEL_URL must be an HTTPS URL without credentials');
+  }
+  const sha256 = required('COURSE_LOCAL_MODEL_SHA256').toLowerCase();
+  if (!/^[0-9a-f]{64}$/u.test(sha256)) {
+    throw new Error('COURSE_LOCAL_MODEL_SHA256 must be a lowercase SHA-256 digest');
+  }
+  const bytes = integer('COURSE_LOCAL_MODEL_BYTES', 0, 1, 20 * 1024 * 1024 * 1024);
+  const sourceLabel = process.env.COURSE_LOCAL_MODEL_SOURCE_LABEL?.trim() || 'Pinned model source';
+  if (sourceLabel.length > 80) throw new Error('COURSE_LOCAL_MODEL_SOURCE_LABEL is too long');
+  return Object.freeze({
+    enabled: true,
+    path,
+    url: url.toString(),
+    sha256,
+    bytes,
+    sourceLabel,
+    seedFile: process.env.COURSE_LOCAL_MODEL_SEED_FILE?.trim() ?? '',
+    inferenceKind: 'openai-compatible',
+  });
+}
+
 export function loadConfig() {
   const backend = process.env.AGENT_WORK_BACKEND ?? 'mock';
   if (!['mock', 'openai-compatible'].includes(backend)) {
@@ -82,7 +115,15 @@ export function loadConfig() {
     throw new Error('COURSE_DB_APP_PASSWORD must be 16-128 safe ASCII characters');
   }
   const origin = process.env.PUBLIC_ORIGIN ?? 'http://127.0.0.1:8090';
-  const inference = inferenceConfig(backend);
+  const localModelManagement = boolean('COURSE_LOCAL_MODEL_MANAGEMENT');
+  const inferences = {
+    mock: inferenceConfig('mock'),
+  };
+  if (backend === 'openai-compatible' || localModelManagement) {
+    inferences['openai-compatible'] = inferenceConfig('openai-compatible');
+  }
+  const inference = inferences[backend];
+  const localModel = localModelConfig(localModelManagement, inferences);
   const qualificationRunId = process.env.COURSE_QUALIFICATION_RUN_ID?.trim() ?? '';
   if (qualificationRunId && !/^[A-Za-z0-9._-]{1,80}$/u.test(qualificationRunId)) {
     throw new Error('COURSE_QUALIFICATION_RUN_ID contains unsupported characters');
@@ -123,6 +164,8 @@ export function loadConfig() {
     appPassword,
     backend,
     inference,
+    inferences: Object.freeze(inferences),
+    localModel,
     sessionSecure: boolean('SESSION_SECURE'),
     sessionHours,
     outboxProcessingStaleSeconds,

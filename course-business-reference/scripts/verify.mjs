@@ -3,15 +3,28 @@ import { readFile } from 'node:fs/promises';
 
 const root = new URL('../', import.meta.url);
 const read = (path) => readFile(new URL(path, root), 'utf8');
-const [compose, offline, hosted, dockerfile, migration, backendMigration, contract, server] = await Promise.all([
+const [
+  compose,
+  offline,
+  interactive,
+  hosted,
+  dockerfile,
+  migration,
+  backendMigration,
+  contract,
+  server,
+  browser,
+] = await Promise.all([
   read('compose.yaml'),
   read('compose.offline.yaml'),
+  read('compose.interactive-local.yaml'),
   read('compose.hosted.yaml'),
   read('Dockerfile'),
   read('migrations/001_initial.sql'),
   read('migrations/004_inference_backends.sql'),
   read('contracts/agent-work-port.v2.json'),
   read('src/server.mjs'),
+  read('web/app.js'),
 ]);
 JSON.parse(contract);
 
@@ -26,8 +39,31 @@ for (const required of [
   if (!compose.includes(required)) throw new Error(`Compose invariant missing: ${required}`);
 }
 for (const forbidden of ['docker.sock', 'network_mode: host', '/Users/', '/home/']) {
-  if ([compose, offline, hosted].some((value) => value.includes(forbidden))) {
+  if ([compose, offline, interactive, hosted].some((value) => value.includes(forbidden))) {
     throw new Error(`Compose contains forbidden boundary: ${forbidden}`);
+  }
+}
+for (const required of [
+  'COURSE_LOCAL_MODEL_MANAGEMENT: "true"',
+  'COURSE_LOCAL_MODEL_SHA256:',
+  'Waiting for the user-installed local model.',
+  'course-models:/models:ro',
+]) {
+  if (!interactive.includes(required)) {
+    throw new Error(`Interactive local delivery invariant missing: ${required}`);
+  }
+}
+if (interactive.includes('wget ') || interactive.includes('curl ')) {
+  throw new Error('Interactive local delivery must not download a model during Compose startup');
+}
+for (const required of [
+  '/api/runtime/local-model/install',
+  'Download & install',
+  'data-runtime-select="mock"',
+  'backendKind: selectedBackend',
+]) {
+  if (!server.includes(required) && !browser.includes(required)) {
+    throw new Error(`Interactive runtime UI invariant missing: ${required}`);
   }
 }
 const databaseService = compose.match(/^  database:\n([\s\S]*?)(?=^  app:)/mu)?.[0] ?? '';

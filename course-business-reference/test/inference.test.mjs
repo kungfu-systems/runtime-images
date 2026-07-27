@@ -63,6 +63,13 @@ function configuredEnvironment(overrides, fn) {
     'AGENT_WORK_TIMEOUT_MS',
     'APP_DATABASE_URL',
     'COURSE_DB_APP_PASSWORD',
+    'COURSE_LOCAL_MODEL_BYTES',
+    'COURSE_LOCAL_MODEL_MANAGEMENT',
+    'COURSE_LOCAL_MODEL_PATH',
+    'COURSE_LOCAL_MODEL_SEED_FILE',
+    'COURSE_LOCAL_MODEL_SHA256',
+    'COURSE_LOCAL_MODEL_SOURCE_LABEL',
+    'COURSE_LOCAL_MODEL_URL',
     'DATABASE_URL',
   ];
   const prior = Object.fromEntries(names.map((name) => [name, process.env[name]]));
@@ -90,6 +97,31 @@ test('configuration defaults to an explicit simulation without inference secrets
     assert.equal(config.inference.simulated, true);
     assert.equal(config.inference.model, 'none');
     assert.equal('apiKey' in config.inference, false);
+    assert.deepEqual(Object.keys(config.inferences), ['mock']);
+    assert.equal(config.localModel.enabled, false);
+  });
+});
+
+test('interactive local configuration keeps Mock default and pins click-installed model bytes', () => {
+  configuredEnvironment({
+    AGENT_WORK_BACKEND: 'mock',
+    AGENT_WORK_BASE_URL: 'http://llama:8080/v1',
+    AGENT_WORK_MODEL: 'Qwen3-0.6B-Q4_K_M',
+    AGENT_WORK_PROVIDER_LABEL: 'Local Qwen',
+    AGENT_WORK_DELIVERY: 'local',
+    COURSE_LOCAL_MODEL_MANAGEMENT: 'true',
+    COURSE_LOCAL_MODEL_PATH: '/models/Qwen3-0.6B-Q4_K_M.gguf',
+    COURSE_LOCAL_MODEL_URL: 'https://models.invalid/pinned.gguf',
+    COURSE_LOCAL_MODEL_SHA256: 'a'.repeat(64),
+    COURSE_LOCAL_MODEL_BYTES: '396705472',
+  }, () => {
+    const config = loadConfig();
+    assert.equal(config.backend, 'mock');
+    assert.equal(config.inference.simulated, true);
+    assert.equal(config.inferences['openai-compatible'].delivery, 'local');
+    assert.equal(config.localModel.enabled, true);
+    assert.equal(config.localModel.bytes, 396705472);
+    assert.equal(config.localModel.inferenceKind, 'openai-compatible');
   });
 });
 
@@ -171,6 +203,8 @@ test('AgentWork router preserves old mock bindings while defaulting new work to 
   assert.equal((await router.execute({ ...command, type: 'provision' })).kind, 'openai-compatible');
   assert.equal((await router.execute({ ...command, bindingId: 'mock:legacy' })).kind, 'mock');
   assert.equal((await router.read('openai:new')).kind, 'openai-compatible');
+  assert.equal(router.hasBackend('mock'), true);
+  assert.equal(router.hasBackend('missing'), false);
   assert.deepEqual(calls, [
     'execute:openai-compatible:provision',
     'execute:mock:generate_outline',

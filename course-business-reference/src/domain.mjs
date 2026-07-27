@@ -132,7 +132,10 @@ export class CourseDomain {
       client.query('UPDATE course.sessions SET revoked_at = now() WHERE id = $1', [auth.sessionId]));
   }
 
-  async createCourse(userId, input) {
+  async createCourse(userId, input, backendKind = this.config.backend) {
+    if (!this.agentWorkPort.hasBackend(backendKind)) {
+      throw new Error('requested course Agent backend is unavailable');
+    }
     const values = projectInput(input);
     const created = await transaction(this.pool, { userId }, async (client) => {
       const enrollment = await client.query(
@@ -164,7 +167,7 @@ export class CourseDomain {
           userId,
           enrollment.rows[0].id,
           HOMEWORK_ID,
-          this.config.backend,
+          backendKind,
           project.rows[0].id,
         ],
       );

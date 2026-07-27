@@ -58,19 +58,41 @@ The core image contains no model and remains the same in every mode:
 | --- | ---: | --- | --- |
 | default simulation | none | database development secrets only | `Visible Mock Agent` |
 | hosted endpoint | no local model | endpoint, model, and a secret file | configured provider |
-| optional local pack | about 704 MB compressed beyond the core image | one Compose overlay | `Local Qwen Course Designer` |
+| interactive local pack | only after the user clicks; about 704 MB compressed beyond the core image | `compose.interactive-local.yaml` | selectable Mock or `Local Qwen Course Designer` |
+| automatic local pack | at Compose startup; about 704 MB compressed beyond the core image | `compose.offline.yaml` | `Local Qwen Course Designer` |
 
-The local pack pins the multi-platform llama.cpp server image by OCI digest and
-pins `Qwen3-0.6B-Q4_K_M.gguf` to an exact repository revision plus SHA-256. The
-model initializer downloads it once into a named cache volume and verifies the
-checksum. Later application rebuilds do not download it again. llama.cpp is
-reachable only on the private Compose network; it has no host port.
+Both local packs pin the multi-platform llama.cpp server image by OCI digest and
+pin `Qwen3-0.6B-Q4_K_M.gguf` to an exact repository revision, byte count, and
+SHA-256. llama.cpp is reachable only on the private Compose network; it has no
+host port.
+
+The interactive pack starts with Mock selected and an empty model volume. Its
+header menu shows the active mode and the model's install state. No model
+request is made until an authenticated creator clicks **Download & install**.
+The application streams the server-controlled pinned source into a partial
+file, exposes progress, verifies the exact size and SHA-256, and atomically
+installs it. The private inference process starts only after that verified file
+appears. The creator can then select **Use local**; courses created afterward
+bind to that backend, while existing courses keep their original binding.
+
+Start the click-to-install delivery:
+
+```bash
+COURSE_DB_MIGRATION_PASSWORD=synthetic_migration_42 \
+COURSE_DB_APP_PASSWORD=synthetic_runtime_42 \
+docker compose -f compose.yaml -f compose.interactive-local.yaml up --build --detach
+```
+
+Ordinary application rebuilds preserve the named model volume. Set
+`COURSE_MODELS_VOLUME` when multiple independent interactive installations
+share one Docker host.
 
 For an air-gapped host, load a trusted llama.cpp image archive and set
 `COURSE_LLAMA_IMAGE` to its local tag before starting Compose. The default
 remains the digest-pinned GHCR image.
 
-Start the local delivery pack:
+The automatic pack remains useful for unattended qualification. Its model
+initializer downloads once into the named volume and verifies the checksum:
 
 ```bash
 COURSE_DB_MIGRATION_PASSWORD=synthetic_migration_42 \

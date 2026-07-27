@@ -20,8 +20,12 @@ export class AgentWorkRouter extends AgentWorkPort {
     return adapter;
   }
 
-  async health() {
-    return this.adapter(this.defaultBackend).health();
+  hasBackend(kind) {
+    return this.adapters.has(kind);
+  }
+
+  async health(kind = this.defaultBackend) {
+    return this.adapter(kind).health();
   }
 
   async execute(command) {

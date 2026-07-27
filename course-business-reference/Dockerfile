@@ -25,10 +25,12 @@ COPY --from=dependencies --chown=root:root /build/node_modules /opt/course/node_
 COPY --chown=root:root course-business-reference/src /opt/course/src
 COPY --chown=root:root course-business-reference/web /opt/course/web
 COPY --chown=root:root course-business-reference/migrations /opt/course/migrations
-RUN mkdir -p /state && chown node:node /state && chmod 0755 /state /opt/course
+RUN mkdir -p /state /models \
+    && chown node:node /state /models \
+    && chmod 0755 /state /models /opt/course
 USER node
 WORKDIR /opt/course
-VOLUME ["/state"]
+VOLUME ["/state", "/models"]
 EXPOSE 8090
 HEALTHCHECK --interval=5s --timeout=4s --start-period=30s --retries=24 \
   CMD node -e "fetch('http://127.0.0.1:8090/readyz').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"
