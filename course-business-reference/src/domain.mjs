@@ -173,9 +173,10 @@ export class CourseDomain {
       );
       await client.query(
         `INSERT INTO course.command_outbox
-          (user_id, learner_homework_id, command_type, idempotency_key)
-         VALUES ($1, $2, 'provision', $3)`,
-        [userId, homework.rows[0].id, `provision:${homework.rows[0].id}`],
+          (user_id, learner_homework_id, command_type, idempotency_key,
+           backend_kind, backend_binding_id)
+         VALUES ($1, $2, 'provision', $3, $4, NULL)`,
+        [userId, homework.rows[0].id, `provision:${homework.rows[0].id}`, backendKind],
       );
       return project.rows[0].id;
     });
@@ -217,6 +218,7 @@ export class CourseDomain {
         `SELECT v.id, v.version_number, v.status, v.outline, v.change_summary,
                 v.created_at, v.approved_at, r.action AS agent_action,
                 r.backend_kind AS agent_backend, r.transition_id,
+                r.backend_binding_id AS agent_backend_binding_id,
                 r.input AS agent_input, r.created_at AS agent_completed_at
          FROM course.course_outline_versions v
          JOIN course.agent_runs r ON r.id = v.source_run_id
@@ -224,7 +226,19 @@ export class CourseDomain {
          ORDER BY v.version_number DESC`,
         [courseId, userId],
       );
-      return { ...result.rows[0], versions: versions.rows };
+      const backendSwitches = await client.query(
+        `SELECT from_backend_kind, to_backend_kind, prior_binding_id,
+                new_binding_id, created_at, completed_at
+         FROM course.course_backend_switches
+         WHERE course_project_id = $1 AND user_id = $2
+         ORDER BY created_at DESC`,
+        [courseId, userId],
+      );
+      return {
+        ...result.rows[0],
+        versions: versions.rows,
+        backend_switches: backendSwitches.rows,
+      };
     });
     if (!project) return null;
     const work = project.backend_binding_id
@@ -241,6 +255,15 @@ export class CourseDomain {
         deliveryConstraints: project.delivery_constraints,
       },
       backendKind: project.backend_kind,
+      backendStatus: project.projected_status,
+      backendSwitches: project.backend_switches.map((entry) => ({
+        from: entry.from_backend_kind,
+        to: entry.to_backend_kind,
+        priorBindingId: entry.prior_binding_id,
+        newBindingId: entry.new_binding_id,
+        createdAt: entry.created_at,
+        completedAt: entry.completed_at,
+      })),
       currentOutlineVersionId: project.current_outline_version_id,
       versions: project.versions.map((version) => ({
         id: version.id,
@@ -253,6 +276,7 @@ export class CourseDomain {
         agentRun: {
           action: version.agent_action,
           backend: version.agent_backend,
+          backendBindingId: version.agent_backend_binding_id,
           transitionId: version.transition_id,
           previousVersionId: version.agent_input?.previousVersionId ?? null,
           feedback: version.agent_input?.feedback ?? '',
@@ -264,6 +288,94 @@ export class CourseDomain {
     };
   }
 
+  async switchCourseBackend(userId, courseId, backendKind, clientKey) {
+    if (!this.agentWorkPort.hasBackend(backendKind)) {
+      throw Object.assign(
+        new Error('requested course Agent backend is unavailable'),
+        { status: 409 },
+      );
+    }
+    const key = String(clientKey ?? randomUUID());
+    if (!/^[A-Za-z0-9._:-]{8,128}$/u.test(key)) throw new Error('invalid idempotency key');
+    const changed = await transaction(this.pool, { userId }, async (client) => {
+      const priorRequest = await client.query(
+        `SELECT id FROM course.course_backend_switches
+         WHERE user_id = $1 AND course_project_id = $2 AND idempotency_key = $3`,
+        [userId, courseId, key],
+      );
+      if (priorRequest.rowCount) return false;
+      const owned = await client.query(
+        `SELECT p.id, h.id AS homework_id, h.backend_kind,
+                h.backend_binding_id, h.projected_status
+         FROM course.course_projects p
+         JOIN course.learner_homeworks h ON h.course_project_id = p.id
+         WHERE p.id = $1 AND p.user_id = $2
+         FOR UPDATE OF p, h`,
+        [courseId, userId],
+      );
+      if (!owned.rowCount) {
+        const error = new Error('not found');
+        error.code = 'NOT_FOUND';
+        throw error;
+      }
+      const current = owned.rows[0];
+      if (current.backend_kind === backendKind) return false;
+      const pending = await client.query(
+        `SELECT id FROM course.command_outbox
+         WHERE learner_homework_id = $1 AND state IN ('pending','processing')
+         LIMIT 1`,
+        [current.homework_id],
+      );
+      if (pending.rowCount) {
+        throw Object.assign(
+          new Error('wait for the current Agent action before switching'),
+          { status: 409 },
+        );
+      }
+      const provisionKey = `switch-backend:${courseId}:${key}:provision`;
+      const command = await client.query(
+        `INSERT INTO course.command_outbox
+          (user_id, learner_homework_id, command_type, idempotency_key,
+           backend_kind, backend_binding_id)
+         VALUES ($1, $2, 'provision', $3, $4, NULL)
+         RETURNING id`,
+        [userId, current.homework_id, provisionKey, backendKind],
+      );
+      await client.query(
+        `INSERT INTO course.course_backend_switches
+          (user_id, course_project_id, learner_homework_id,
+           from_backend_kind, to_backend_kind, prior_binding_id,
+           provision_command_id, idempotency_key)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        [
+          userId,
+          courseId,
+          current.homework_id,
+          current.backend_kind,
+          backendKind,
+          current.backend_binding_id,
+          command.rows[0].id,
+          key,
+        ],
+      );
+      await client.query(
+        `UPDATE course.learner_homeworks
+         SET backend_kind = $2, backend_binding_id = NULL,
+             projected_status = 'provisioning', projection_version = NULL,
+             updated_at = now()
+         WHERE id = $1`,
+        [current.homework_id, backendKind],
+      );
+      await client.query(
+        'UPDATE course.course_projects SET updated_at = now() WHERE id = $1',
+        [courseId],
+      );
+      return true;
+    });
+    if (changed) await this.dispatcher.drainUser(userId);
+    return this.course(userId, courseId);
+  }
+
   async enqueueCourseAction(userId, courseId, type, clientKey, input = {}) {
     if (!['generate_outline', 'revise_outline'].includes(type)) {
       throw new Error('unsupported course action');
@@ -272,7 +384,8 @@ export class CourseDomain {
     if (!/^[A-Za-z0-9._:-]{8,128}$/u.test(key)) throw new Error('invalid idempotency key');
     await transaction(this.pool, { userId }, async (client) => {
       const owned = await client.query(
-        `SELECT p.*, h.id AS homework_id
+        `SELECT p.*, h.id AS homework_id, h.backend_kind,
+                h.backend_binding_id, h.projected_status
          FROM course.course_projects p
          JOIN course.learner_homeworks h ON h.course_project_id = p.id
          WHERE p.id = $1 AND p.user_id = $2`,
@@ -284,6 +397,12 @@ export class CourseDomain {
         throw error;
       }
       const project = owned.rows[0];
+      if (!project.backend_binding_id || project.projected_status !== 'ready') {
+        throw Object.assign(
+          new Error('course Agent binding is not ready'),
+          { status: 409 },
+        );
+      }
       const latest = await client.query(
         `SELECT id, outline
          FROM course.course_outline_versions
@@ -309,8 +428,9 @@ export class CourseDomain {
       };
       await client.query(
         `INSERT INTO course.command_outbox
-          (user_id, learner_homework_id, command_type, idempotency_key, payload)
-         VALUES ($1, $2, $3, $4, $5::jsonb)
+          (user_id, learner_homework_id, command_type, idempotency_key, payload,
+           backend_kind, backend_binding_id)
+         VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7)
          ON CONFLICT (idempotency_key) DO NOTHING`,
         [
           userId,
@@ -318,6 +438,8 @@ export class CourseDomain {
           type,
           `${type}:${courseId}:${key}`,
           JSON.stringify(payload),
+          project.backend_kind,
+          project.backend_binding_id,
         ],
       );
     });
@@ -404,7 +526,8 @@ export class CourseDomain {
     if (!/^[A-Za-z0-9._:-]{8,128}$/u.test(key)) throw new Error('invalid idempotency key');
     await transaction(this.pool, { userId }, async (client) => {
       const owned = await client.query(
-        'SELECT id FROM course.learner_homeworks WHERE id = $1 AND user_id = $2',
+        `SELECT id, backend_kind, backend_binding_id
+         FROM course.learner_homeworks WHERE id = $1 AND user_id = $2`,
         [homeworkId, userId],
       );
       if (!owned.rowCount) {
@@ -414,10 +537,19 @@ export class CourseDomain {
       }
       await client.query(
         `INSERT INTO course.command_outbox
-          (user_id, learner_homework_id, command_type, idempotency_key, payload)
-         VALUES ($1, $2, $3, $4, $5::jsonb)
+          (user_id, learner_homework_id, command_type, idempotency_key, payload,
+           backend_kind, backend_binding_id)
+         VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7)
          ON CONFLICT (idempotency_key) DO NOTHING`,
-        [userId, homeworkId, type, `${type}:${homeworkId}:${key}`, JSON.stringify(payload)],
+        [
+          userId,
+          homeworkId,
+          type,
+          `${type}:${homeworkId}:${key}`,
+          JSON.stringify(payload),
+          owned.rows[0].backend_kind,
+          owned.rows[0].backend_binding_id,
+        ],
       );
     });
     await this.dispatcher.drainUser(userId);

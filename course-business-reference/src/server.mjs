@@ -280,6 +280,23 @@ const server = createServer(async (req, res) => {
       const course = await domain.course(auth.user.id, courseMatch[1]);
       return course ? json(res, 200, { course }) : json(res, 404, { error: 'Not found.' });
     }
+    const courseBackendMatch = url.pathname.match(
+      /^\/api\/courses\/([0-9a-f-]{36})\/backend$/u,
+    );
+    if (req.method === 'POST' && courseBackendMatch) {
+      requireOrigin(req);
+      const auth = await requireAuth(req);
+      requireCsrf(req, auth);
+      const input = await body(req);
+      const backendKind = await requireCourseBackend(input);
+      const course = await domain.switchCourseBackend(
+        auth.user.id,
+        courseBackendMatch[1],
+        backendKind,
+        req.headers['idempotency-key'],
+      );
+      return json(res, 200, { course });
+    }
     const courseActionMatch = url.pathname.match(
       /^\/api\/courses\/([0-9a-f-]{36})\/actions\/(generate|revise)$/u,
     );

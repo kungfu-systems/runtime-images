@@ -33,7 +33,9 @@ export class OutboxDispatcher {
           [this.processingStaleSeconds],
         );
         const selected = await client.query(
-          `SELECT o.*, h.backend_binding_id, h.backend_kind, h.course_project_id
+          `SELECT o.*, h.course_project_id,
+                  h.backend_kind AS current_backend_kind,
+                  h.backend_binding_id AS current_backend_binding_id
            FROM course.command_outbox o
            JOIN course.learner_homeworks h ON h.id = o.learner_homework_id
            WHERE o.state = 'pending' AND o.available_at <= now()
@@ -119,9 +121,23 @@ export class OutboxDispatcher {
             `UPDATE course.learner_homeworks
              SET backend_binding_id = $2, projected_status = $3,
                  projection_version = $4, updated_at = now()
-             WHERE id = $1`,
-            [message.learner_homework_id, view.bindingId, view.status, view.transitionId],
+             WHERE id = $1 AND backend_kind = $5`,
+            [
+              message.learner_homework_id,
+              view.bindingId,
+              view.status,
+              view.transitionId,
+              message.backend_kind,
+            ],
           );
+          if (message.command_type === 'provision') {
+            await client.query(
+              `UPDATE course.course_backend_switches
+               SET new_binding_id = $2, completed_at = now()
+               WHERE provision_command_id = $1`,
+              [message.id, view.bindingId],
+            );
+          }
           await client.query(
             `UPDATE course.command_outbox
              SET state = 'delivered', delivered_at = now(), last_error = NULL
@@ -143,8 +159,8 @@ export class OutboxDispatcher {
             `UPDATE course.learner_homeworks
              SET projected_status = CASE WHEN $2 >= 5 THEN 'failed' ELSE projected_status END,
                  updated_at = now()
-             WHERE id = $1`,
-            [message.learner_homework_id, message.attempts + 1],
+             WHERE id = $1 AND backend_kind = $3`,
+            [message.learner_homework_id, message.attempts + 1, message.backend_kind],
           );
         });
         return;
