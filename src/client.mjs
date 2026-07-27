@@ -15,6 +15,14 @@ export class HubStarterClient {
     return this.#request('/api/settle', { method: 'POST' });
   }
 
+  async submitClaim() {
+    return this.#request('/api/coursework/claim', { method: 'POST' });
+  }
+
+  async submitEvidence() {
+    return this.#request('/api/coursework/evidence', { method: 'POST' });
+  }
+
   async #request(path, init = {}) {
     const response = await this.fetch(`${this.baseUrl}${path}`, {
       ...init,

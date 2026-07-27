@@ -42,8 +42,8 @@ const server = createServer(async (request, response) => {
       const readyPhases = new Set([
         'executing',
         'stage-ready',
-        'claimed-complete',
-        'reviewed',
+        'completion-claimed',
+        'independently-reviewed',
         'continuation-decided',
       ]);
       const ready = readyPhases.has(status.phase);
@@ -63,6 +63,14 @@ const server = createServer(async (request, response) => {
     }
     if (request.method === 'POST' && url.pathname === '/api/settle') {
       sendJson(response, 200, await runtime.settleDemo());
+      return;
+    }
+    if (request.method === 'POST' && url.pathname === '/api/coursework/claim') {
+      sendJson(response, 200, await runtime.submitFirstAttempt());
+      return;
+    }
+    if (request.method === 'POST' && url.pathname === '/api/coursework/evidence') {
+      sendJson(response, 200, await runtime.submitEvidenceAttempt());
       return;
     }
     if (request.method === 'GET' && (url.pathname === '/' || url.pathname === '/index.html')) {

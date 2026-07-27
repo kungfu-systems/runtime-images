@@ -4,3 +4,4 @@ node_modules/
 .artifacts/
 .env
 kungfu-episodes-cli-linux-x64.tar.gz
+kungfu-episodes-cli-linux-arm64.tar.gz

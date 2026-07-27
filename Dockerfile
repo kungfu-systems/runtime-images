@@ -1,44 +1,45 @@
 # syntax=docker/dockerfile:1.7
 # SPDX-License-Identifier: Apache-2.0
 
-ARG BUILD_IMAGE=ghcr.io/kungfu-systems/build-images/kungfu-verify@sha256:cb6d939d567c129903d6e3ad858e2c09a9475b3b8f81b1aad10279d0e63a920d
-ARG RUNTIME_IMAGE=node:24-trixie-slim@sha256:5301bbf5e8046148348b1dea15436326f43c579031f8d76654a631225bdfe467
+ARG RUNTIME_IMAGE=node:24-trixie-slim@sha256:ae91dcc111a68c9d2d81ff2a17bda61be126426176fde6fe7d08ab13b7f50573
 
-FROM ${BUILD_IMAGE} AS package
-ARG KUNGFU_PACKAGE_SHA256
+FROM ${RUNTIME_IMAGE} AS package
+ARG TARGETARCH
+ARG KUNGFU_PACKAGE_SHA256_AMD64
+ARG KUNGFU_PACKAGE_SHA256_ARM64
 ARG KUNGFU_PACKAGE_VERSION
 ARG KUNGFU_SOURCE_SHA
 USER root
 COPY kungfu-episodes-cli-linux-x64.tar.gz /tmp/kungfu-episodes-cli-linux-x64.tar.gz
+COPY kungfu-episodes-cli-linux-arm64.tar.gz /tmp/kungfu-episodes-cli-linux-arm64.tar.gz
 RUN set -eu; \
-    test -n "${KUNGFU_PACKAGE_SHA256}"; \
+    case "${TARGETARCH}" in \
+      amd64) package_platform=linux-x64; package_arch=x64; package_sha="${KUNGFU_PACKAGE_SHA256_AMD64}" ;; \
+      arm64) package_platform=linux-arm64; package_arch=arm64; package_sha="${KUNGFU_PACKAGE_SHA256_ARM64}" ;; \
+      *) echo "unsupported target architecture: ${TARGETARCH}" >&2; exit 64 ;; \
+    esac; \
+    package_archive="/tmp/kungfu-episodes-cli-${package_platform}.tar.gz"; \
+    test -n "${package_sha}"; \
     test -n "${KUNGFU_PACKAGE_VERSION}"; \
     printf '%s' "${KUNGFU_SOURCE_SHA}" | grep -Eq '^[0-9a-f]{40}$'; \
-    echo "${KUNGFU_PACKAGE_SHA256}  /tmp/kungfu-episodes-cli-linux-x64.tar.gz" | sha256sum -c -; \
+    echo "${package_sha}  ${package_archive}" | sha256sum -c -; \
     mkdir -p /opt/kungfu; \
-    tar -xzf /tmp/kungfu-episodes-cli-linux-x64.tar.gz -C /opt/kungfu --strip-components=1; \
-    rm /tmp/kungfu-episodes-cli-linux-x64.tar.gz; \
-    jq -e --arg version "${KUNGFU_PACKAGE_VERSION}" \
-      '.schema == "kungfu.product.cli/v1" and .platform == "linux-x64" and .entries.kungfu != null' \
-      /opt/kungfu/product.json >/dev/null; \
-    jq -e --arg source "${KUNGFU_SOURCE_SHA}" --arg version "${KUNGFU_PACKAGE_VERSION}" \
-      '.schema == "kungfu.product.compatibility/v1" and .source_commit == $source and .versions.product == $version' \
-      /opt/kungfu/runtime/product-compatibility.json >/dev/null; \
-    jq -e --arg source "${KUNGFU_SOURCE_SHA}" --arg version "${KUNGFU_PACKAGE_VERSION}" \
-      '.schema == "kungfu.product-upgrade.manifest/v1" and .sourceCommit == $source and .productVersion == $version and .platform == "linux" and .architecture == "x64"' \
-      /opt/kungfu/upgrade/kungfu-release-manifest.json >/dev/null; \
-    entry=$(jq -r '.entries.kungfu' /opt/kungfu/product.json); \
+    tar -xzf "${package_archive}" -C /opt/kungfu --strip-components=1; \
+    node -e 'const p=require(process.argv[1]); if(p.schema!=="kungfu.product.cli/v1"||p.platform!==process.argv[2]||!p.entries?.kungfu) process.exit(1)' /opt/kungfu/product.json "${package_platform}"; \
+    node -e 'const p=require(process.argv[1]); if(p.schema!=="kungfu.product.compatibility/v1"||p.source_commit!==process.argv[2]||p.versions?.product!==process.argv[3]) process.exit(1)' /opt/kungfu/runtime/product-compatibility.json "${KUNGFU_SOURCE_SHA}" "${KUNGFU_PACKAGE_VERSION}"; \
+    node -e 'const p=require(process.argv[1]); if(p.schema!=="kungfu.product-upgrade.manifest/v1"||p.sourceCommit!==process.argv[2]||p.productVersion!==process.argv[3]||p.platform!=="linux"||p.architecture!==process.argv[4]) process.exit(1)' /opt/kungfu/upgrade/kungfu-release-manifest.json "${KUNGFU_SOURCE_SHA}" "${KUNGFU_PACKAGE_VERSION}" "${package_arch}"; \
+    entry=$(node -e 'process.stdout.write(require(process.argv[1]).entries.kungfu)' /opt/kungfu/product.json); \
     case "${entry}" in /*|../*|*/../*|*/..) exit 66 ;; esac; \
     test -x "/opt/kungfu/${entry}"; \
     test "${entry}" = kungfu; \
     chmod -R a-w /opt/kungfu
 
 FROM ${RUNTIME_IMAGE} AS runtime
-ARG KUNGFU_PACKAGE_SHA256
+ARG TARGETPLATFORM
+ARG KUNGFU_PACKAGE_SHA256_AMD64
+ARG KUNGFU_PACKAGE_SHA256_ARM64
 ARG KUNGFU_PACKAGE_VERSION
 ARG KUNGFU_SOURCE_SHA
-ARG BUILD_IMAGES_SHA=3056c23e70b83f5bb63062f04027a93e79039e4b
-ARG BUILD_IMAGE_DIGEST=sha256:cb6d939d567c129903d6e3ad858e2c09a9475b3b8f81b1aad10279d0e63a920d
 ARG SOURCE_REVISION
 
 LABEL org.opencontainers.image.title="Kungfu Hub Starter" \
@@ -48,9 +49,9 @@ LABEL org.opencontainers.image.title="Kungfu Hub Starter" \
       org.opencontainers.image.licenses="Apache-2.0" \
       tech.kungfu.product.version="${KUNGFU_PACKAGE_VERSION}" \
       tech.kungfu.product.source="${KUNGFU_SOURCE_SHA}" \
-      tech.kungfu.product.package.sha256="${KUNGFU_PACKAGE_SHA256}" \
-      tech.kungfu.build-images.source="${BUILD_IMAGES_SHA}" \
-      tech.kungfu.build-image.digest="${BUILD_IMAGE_DIGEST}" \
+      tech.kungfu.product.package.amd64.sha256="${KUNGFU_PACKAGE_SHA256_AMD64}" \
+      tech.kungfu.product.package.arm64.sha256="${KUNGFU_PACKAGE_SHA256_ARM64}" \
+      tech.kungfu.runtime.platform="${TARGETPLATFORM}" \
       tech.kungfu.hub-starter.contract="kungfu.hub-starter-runtime/v1" \
       tech.kungfu.release.channel="development-pre-alpha"
 
@@ -61,7 +62,8 @@ ENV NODE_ENV=production \
     KUNGFU_INSTALL_SOURCE=archive \
     KUNGFU_DIR=/opt/kungfu \
     KUNGFU_UPGRADE_MANIFEST=/opt/kungfu/upgrade/kungfu-release-manifest.json \
-    KUNGFU_PACKAGE_SHA256=${KUNGFU_PACKAGE_SHA256} \
+    KUNGFU_PACKAGE_SHA256_AMD64=${KUNGFU_PACKAGE_SHA256_AMD64} \
+    KUNGFU_PACKAGE_SHA256_ARM64=${KUNGFU_PACKAGE_SHA256_ARM64} \
     KUNGFU_SOURCE_SHA=${KUNGFU_SOURCE_SHA}
 
 COPY --from=package --chown=root:root /opt/kungfu /opt/kungfu

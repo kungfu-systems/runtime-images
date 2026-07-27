@@ -17,7 +17,6 @@ port_b=18082
 cleanup() {
   docker rm -f "${container_a}" "${container_b}" >/dev/null 2>&1 || true
   docker network rm "${network}" >/dev/null 2>&1 || true
-  docker volume rm "${volume_a}" "${volume_b}" >/dev/null 2>&1 || true
 }
 trap cleanup EXIT
 
@@ -74,14 +73,29 @@ test -n "${identity_b}"
 test "${identity_a}" != "${identity_b}"
 test "${assignment_a}" != "${assignment_b}"
 
-settlement=$(curl --fail --silent --request POST "http://127.0.0.1:${port_a}/api/settle")
-jq -e '.stateRoot | startswith("sha256:")' <<<"${settlement}" >/dev/null
+first_round=$(curl --fail --silent --request POST "http://127.0.0.1:${port_a}/api/coursework/claim")
+jq -e '
+  .coursework.outcome.state == "needs-evidence" and
+  .coursework.independentCheck.verdict == "insufficient" and
+  .coursework.audit.latestDecision == "request-evidence" and
+  .coursework.submission.evidenceCount == 0 and
+  .settlement == null
+' <<<"${first_round}" >/dev/null
+
+second_round=$(curl --fail --silent --request POST "http://127.0.0.1:${port_a}/api/coursework/evidence")
+jq -e '
+  .coursework.outcome.state == "accepted" and
+  .coursework.independentCheck.verdict == "fit" and
+  .coursework.audit.latestDecision == "close" and
+  .coursework.submission.evidenceCount == 1 and
+  (.coursework.audit.stateRoot | startswith("sha256:"))
+' <<<"${second_round}" >/dev/null
 
 docker restart "${container_a}" >/dev/null
 wait_ready "${port_a}"
 restarted_a=$(curl --fail --silent "http://127.0.0.1:${port_a}/api/state")
 test "$(jq -r '.instance.instanceId' <<<"${restarted_a}")" = "${identity_a}"
-jq -e '.settlement.stateRoot | startswith("sha256:")' <<<"${restarted_a}" >/dev/null
+jq -e '.coursework.outcome.state == "accepted" and (.settlement.stateRoot | startswith("sha256:"))' <<<"${restarted_a}" >/dev/null
 
 test "$(curl --silent --output /dev/null --write-out '%{http_code}' "http://127.0.0.1:${port_b}/api/tenants/${identity_a}")" = 404
 test "$(docker inspect --format '{{.Config.User}}' "${container_a}")" = node
@@ -97,8 +111,10 @@ jq -n \
   --arg instanceB "${identity_b}" \
   --arg assignmentA "${assignment_a}" \
   --arg assignmentB "${assignment_b}" \
-  --arg stateRoot "$(jq -r '.stateRoot' <<<"${settlement}")" \
-  '{schema:$schema,image:$image,instances:[{id:$instanceA,assignment:$assignmentA},{id:$instanceB,assignment:$assignmentB}],restartIdentityStable:true,crossTenantReadRejected:true,security:{nonRoot:true,readOnlyRoot:true,privileged:false,capabilityAdditions:false},settlementStateRoot:$stateRoot}' \
+  --arg stateRoot "$(jq -r '.coursework.audit.stateRoot' <<<"${second_round}")" \
+  --arg retainedVolumeA "${volume_a}" \
+  --arg retainedVolumeB "${volume_b}" \
+  '{schema:$schema,image:$image,instances:[{id:$instanceA,assignment:$assignmentA},{id:$instanceB,assignment:$assignmentB}],coursework:{firstRound:"insufficient",firstDecision:"request-evidence",secondRound:"fit",secondDecision:"close",evidenceEpisodeCount:1},restartIdentityStable:true,crossTenantReadRejected:true,security:{nonRoot:true,readOnlyRoot:true,privileged:false,capabilityAdditions:false},settlementStateRoot:$stateRoot,retainedVolumes:[$retainedVolumeA,$retainedVolumeB]}' \
   >"${evidence_path}"
 
-echo "[smoke] two-instance isolation, restart persistence, settlement, and runtime security passed"
+echo "[smoke] two-round coursework, two-instance isolation, restart persistence, and runtime security passed; named state volumes retained"
