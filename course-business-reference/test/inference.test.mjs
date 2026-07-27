@@ -155,6 +155,10 @@ test('OpenAI-compatible request pins a structured course-outline response', () =
   assert.equal(request.response_format.json_schema.schema.properties.positioning.maxLength, undefined);
   assert.equal(request.seed, createOutlineRequest(inferenceConfig, command).seed);
   assert.match(request.messages[1].content, /untrusted course data/u);
+  assert.match(request.messages[1].content, /working title is only a project label/u);
+  assert.match(request.messages[1].content, /learner problem and promised outcome define/u);
+  assert.match(request.messages[1].content, /Every module must directly move the target learner/u);
+  assert.match(request.messages[1].content, /do not merely repeat or rename/u);
 });
 
 test('alternative generation is explicitly distinct without receiving a prior outline', () => {
