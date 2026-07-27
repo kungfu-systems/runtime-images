@@ -3,9 +3,11 @@ import { AGENT_WORK_CONTRACT } from './agent-work-port.mjs';
 import { transaction } from './db.mjs';
 
 export class OutboxDispatcher {
-  constructor(pool, agentWorkPort) {
+  constructor(pool, agentWorkPort, hooks = {}) {
     this.pool = pool;
     this.agentWorkPort = agentWorkPort;
+    this.hooks = hooks;
+    this.processingStaleSeconds = hooks.processingStaleSeconds ?? 30;
     this.running = false;
   }
 
@@ -26,7 +28,9 @@ export class OutboxDispatcher {
         await client.query(
           `UPDATE course.command_outbox
            SET state = 'pending', locked_at = NULL
-           WHERE state = 'processing' AND locked_at < now() - interval '30 seconds'`,
+           WHERE state = 'processing'
+             AND locked_at < now() - ($1 * interval '1 second')`,
+          [this.processingStaleSeconds],
         );
         const selected = await client.query(
           `SELECT o.*, h.backend_binding_id
@@ -48,6 +52,7 @@ export class OutboxDispatcher {
       });
       if (!message) return;
       try {
+        await this.hooks.beforeExecute?.(message);
         const view = await this.agentWorkPort.execute({
           contract: AGENT_WORK_CONTRACT,
           type: message.command_type,
@@ -56,6 +61,7 @@ export class OutboxDispatcher {
           bindingId: message.backend_binding_id,
           payload: message.payload,
         });
+        await this.hooks.afterExecute?.(message, view);
         await transaction(this.pool, { userId }, async (client) => {
           await client.query(
             `UPDATE course.learner_homeworks

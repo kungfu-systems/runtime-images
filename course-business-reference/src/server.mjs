@@ -8,12 +8,13 @@ import { initializeDatabase } from './db.mjs';
 import { CourseDomain } from './domain.mjs';
 import { MockAgentWorkAdapter } from './mock-agent-work-adapter.mjs';
 import { OutboxDispatcher } from './outbox.mjs';
+import { createQualificationFaults } from './qualification-faults.mjs';
 import { createRateLimiter } from './security.mjs';
 
 const config = loadConfig();
 const pool = await initializeDatabase(config);
 const agentWorkPort = new MockAgentWorkAdapter(pool);
-const dispatcher = new OutboxDispatcher(pool, agentWorkPort);
+const dispatcher = new OutboxDispatcher(pool, agentWorkPort, createQualificationFaults(config));
 const domain = new CourseDomain(pool, agentWorkPort, dispatcher, config);
 const webRoot = fileURLToPath(new URL('../web/', import.meta.url));
 const authLimit = createRateLimiter({ limit: 10, windowMs: 5 * 60_000 });
