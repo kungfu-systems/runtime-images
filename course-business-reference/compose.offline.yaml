@@ -57,6 +57,8 @@ services:
       - --parallel
       - "1"
       - --jinja
+      - --reasoning
+      - "off"
     depends_on:
       model-init:
         condition: service_completed_successfully
