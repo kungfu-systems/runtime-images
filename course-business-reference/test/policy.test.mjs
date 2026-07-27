@@ -141,6 +141,7 @@ test('course backend switches preserve command routing and historical provenance
   assert.match(domain, /switchCourseBackend/u);
   assert.match(domain, /state IN \('pending','processing'\)/u);
   assert.match(domain, /backend_kind, backend_binding_id/u);
+  assert.match(domain, /type === 'revise_outline'/u);
   assert.match(outbox, /WHERE id = \$1 AND backend_kind = \$5/u);
   assert.match(outbox, /provision_command_id/u);
   assert.match(server, /courseBackendMatch/u);

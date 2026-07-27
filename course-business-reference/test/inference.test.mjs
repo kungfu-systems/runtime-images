@@ -157,6 +157,22 @@ test('OpenAI-compatible request pins a structured course-outline response', () =
   assert.match(request.messages[1].content, /untrusted course data/u);
 });
 
+test('alternative generation is explicitly distinct without receiving a prior outline', () => {
+  const request = createOutlineRequest(inferenceConfig, {
+    ...command,
+    idempotencyKey: 'alternative:stable-key',
+    payload: {
+      ...command.payload,
+      previousVersionId: 'version-1',
+      previousOutline: null,
+    },
+  });
+  const prompt = request.messages[1].content;
+  assert.match(prompt, /MODE: alternative/u);
+  assert.match(prompt, /materially different learning route/u);
+  assert.match(prompt, /earlier outline is intentionally omitted/u);
+});
+
 test('OpenAI-compatible response becomes the existing business-owned outline shape', () => {
   const parsed = parseOutlineResponse({
     choices: [{ message: { content: JSON.stringify(outline) } }],

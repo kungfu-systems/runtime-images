@@ -421,7 +421,9 @@ export class CourseDomain {
         creatorExpertise: project.creator_expertise,
         deliveryConstraints: project.delivery_constraints,
         previousVersionId: latest.rows[0]?.id ?? null,
-        previousOutline: latest.rows[0]?.outline ?? null,
+        previousOutline: type === 'revise_outline'
+          ? latest.rows[0]?.outline ?? null
+          : null,
         feedback: type === 'revise_outline'
           ? bounded(input.feedback, 'revision feedback', 1, 1000)
           : '',
