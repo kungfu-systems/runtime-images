@@ -2,9 +2,9 @@
 # SPDX-License-Identifier: Apache-2.0
 set -euo pipefail
 
-script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-project_dir=$(CDPATH= cd -- "${script_dir}/.." && pwd)
-repo_dir=$(CDPATH= cd -- "${project_dir}/.." && pwd)
+script_dir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
+project_dir=$(CDPATH='' cd -- "${script_dir}/.." && pwd)
+repo_dir=$(CDPATH='' cd -- "${project_dir}/.." && pwd)
 project_name=${COMPOSE_PROJECT_NAME:-kungfu-course-reference-qualification}
 
 : "${COURSE_DB_MIGRATION_PASSWORD:=synthetic_migration_42}"
