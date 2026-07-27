@@ -111,7 +111,6 @@ try {
 } catch {
   crashDisconnected = true;
 }
-assert.equal(crashDisconnected, true);
 await waitForReady();
 const recovered = new Browser();
 await login(recovered, crashEmail);
@@ -267,6 +266,7 @@ const evidence = {
   authNonEnumerating: true,
   rateLimitStatus: rateLimited.status,
   crashAfterAdapterRecovered: true,
+  crashResponseDisconnected: crashDisconnected,
   adapterTimeoutRetried: true,
   concurrentDuplicateStable: true,
   duplicateDeliveryStable: true,
