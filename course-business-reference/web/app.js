@@ -1,3 +1,5 @@
+import { randomUuid } from './random-uuid.js';
+
 const app = document.querySelector('#app');
 const account = document.querySelector('#account');
 let session = null;
@@ -22,7 +24,7 @@ async function request(path, options = {}) {
 }
 
 function idempotencyKey(action) {
-  return `${action}:${crypto.randomUUID()}`;
+  return `${action}:${randomUuid()}`;
 }
 
 function showAuth(message = '') {
