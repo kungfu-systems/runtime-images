@@ -63,6 +63,11 @@ test('course UI makes Agent contribution and work handoff visible', async () => 
   assert.match(browser, /version\.agentRun\?\.action/u);
   assert.match(browser, /Immutable version/u);
   assert.match(browser, /predates structured per-change reporting/u);
+  assert.match(browser, /Your brief — not AI-generated/u);
+  assert.match(browser, /LOCAL AI OUTPUT STARTS HERE/u);
+  assert.match(browser, /MOCK TEMPLATE OUTPUT STARTS HERE/u);
+  assert.match(browser, /Everything below was returned by/u);
+  assert.match(browser, /not system-prefilled copy/u);
 });
 
 test('course UI accepts placeholder examples with Tab and explains staged actions', async () => {
@@ -125,6 +130,9 @@ test('course UI exposes persistent backend binding and unmistakable local AI out
   assert.match(browser, /data-selected-runtime-panel="dashboard"/u);
   assert.match(styles, /\.ai-output-hero\.local/u);
   assert.match(styles, /\.ai-generated-content\.local/u);
+  assert.match(styles, /\.saved-input-source/u);
+  assert.match(styles, /\.output-boundary\.local/u);
+  assert.match(styles, /\.generated-section-badge/u);
 });
 
 test('course backend switches preserve command routing and historical provenance', async () => {
