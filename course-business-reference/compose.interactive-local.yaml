@@ -1,0 +1,65 @@
+name: kungfu-course-business-reference
+
+x-course-model:
+  url: &course-model-url https://huggingface.co/unsloth/Qwen3-0.6B-GGUF/resolve/50968a4468ef4233ed78cd7c3de230dd1d61a56b/Qwen3-0.6B-Q4_K_M.gguf
+  sha256: &course-model-sha256 ac2d97712095a558e31573f62f466a3f9d93990898b0ec79d7c974c1780d524a
+  bytes: &course-model-bytes "396705472"
+  path: &course-model-path /models/Qwen3-0.6B-Q4_K_M.gguf
+
+services:
+  llama:
+    image: ${COURSE_LLAMA_IMAGE:-ghcr.io/ggml-org/llama.cpp:server@sha256:a576442ad3649c0b5ea74e20ad29a17c121117f32607cfe59ff27cc38066f874}
+    restart: unless-stopped
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    entrypoint:
+      - /bin/sh
+      - -euc
+    command:
+      - |
+        model=/models/Qwen3-0.6B-Q4_K_M.gguf
+        echo "Waiting for the user-installed local model."
+        while [ ! -f "$$model" ]; do sleep 2; done
+        echo "Verified model appeared; starting the private inference server."
+        exec /app/llama-server \
+          --model "$$model" \
+          --alias Qwen3-0.6B-Q4_K_M \
+          --host 0.0.0.0 \
+          --port 8080 \
+          --ctx-size 4096 \
+          --parallel 1 \
+          --jinja \
+          --reasoning off \
+          --chat-template-kwargs '{"enable_thinking":false}'
+    volumes:
+      - course-models:/models:ro
+    networks:
+      - course-private
+
+  app:
+    environment:
+      AGENT_WORK_BACKEND: mock
+      AGENT_WORK_BASE_URL: http://llama:8080/v1
+      AGENT_WORK_MODEL: Qwen3-0.6B-Q4_K_M
+      AGENT_WORK_PROVIDER_LABEL: Local Qwen
+      AGENT_WORK_DELIVERY: local
+      AGENT_WORK_API_KEY_FILE: ""
+      AGENT_WORK_TIMEOUT_MS: ${COURSE_AGENT_TIMEOUT_MS:-180000}
+      COURSE_LOCAL_MODEL_MANAGEMENT: "true"
+      COURSE_LOCAL_MODEL_PATH: *course-model-path
+      COURSE_LOCAL_MODEL_URL: *course-model-url
+      COURSE_LOCAL_MODEL_SHA256: *course-model-sha256
+      COURSE_LOCAL_MODEL_BYTES: *course-model-bytes
+      COURSE_LOCAL_MODEL_SOURCE_LABEL: Hugging Face · pinned Qwen3 0.6B
+      COURSE_LOCAL_MODEL_SEED_FILE: ${COURSE_LOCAL_MODEL_SEED_FILE:-}
+    volumes:
+      - course-models:/models
+
+volumes:
+  course-models:
+    name: ${COURSE_MODELS_VOLUME:-kungfu-course-business-reference-models}

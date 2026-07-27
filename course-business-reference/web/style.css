@@ -15,7 +15,30 @@ button, input, textarea { font: inherit; }
 .topbar { min-height: 66px; padding: 0 5vw; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); background: rgba(255,253,247,.92); }
 .brand { color: var(--ink); text-decoration: none; font-weight: 800; letter-spacing: -.02em; }
 .brand span { color: var(--accent); font-weight: 500; }
+.topbar-actions { display: flex; gap: 18px; align-items: center; }
+#runtime-menu { position: relative; }
 #account { display: flex; gap: 18px; align-items: center; }
+.runtime-trigger { display: flex; gap: 8px; align-items: center; padding: 8px 12px; border: 1px solid var(--line); background: white; color: var(--ink); font-size: 12px; }
+.runtime-trigger:hover, .runtime-trigger.active { border-color: var(--teal); background: #edf5f2; }
+.runtime-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--teal); box-shadow: 0 0 0 3px rgba(11,107,92,.12); }
+.runtime-dot.mock { background: var(--accent); box-shadow: 0 0 0 3px rgba(232,93,63,.12); }
+.runtime-popover { position: absolute; z-index: 100; top: calc(100% + 12px); right: 0; display: none; width: min(420px, 90vw); padding: 22px; border: 1px solid var(--line); border-radius: 18px; background: var(--panel); box-shadow: 0 24px 70px rgba(19,35,31,.18); }
+.runtime-popover.open { display: block; animation: runtimeMenuIn .2s ease-out; }
+.runtime-popover h2 { margin: 6px 0 18px; font-family: Georgia, serif; font-size: 26px; font-weight: 500; }
+.runtime-choice { width: 100%; display: flex; gap: 16px; align-items: center; justify-content: space-between; margin-top: 10px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: white; color: var(--ink); text-align: left; }
+.runtime-choice:hover, .runtime-choice.selected { border-color: var(--teal); background: #edf5f2; }
+.runtime-choice span, .runtime-install > div { display: grid; gap: 4px; }
+.runtime-choice small, .runtime-install small { font-size: 11px; font-weight: 500; line-height: 1.35; }
+.runtime-choice em { color: var(--teal); font-size: 11px; font-style: normal; font-weight: 900; white-space: nowrap; }
+.runtime-install { display: grid; grid-template-columns: 1fr auto; gap: 10px 16px; align-items: center; margin-top: 10px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: white; }
+.runtime-install button { padding: 8px 12px; font-size: 11px; }
+.runtime-install > small, .runtime-install progress { grid-column: 1 / -1; width: 100%; }
+.runtime-install progress { height: 7px; accent-color: var(--teal); }
+.runtime-note { margin: 16px 2px 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
+@keyframes runtimeMenuIn {
+  from { opacity: 0; transform: translateY(-6px) scale(.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
 .simulation-banner { padding: 8px 5vw; background: var(--ink); color: #f8d7bd; text-align: center; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
 .simulation-banner.is-real { background: var(--teal); color: white; }
 main { width: min(1180px, 90vw); margin: 0 auto; padding: 64px 0 100px; }
@@ -173,6 +196,10 @@ details p, pre { color: var(--muted); line-height: 1.5; white-space: pre-wrap; o
 .success { color: var(--teal); font-weight: 800; }
 .loading { color: var(--muted); }
 @media (max-width: 760px) {
+  .topbar { align-items: flex-start; gap: 12px; padding-top: 14px; padding-bottom: 14px; }
+  .topbar-actions { align-items: flex-end; flex-direction: column-reverse; gap: 8px; }
+  .runtime-popover { position: fixed; top: 74px; right: 5vw; left: 5vw; width: auto; }
+  #account { font-size: 12px; }
   main { padding-top: 38px; }
   .hero, .auth-grid, .work-layout, .course-list, .course-head, .course-workspace { grid-template-columns: 1fr; }
   .dashboard-head { display: block; }

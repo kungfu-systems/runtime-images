@@ -3,7 +3,15 @@ import { randomUuid } from './random-uuid.js';
 const app = document.querySelector('#app');
 const account = document.querySelector('#account');
 const backendBanner = document.querySelector('#backend-banner');
+const runtimeMenu = document.querySelector('#runtime-menu');
 let session = null;
+let runtimeState = {
+  defaultBackend: 'mock',
+  backends: {},
+};
+let selectedBackend = localStorage.getItem('course-agent-backend') || 'mock';
+let runtimeMenuOpen = false;
+let runtimePoll = null;
 let backendState = {
   kind: 'mock',
   label: 'Visible Mock Agent',
@@ -24,6 +32,142 @@ function updateBackend(value) {
     ? 'Visible Mock Agent · deterministic development simulation · approved versions stay in PostgreSQL'
     : `${backendState.label} · ${backendState.delivery} inference · approved versions stay in PostgreSQL`;
 }
+
+function formatBytes(value) {
+  if (!Number.isFinite(value) || value <= 0) return '0 MB';
+  return `${(value / (1024 * 1024)).toFixed(value >= 1024 * 1024 * 1024 ? 1 : 0)} MB`;
+}
+
+function localStatusCopy(local) {
+  const model = local?.modelInstall;
+  if (!model) return 'This delivery does not include an optional local model.';
+  if (model.state === 'not-installed') {
+    return `${formatBytes(model.totalBytes)} · downloads only after you click`;
+  }
+  if (model.state === 'downloading') {
+    return `Downloading ${model.progress}% · ${formatBytes(model.bytes)} of ${formatBytes(model.totalBytes)}`;
+  }
+  if (model.state === 'verifying') return 'Download complete · verifying SHA-256';
+  if (model.state === 'installed' && !local.ready) return 'Installed and verified · starting local inference';
+  if (model.state === 'installed') return 'Installed, verified, and ready';
+  if (model.state === 'error') return model.error || 'Installation needs to be retried.';
+  return 'Checking local model status…';
+}
+
+function shouldPollRuntime() {
+  const local = runtimeState.backends['openai-compatible'];
+  return ['downloading', 'verifying', 'checking'].includes(local?.modelInstall?.state)
+    || (local?.modelInstall?.state === 'installed' && !local.ready);
+}
+
+function scheduleRuntimePoll() {
+  if (runtimePoll) clearTimeout(runtimePoll);
+  runtimePoll = shouldPollRuntime()
+    ? setTimeout(() => refreshRuntime({ keepOpen: true }).catch(() => {}), 1_000)
+    : null;
+}
+
+function renderRuntimeMenu() {
+  const mock = runtimeState.backends.mock ?? backendState;
+  const local = runtimeState.backends['openai-compatible'];
+  const selected = runtimeState.backends[selectedBackend] ?? mock;
+  updateBackend(selected);
+  const installed = local?.modelInstall?.state === 'installed';
+  const installing = ['downloading', 'verifying', 'checking'].includes(
+    local?.modelInstall?.state,
+  );
+  const installAction = !local
+    ? ''
+    : installed
+      ? `<button class="runtime-choice${selectedBackend === 'openai-compatible' ? ' selected' : ''}" data-runtime-select="openai-compatible" ${local.ready ? '' : 'disabled'}>
+          <span><strong>Local model</strong><small>${escapeHtml(localStatusCopy(local))}</small></span>
+          <em>${local.ready ? (selectedBackend === 'openai-compatible' ? 'In use' : 'Use local') : 'Starting…'}</em>
+        </button>`
+      : `<div class="runtime-install">
+          <div><strong>Local model</strong><small>${escapeHtml(localStatusCopy(local))}</small></div>
+          <button data-runtime-install ${installing || !session?.authenticated ? 'disabled' : ''}>
+            ${installing ? `${local.modelInstall.progress}%` : 'Download & install'}
+          </button>
+          ${session?.authenticated ? '' : '<small>Log in before installing on this instance.</small>'}
+          ${installing ? `<progress max="100" value="${local.modelInstall.progress}"></progress>` : ''}
+        </div>`;
+  runtimeMenu.innerHTML = `
+    <button class="runtime-trigger${runtimeMenuOpen ? ' active' : ''}" data-runtime-toggle aria-expanded="${runtimeMenuOpen}">
+      <span class="runtime-dot ${selectedBackend === 'mock' ? 'mock' : 'local'}"></span>
+      AI: ${escapeHtml(selectedBackend === 'mock' ? 'Mock' : 'Local model')}
+      <span aria-hidden="true">⌄</span>
+    </button>
+    <section class="runtime-popover${runtimeMenuOpen ? ' open' : ''}" aria-label="AI runtime">
+      <p class="step">AI runtime for new courses</p>
+      <h2>Choose how drafts are made</h2>
+      <button class="runtime-choice${selectedBackend === 'mock' ? ' selected' : ''}" data-runtime-select="mock">
+        <span><strong>Mock</strong><small>Instant deterministic simulation · no model download</small></span>
+        <em>${selectedBackend === 'mock' ? 'In use' : 'Use mock'}</em>
+      </button>
+      ${installAction}
+      <p class="runtime-note">The selection applies to courses you create next. Existing courses keep their original Agent binding.</p>
+    </section>`;
+  scheduleRuntimePoll();
+}
+
+async function refreshRuntime({ keepOpen = false } = {}) {
+  const { runtime } = await request('/api/runtime');
+  runtimeState = runtime;
+  if (!runtimeState.backends[selectedBackend]) {
+    selectedBackend = runtime.defaultBackend;
+    localStorage.setItem('course-agent-backend', selectedBackend);
+  }
+  if (
+    selectedBackend === 'openai-compatible'
+    && runtimeState.backends[selectedBackend]?.modelInstall?.state !== 'installed'
+  ) {
+    selectedBackend = 'mock';
+    localStorage.setItem('course-agent-backend', selectedBackend);
+  }
+  if (!keepOpen) runtimeMenuOpen = false;
+  renderRuntimeMenu();
+}
+
+function selectRuntime(kind) {
+  const backend = runtimeState.backends[kind];
+  if (!backend?.ready) return;
+  selectedBackend = kind;
+  localStorage.setItem('course-agent-backend', kind);
+  runtimeMenuOpen = false;
+  renderRuntimeMenu();
+}
+
+runtimeMenu.addEventListener('click', async (event) => {
+  event.stopPropagation();
+  const toggle = event.target.closest('[data-runtime-toggle]');
+  if (toggle) {
+    runtimeMenuOpen = !runtimeMenuOpen;
+    renderRuntimeMenu();
+    return;
+  }
+  const choice = event.target.closest('[data-runtime-select]');
+  if (choice) {
+    selectRuntime(choice.dataset.runtimeSelect);
+    return;
+  }
+  const install = event.target.closest('[data-runtime-install]');
+  if (install && !install.disabled) {
+    install.disabled = true;
+    try {
+      await request('/api/runtime/local-model/install', { method: 'POST', body: {} });
+      runtimeMenuOpen = true;
+      await refreshRuntime({ keepOpen: true });
+    } catch {
+      await refreshRuntime({ keepOpen: true });
+    }
+  }
+});
+
+document.addEventListener('click', () => {
+  if (!runtimeMenuOpen) return;
+  runtimeMenuOpen = false;
+  renderRuntimeMenu();
+});
 
 function activeAgentLabel() {
   return backendState.label || (backendState.simulated ? 'Visible Mock Agent' : 'Course Designer');
@@ -185,6 +329,7 @@ function wireAccount() {
   document.querySelector('#logout').addEventListener('click', async () => {
     await request('/api/logout', { method: 'POST', body: {} });
     session = null;
+    renderRuntimeMenu();
     showAuth();
   });
 }
@@ -232,7 +377,7 @@ function showAuth(message = '') {
       const data = Object.fromEntries(new FormData(event.currentTarget));
       try {
         session = await request(`/api/${mode}`, { method: 'POST', body: data });
-        updateBackend(session.agentBackend);
+        await refreshRuntime();
         await showCourses();
       } catch (error) {
         document.querySelector('#auth-error').textContent = error.message;
@@ -321,7 +466,10 @@ function showNewCourse(message = '') {
     try {
       const { course } = await request('/api/courses', {
         method: 'POST',
-        body: Object.fromEntries(new FormData(event.currentTarget)),
+        body: {
+          ...Object.fromEntries(new FormData(event.currentTarget)),
+          backendKind: selectedBackend,
+        },
       });
       await showCourse(course.id, 'Course created. Your brief is saved.');
     } catch (error) {
@@ -634,7 +782,7 @@ async function runAgentAction(
 
 try {
   session = await request('/api/session');
-  updateBackend(session.agentBackend);
+  await refreshRuntime();
   if (session.authenticated) await showCourses();
   else showAuth();
 } catch (error) {

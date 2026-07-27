@@ -9,6 +9,7 @@ import { CourseDomain } from './domain.mjs';
 import { AgentWorkRouter } from './agent-work-router.mjs';
 import { MockAgentWorkAdapter } from './mock-agent-work-adapter.mjs';
 import { OpenAICompatibleAgentWorkAdapter } from './openai-compatible-agent-work-adapter.mjs';
+import { LocalModelManager } from './local-model-manager.mjs';
 import { OutboxDispatcher } from './outbox.mjs';
 import { createQualificationFaults } from './qualification-faults.mjs';
 import { createRateLimiter } from './security.mjs';
@@ -16,16 +17,18 @@ import { createRateLimiter } from './security.mjs';
 const config = loadConfig();
 const pool = await initializeDatabase(config);
 const adapters = { mock: new MockAgentWorkAdapter(pool) };
-if (config.backend === 'openai-compatible') {
+if (config.inferences['openai-compatible']) {
   adapters['openai-compatible'] = new OpenAICompatibleAgentWorkAdapter(
     pool,
-    config.inference,
+    config.inferences['openai-compatible'],
   );
 }
 const agentWorkPort = new AgentWorkRouter({
   defaultBackend: config.backend,
   adapters,
 });
+const localModel = new LocalModelManager(config.localModel);
+await localModel.initialize();
 const dispatcher = new OutboxDispatcher(pool, agentWorkPort, createQualificationFaults(config));
 const domain = new CourseDomain(pool, agentWorkPort, dispatcher, config);
 const webRoot = fileURLToPath(new URL('../web/', import.meta.url));
@@ -72,16 +75,61 @@ function json(res, status, value, extra = {}) {
   res.end(JSON.stringify(value));
 }
 
-function backendDescription() {
+function backendDescription(kind = config.backend) {
   const {
-    kind,
+    kind: backendKind,
     label,
     provider,
     model,
     simulated,
     delivery,
-  } = config.inference;
-  return { kind, label, provider, model, simulated, delivery };
+  } = config.inferences[kind];
+  return { kind: backendKind, label, provider, model, simulated, delivery };
+}
+
+async function runtimeDescription() {
+  const model = localModel.publicStatus();
+  let localReady = false;
+  if (model.state === 'installed' && agentWorkPort.hasBackend('openai-compatible')) {
+    localReady = await agentWorkPort.health('openai-compatible').then(
+      () => true,
+      () => false,
+    );
+  }
+  return {
+    defaultBackend: config.backend,
+    backends: {
+      mock: {
+        ...backendDescription('mock'),
+        available: true,
+        ready: true,
+      },
+      ...(config.inferences['openai-compatible']
+        ? {
+          'openai-compatible': {
+            ...backendDescription('openai-compatible'),
+            available: model.state === 'installed',
+            ready: localReady,
+            modelInstall: model,
+          },
+        }
+        : {}),
+    },
+  };
+}
+
+async function requireCourseBackend(input) {
+  const kind = String(input.backendKind ?? config.backend);
+  if (!agentWorkPort.hasBackend(kind)) {
+    throw Object.assign(new Error('requested Agent backend is unavailable'), { status: 409 });
+  }
+  if (kind === 'openai-compatible') {
+    const runtime = await runtimeDescription();
+    if (!runtime.backends[kind]?.ready) {
+      throw Object.assign(new Error('local model is not ready'), { status: 409 });
+    }
+  }
+  return kind;
 }
 
 function sessionCookie(token, clear = false) {
@@ -163,6 +211,9 @@ const server = createServer(async (req, res) => {
         agentBackend: backendDescription(),
       });
     }
+    if (req.method === 'GET' && url.pathname === '/api/runtime') {
+      return json(res, 200, { runtime: await runtimeDescription() });
+    }
     if (req.method === 'GET' && url.pathname === '/api/session') {
       const auth = await domain.authenticate(cookies(req).course_session);
       return json(res, 200, auth
@@ -198,6 +249,14 @@ const server = createServer(async (req, res) => {
       await domain.logout(auth);
       return json(res, 200, { authenticated: false }, { 'set-cookie': sessionCookie('', true) });
     }
+    if (req.method === 'POST' && url.pathname === '/api/runtime/local-model/install') {
+      requireOrigin(req);
+      const auth = await requireAuth(req);
+      requireCsrf(req, auth);
+      await body(req);
+      await localModel.install();
+      return json(res, 202, { runtime: await runtimeDescription() });
+    }
     if (req.method === 'GET' && url.pathname === '/api/homeworks') {
       const auth = await requireAuth(req);
       return json(res, 200, { homeworks: await domain.listHomeworks(auth.user.id) });
@@ -210,7 +269,9 @@ const server = createServer(async (req, res) => {
       requireOrigin(req);
       const auth = await requireAuth(req);
       requireCsrf(req, auth);
-      const course = await domain.createCourse(auth.user.id, await body(req));
+      const input = await body(req);
+      const backendKind = await requireCourseBackend(input);
+      const course = await domain.createCourse(auth.user.id, input, backendKind);
       return json(res, 201, { course });
     }
     const courseMatch = url.pathname.match(/^\/api\/courses\/([0-9a-f-]{36})$/u);
