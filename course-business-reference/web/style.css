@@ -129,6 +129,7 @@ button:disabled { opacity: .55; cursor: wait; }
 .agent-card .course-backend { margin-bottom: 6px; }
 .agent-card p { color: var(--muted); line-height: 1.55; }
 .secondary-action { width: 100%; margin-top: 10px; background: transparent; color: var(--teal); border: 1px solid var(--teal); }
+.secondary-action:hover { color: white; }
 .version-history { margin-top: 18px; }
 .version-button { width: 100%; display: flex; justify-content: space-between; margin-top: 8px; background: transparent; color: var(--ink); border: 1px solid var(--line); border-radius: 10px; }
 .version-button.active, .version-button:hover { color: white; background: var(--teal); }
