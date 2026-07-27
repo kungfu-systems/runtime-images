@@ -82,6 +82,8 @@ test('course UI accepts placeholder examples with Tab and explains staged action
   assert.match(browser, /backendState/u);
   assert.match(browser, /Approving version/u);
   assert.match(browser, /Improving your course outline/u);
+  assert.match(browser, /newest\.id === previousNewestId/u);
+  assert.match(browser, /did not return a new outline/u);
   assert.match(styles, /workflowStageIn/u);
   assert.match(styles, /workflowStageOut/u);
   assert.match(styles, /prefers-reduced-motion/u);

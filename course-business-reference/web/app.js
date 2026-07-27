@@ -535,9 +535,9 @@ async function showCourse(id, message = '', selectedVersionId = null) {
     button.addEventListener('click', () => showCourse(id, '', button.dataset.versionId));
   }
   document.querySelector('#generate')?.addEventListener('click', () =>
-    runAgentAction(id, 'generate', {}, false, agentLabel));
+    runAgentAction(id, 'generate', {}, false, agentLabel, course.versions[0]?.id ?? null));
   document.querySelector('#generate-again')?.addEventListener('click', () =>
-    runAgentAction(id, 'generate', {}, true, agentLabel));
+    runAgentAction(id, 'generate', {}, true, agentLabel, course.versions[0]?.id ?? null));
   const reviseForm = document.querySelector('#revise-form');
   if (reviseForm) wireTabPlaceholderAcceptance(reviseForm);
   reviseForm?.addEventListener('submit', (event) => {
@@ -548,6 +548,7 @@ async function showCourse(id, message = '', selectedVersionId = null) {
       Object.fromEntries(new FormData(event.currentTarget)),
       true,
       agentLabel,
+      course.versions[0]?.id ?? null,
     );
   });
   document.querySelector('#approve')?.addEventListener('click', async (event) => {
@@ -580,6 +581,7 @@ async function runAgentAction(
   body,
   hasExistingVersion = true,
   requestedAgentLabel = activeAgentLabel(),
+  previousNewestId = null,
 ) {
   const controls = app.querySelectorAll('button, textarea');
   controls.forEach((control) => { control.disabled = true; });
@@ -614,7 +616,10 @@ async function runAgentAction(
         body,
       }),
     });
-    const newest = course.versions[0];
+    const newest = course?.versions?.[0];
+    if (!newest || newest.id === previousNewestId) {
+      throw new Error(`${agentLabel} did not return a new outline. Please try again.`);
+    }
     await showCourse(
       id,
       action === 'generate'
