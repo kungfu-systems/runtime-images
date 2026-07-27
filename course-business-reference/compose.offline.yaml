@@ -36,7 +36,7 @@ services:
       - course-private
 
   llama:
-    image: ghcr.io/ggml-org/llama.cpp:server@sha256:a576442ad3649c0b5ea74e20ad29a17c121117f32607cfe59ff27cc38066f874
+    image: ${COURSE_LLAMA_IMAGE:-ghcr.io/ggml-org/llama.cpp:server@sha256:a576442ad3649c0b5ea74e20ad29a17c121117f32607cfe59ff27cc38066f874}
     restart: unless-stopped
     read_only: true
     security_opt:
