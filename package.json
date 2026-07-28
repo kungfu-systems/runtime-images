@@ -1,7 +1,7 @@
 {
   "name": "@kungfu-tech/hub-starter-runtime",
   "version": "0.1.0-alpha.1",
-  "description": "Docker-first development runtime for exploring Kungfu-managed work.",
+  "description": "Unified PostgreSQL Course Hub with selectable inference and Kungfu-managed work.",
   "license": "Apache-2.0",
   "private": true,
   "type": "module",

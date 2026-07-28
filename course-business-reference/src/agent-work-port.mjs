@@ -49,6 +49,8 @@ export function assertCommand(command) {
 export function backendKindForBinding(bindingId) {
   const value = String(bindingId ?? '');
   if (value.startsWith('mock:')) return 'mock';
+  if (value.startsWith('openai:hosted:')) return 'hosted';
+  if (value.startsWith('openai:openai-compatible:')) return 'openai-compatible';
   if (value.startsWith('openai:')) return 'openai-compatible';
   throw new Error('unsupported AgentWorkPort binding');
 }

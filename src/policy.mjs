@@ -24,8 +24,10 @@ export function validateComposeText(text) {
   for (const required of [
     'read_only: true',
     'no-new-privileges:true',
-    '127.0.0.1:${HUB_PORT:-8080}:8080',
+    '${HUB_BIND_ADDRESS:-127.0.0.1}:${HUB_PORT:-8080}:8080',
     'hub-state:/state',
+    'course-models:/models',
+    'course-postgres:/var/lib/postgresql/data',
     'driver: bridge',
   ]) {
     if (!text.includes(required)) throw new Error(`compose safety invariant missing: ${required}`);

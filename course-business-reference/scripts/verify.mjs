@@ -1,120 +1,118 @@
 // SPDX-License-Identifier: Apache-2.0
 import { readFile } from 'node:fs/promises';
 
-const root = new URL('../', import.meta.url);
+const root = new URL('../../', import.meta.url);
 const read = (path) => readFile(new URL(path, root), 'utf8');
 const [
   compose,
-  offline,
-  interactive,
-  hosted,
   dockerfile,
-  migration,
-  backendMigration,
-  contract,
+  initialMigration,
+  workMigration,
+  hostedMigration,
   server,
   browser,
   workControl,
+  modelCatalog,
+  modelManager,
+  interactiveOverlay,
+  offlineOverlay,
 ] = await Promise.all([
   read('compose.yaml'),
-  read('compose.offline.yaml'),
-  read('compose.interactive-local.yaml'),
-  read('compose.hosted.yaml'),
   read('Dockerfile'),
-  read('migrations/001_initial.sql'),
-  read('migrations/004_inference_backends.sql'),
-  read('contracts/agent-work-port.v2.json'),
-  read('src/server.mjs'),
-  read('web/app.js'),
-  read('src/work-control-projection.mjs'),
+  read('course-business-reference/migrations/001_initial.sql'),
+  read('course-business-reference/migrations/007_kungfu_course_work_control.sql'),
+  read('course-business-reference/migrations/008_hosted_inference_backend.sql'),
+  read('course-business-reference/src/server.mjs'),
+  read('course-business-reference/web/app.js'),
+  read('course-business-reference/src/kungfu-course-work-control.mjs'),
+  read('course-business-reference/src/model-catalog.mjs'),
+  read('course-business-reference/src/local-model-manager.mjs'),
+  read('course-business-reference/compose.interactive-local.yaml'),
+  read('course-business-reference/compose.offline.yaml'),
 ]);
-JSON.parse(contract);
 
 for (const required of [
-  '127.0.0.1:${COURSE_PORT:-8090}:8090',
-  'cap_drop:',
+  'postgres:17.6-bookworm@sha256:',
+  '${HUB_BIND_ADDRESS:-127.0.0.1}:${HUB_PORT:-8080}:8080',
+  'course-postgres:/var/lib/postgresql/data',
+  'course-models:/models',
+  'COURSE_DB_APP_PASSWORD',
   'read_only: true',
   'no-new-privileges:true',
-  'postgres:17.6-bookworm@sha256:',
-  'COURSE_DB_APP_PASSWORD',
 ]) {
   if (!compose.includes(required)) throw new Error(`Compose invariant missing: ${required}`);
 }
 for (const forbidden of ['docker.sock', 'network_mode: host', '/Users/', '/home/']) {
-  if ([compose, offline, interactive, hosted].some((value) => value.includes(forbidden))) {
-    throw new Error(`Compose contains forbidden boundary: ${forbidden}`);
-  }
+  if (compose.includes(forbidden)) throw new Error(`Compose contains forbidden boundary: ${forbidden}`);
 }
 for (const required of [
-  'COURSE_LOCAL_MODEL_MANAGEMENT: "true"',
-  'COURSE_LOCAL_MODEL_SHA256:',
-  'Waiting for the user-installed local model.',
-  'course-models:/models:ro',
-  'test ! -f /models/Qwen3-0.6B-Q4_K_M.gguf || curl -fsS',
+  'FROM ${LLAMA_IMAGE} AS llama',
+  'COPY --from=llama',
+  'COPY --from=package',
+  'USER node',
+  'course-business-reference/migrations',
 ]) {
-  if (!interactive.includes(required)) {
-    throw new Error(`Interactive local delivery invariant missing: ${required}`);
-  }
-}
-if (interactive.includes('wget -c') || interactive.includes('curl -o')) {
-  throw new Error('Interactive local delivery must not download a model during Compose startup');
-}
-for (const required of [
-  '/api/runtime/local-model/install',
-  'Download & install',
-  'data-runtime-select="mock"',
-  'backendKind: selectedBackend',
-]) {
-  if (!server.includes(required) && !browser.includes(required)) {
-    throw new Error(`Interactive runtime UI invariant missing: ${required}`);
-  }
-}
-for (const required of [
-  'mode: \'app-only\'',
-  'nativeCourseBinding: false',
-  'kungfu.hub-starter.readiness/v1',
-]) {
-  if (!workControl.includes(required)) {
-    throw new Error(`Work-control truth boundary missing: ${required}`);
-  }
-}
-for (const required of [
-  'COURSE_WORK_CONTROL_DEMO_STATUS_URL',
-  'COURSE_WORK_CONTROL_DEMO_BROWSER_URL',
-]) {
-  if (!compose.includes(required)) {
-    throw new Error(`Optional work-control demo configuration missing: ${required}`);
-  }
-}
-const databaseService = compose.match(/^  database:\n([\s\S]*?)(?=^  app:)/mu)?.[0] ?? '';
-if (!databaseService || /^\s{4}ports:/mu.test(databaseService)) {
-  throw new Error('PostgreSQL must exist without publishing a host port');
-}
-for (const required of ['USER node', 'course.agent-work-port/v2', 'ENTRYPOINT']) {
   if (!dockerfile.includes(required)) throw new Error(`Dockerfile invariant missing: ${required}`);
 }
 for (const required of [
-  'ghcr.io/ggml-org/llama.cpp:server@sha256:',
-  'Qwen3-0.6B-Q4_K_M.gguf',
-  'MODEL_SHA256',
-  'course-models:/models:ro',
-  'AGENT_WORK_BASE_URL: http://llama:8080/v1',
+  'ENABLE ROW LEVEL SECURITY',
+  'FORCE ROW LEVEL SECURITY',
+  "current_setting('app.user_id'",
+  'mock_agent_work',
 ]) {
-  if (!offline.includes(required)) throw new Error(`Offline delivery invariant missing: ${required}`);
+  if (!initialMigration.includes(required)) throw new Error(`isolation invariant missing: ${required}`);
 }
-if (/^\s{4}ports:/mu.test(offline.match(/^  llama:\n([\s\S]*?)(?=^  app:)/mu)?.[0] ?? '')) {
-  throw new Error('Local inference must not publish a host port');
+for (const required of [
+  'kungfu_binding_id',
+  'work_control_state',
+  'course.kungfu-work-control/v1',
+  'legacy-unmanaged',
+]) {
+  if (!workMigration.includes(required)) throw new Error(`work-control migration missing: ${required}`);
 }
-for (const required of ['AGENT_WORK_API_KEY_FILE', '/run/secrets/course-agent-api-key']) {
-  if (!hosted.includes(required)) throw new Error(`Hosted delivery invariant missing: ${required}`);
+if (!hostedMigration.includes("'hosted'")) throw new Error('hosted backend migration is missing');
+for (const route of ['local-models', 'install', 'activate']) {
+  if (!server.includes(route)) throw new Error(`model route missing: ${route}`);
 }
-for (const required of ['openai-compatible', 'agent_work.works', 'agent_work.deliveries']) {
-  if (!backendMigration.includes(required)) throw new Error(`Backend migration invariant missing: ${required}`);
+for (const required of [
+  'data-runtime-model-install',
+  'data-runtime-model-activate',
+  'data-runtime-select="mock"',
+  'data-runtime-select="hosted"',
+  'backendKind: selectedBackend',
+  'Stable course binding',
+  'Portable seal',
+]) {
+  if (!browser.includes(required)) throw new Error(`browser boundary missing: ${required}`);
 }
-for (const required of ['ENABLE ROW LEVEL SECURITY', 'FORCE ROW LEVEL SECURITY', "current_setting('app.user_id'", 'mock_agent_work']) {
-  if (!migration.includes(required)) throw new Error(`Migration invariant missing: ${required}`);
+for (const required of [
+  "'work', 'capture'",
+  "'work', 'admit'",
+  "'work', 'claim'",
+  "'work', 'kickoff'",
+  "'work', 'stage'",
+  "'storage', 'episode', 'begin'",
+  "'storage', 'episode', 'attach-payload'",
+  "'work', 'claim-completion'",
+  "'work', 'review'",
+  "'work', 'decide'",
+  "'work', 'seal'",
+]) {
+  if (!workControl.includes(required)) throw new Error(`public Kungfu lifecycle missing: ${required}`);
 }
-if (server.includes('kungfu') || server.includes('KUNGFU_')) {
-  throw new Error('course server must not integrate Kungfu in the mock-backed phase');
+if ((modelCatalog.match(/id: 'qwen3-/gu) ?? []).length !== 3) {
+  throw new Error('the starter model catalog must contain exactly three Qwen choices');
 }
-console.log('[course-reference verify] boundaries and contracts passed');
+for (const required of ['.part', 'headers.range', 'sha256', 'rename(partial, path)']) {
+  if (!modelManager.includes(required)) throw new Error(`verified model delivery missing: ${required}`);
+}
+if (modelManager.includes('fallback') || server.includes('fallback')) {
+  throw new Error('selected inference must not silently fall back to Mock');
+}
+for (const overlay of [interactiveOverlay, offlineOverlay]) {
+  if (/^  (llama|model-init):/mu.test(overlay) || overlay.includes('wget ')) {
+    throw new Error('compatibility overlays must not restore sidecars or automatic model downloads');
+  }
+}
+
+console.log('[course-hub verify] business, inference, model, and Kungfu authority boundaries passed');

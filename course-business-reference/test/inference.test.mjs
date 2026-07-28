@@ -63,13 +63,10 @@ function configuredEnvironment(overrides, fn) {
     'AGENT_WORK_TIMEOUT_MS',
     'APP_DATABASE_URL',
     'COURSE_DB_APP_PASSWORD',
-    'COURSE_LOCAL_MODEL_BYTES',
     'COURSE_LOCAL_MODEL_MANAGEMENT',
-    'COURSE_LOCAL_MODEL_PATH',
-    'COURSE_LOCAL_MODEL_SEED_FILE',
-    'COURSE_LOCAL_MODEL_SHA256',
-    'COURSE_LOCAL_MODEL_SOURCE_LABEL',
-    'COURSE_LOCAL_MODEL_URL',
+    'COURSE_LOCAL_MODELS_ROOT',
+    'COURSE_LLAMA_SERVER_BIN',
+    'COURSE_LLAMA_SERVER_PORT',
     'DATABASE_URL',
   ];
   const prior = Object.fromEntries(names.map((name) => [name, process.env[name]]));
@@ -97,31 +94,28 @@ test('configuration defaults to an explicit simulation without inference secrets
     assert.equal(config.inference.simulated, true);
     assert.equal(config.inference.model, 'none');
     assert.equal('apiKey' in config.inference, false);
-    assert.deepEqual(Object.keys(config.inferences), ['mock']);
-    assert.equal(config.localModel.enabled, false);
+    assert.deepEqual(Object.keys(config.inferences), ['mock', 'openai-compatible']);
+    assert.equal(config.localModel.enabled, true);
+    assert.equal(config.localModel.catalog.length, 3);
   });
 });
 
 test('interactive local configuration keeps Mock default and pins click-installed model bytes', () => {
   configuredEnvironment({
     AGENT_WORK_BACKEND: 'mock',
-    AGENT_WORK_BASE_URL: 'http://llama:8080/v1',
-    AGENT_WORK_MODEL: 'Qwen3-0.6B-Q4_K_M',
-    AGENT_WORK_PROVIDER_LABEL: 'Local Qwen',
-    AGENT_WORK_DELIVERY: 'local',
     COURSE_LOCAL_MODEL_MANAGEMENT: 'true',
-    COURSE_LOCAL_MODEL_PATH: '/models/Qwen3-0.6B-Q4_K_M.gguf',
-    COURSE_LOCAL_MODEL_URL: 'https://models.invalid/pinned.gguf',
-    COURSE_LOCAL_MODEL_SHA256: 'a'.repeat(64),
-    COURSE_LOCAL_MODEL_BYTES: '396705472',
+    COURSE_LOCAL_MODELS_ROOT: '/models',
   }, () => {
     const config = loadConfig();
     assert.equal(config.backend, 'mock');
     assert.equal(config.inference.simulated, true);
     assert.equal(config.inferences['openai-compatible'].delivery, 'local');
     assert.equal(config.localModel.enabled, true);
-    assert.equal(config.localModel.bytes, 396705472);
-    assert.equal(config.localModel.inferenceKind, 'openai-compatible');
+    assert.equal(config.localModel.catalog[0].bytes, 396705472);
+    assert.equal(
+      config.localModel.catalog[0].sha256,
+      'ac2d97712095a558e31573f62f466a3f9d93990898b0ec79d7c974c1780d524a',
+    );
   });
 });
 
@@ -132,6 +126,7 @@ test('OpenAI-compatible configuration validates the endpoint and exposes no secr
     AGENT_WORK_MODEL: 'Qwen3-0.6B-Q4_K_M',
     AGENT_WORK_PROVIDER_LABEL: 'Local Qwen',
     AGENT_WORK_DELIVERY: 'local',
+    COURSE_LOCAL_MODEL_MANAGEMENT: 'false',
   }, () => {
     const config = loadConfig();
     assert.equal(config.inference.baseUrl, 'http://llama:8080/v1');
@@ -142,6 +137,7 @@ test('OpenAI-compatible configuration validates the endpoint and exposes no secr
     AGENT_WORK_BACKEND: 'openai-compatible',
     AGENT_WORK_BASE_URL: 'https://user:secret@provider.invalid/v1',
     AGENT_WORK_MODEL: 'model',
+    COURSE_LOCAL_MODEL_MANAGEMENT: 'false',
   }, () => assert.throws(loadConfig, /without credentials/u));
 });
 

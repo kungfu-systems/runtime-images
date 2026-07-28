@@ -1,246 +1,100 @@
-# Course business reference
+# Course business reference compatibility path
 
-This independently rooted example answers one Builder question: how does a
-normal customer-facing PostgreSQL application compose with an Agent-work
-engine?
+This directory contains the PostgreSQL course domain, Web product, migrations,
+and tests used by the unified Kungfu Course Hub image. It is no longer a
+separate image or a Mock-only product.
 
-It is a complete, bounded vertical slice, not a general LMS or production SaaS.
-Course creators can register, maintain a private collection of course projects,
-delegate outline generation and revision, preserve every generated version, and
-approve one version as the current business result. The default Agent-work
-backend is a persistent, deterministic **simulation**. It does not run an AI
-model or Kungfu and cannot produce Kungfu evidence, reviews, decisions,
-receipts, roots, or seals. The same image can select a schema-constrained
-OpenAI-compatible endpoint, either hosted or supplied by the optional local
-llama.cpp delivery pack.
+The root [`Dockerfile`](../Dockerfile) assembles this application together with
+the architecture-matched Kungfu public CLI and llama.cpp runtime. The root
+[`compose.yaml`](../compose.yaml) is the canonical installation surface. This
+directory's Compose file remains for existing development automation and
+launches the same `KUNGFU_HUB_IMAGE`.
 
-The visible job is deliberately ordinary: turn a creator's expertise, target
-learner, promised outcome, and delivery constraints into a teachable
-three-module outline. Every backend returns an inspectable draft through the
-same port, so its purpose remains understandable before a future Kungfu adapter.
-Each saved version also shows a five-step work handoff: what the creator
-supplied, what the course app delegated, what the selected Course Designer
-delivered, what PostgreSQL saved, and what remains for the creator to approve.
-The version history distinguishes first drafts, revisions, and alternatives,
-while an explicit change summary identifies the Agent's contribution.
-Empty course-brief and feedback fields accept their visible example when the
-creator presses Tab, then continue normal keyboard navigation. Generate,
-improve, and approve actions show one visible lifecycle stage per second with
-entry and exit motion while the real request runs; these stages explain the
-application workflow and never claim to expose hidden model reasoning.
+## What the reference proves
 
-The course page also makes the work-control boundary explicit. It labels the
-current implementation as **App-only coordination**, shows which facts come
-from the application outbox, Agent backend, PostgreSQL, and creator approval,
-and contrasts that path with a future Kungfu-managed Assignment, Evidence,
-independent review, typed decision, recovery, and seal. Operators may configure
-a read-only link to a separate Hub Starter walkthrough; its readiness is shown
-without claiming that it manages the current course or user account:
+- creator registration, login, opaque sessions, Origin/CSRF controls;
+- private per-account course collections enforced in PostgreSQL;
+- immutable generated outline versions and one approved-version pointer;
+- a durable, idempotent command outbox and backend-switch history;
+- explicit Mock, local Qwen, and optional hosted inference;
+- one stable Kungfu binding per course and one real native work lifecycle per
+  generated version;
+- retained Evidence, independent review, typed decision, and seal roots.
 
-```bash
-COURSE_WORK_CONTROL_DEMO_STATUS_URL=http://127.0.0.1:8080/healthz \
-COURSE_WORK_CONTROL_DEMO_BROWSER_URL=http://127.0.0.1:8080/ \
-docker compose up --build --detach
-```
+The business database and Kungfu have different jobs. PostgreSQL owns customer
+identity and business records. The selected Agent backend produces visible
+course content. Kungfu governs the work claim and its evidence/review/decision
+history. The Web page projects those authorities without treating any one of
+them as the whole product.
 
-## Run locally
+## Compatibility launch
 
-Use synthetic development passwords and a project name that does not overlap
-the Hub Starter deployment:
+Use the root launch for new installations. Existing scripts may still run:
 
-```bash
+```sh
 cd course-business-reference
 COURSE_DB_MIGRATION_PASSWORD=synthetic_migration_42 \
 COURSE_DB_APP_PASSWORD=synthetic_runtime_42 \
-docker compose up --build --detach
+docker compose up --detach
 ```
 
-Open <http://127.0.0.1:8090>. Ordinary `docker compose stop` and restart
-preserve both named volumes. This project never automates
-`docker compose down -v`.
+Open <http://127.0.0.1:8090>. Set `KUNGFU_HUB_IMAGE` to a separately qualified
+exact image digest when testing a candidate.
 
-The default binding is loopback-only. LAN or public ingress, TLS, real customer
-data, account recovery, email verification, MFA, billing, organizations,
-teacher roles, and production security certification are intentionally out of
-scope.
-
-## Delivery modes
-
-The core image contains no model and remains the same in every mode:
-
-| Mode | Additional download | Configuration | Result label |
-| --- | ---: | --- | --- |
-| default simulation | none | database development secrets only | `Visible Mock Agent` |
-| hosted endpoint | no local model | endpoint, model, and a secret file | configured provider |
-| interactive local pack | only after the user clicks; about 704 MB compressed beyond the core image | `compose.interactive-local.yaml` | selectable Mock or `Local Qwen Course Designer` |
-| automatic local pack | at Compose startup; about 704 MB compressed beyond the core image | `compose.offline.yaml` | `Local Qwen Course Designer` |
-
-Both local packs pin the multi-platform llama.cpp server image by OCI digest and
-pin `Qwen3-0.6B-Q4_K_M.gguf` to an exact repository revision, byte count, and
-SHA-256. llama.cpp is reachable only on the private Compose network; it has no
-host port.
-
-The interactive pack starts with Mock selected and an empty model volume. Its
-header menu shows the active mode and the model's install state. No model
-request is made until an authenticated creator clicks **Download & install**.
-The application streams the server-controlled pinned source into a partial
-file, exposes progress, verifies the exact size and SHA-256, and atomically
-installs it. The private inference process starts only after that verified file
-appears. The creator can then select **Use local** as the default for new
-courses. Every course page separately shows its current binding and can switch
-future Generate and Improve actions between Mock and a ready local model.
-Previously saved versions retain their original backend, binding, and
-transition provenance.
-
-Start the click-to-install delivery:
-
-```bash
-COURSE_DB_MIGRATION_PASSWORD=synthetic_migration_42 \
-COURSE_DB_APP_PASSWORD=synthetic_runtime_42 \
-docker compose -f compose.yaml -f compose.interactive-local.yaml up --build --detach
-```
-
-Ordinary application rebuilds preserve the named model volume. Set
-`COURSE_MODELS_VOLUME` when multiple independent interactive installations
-share one Docker host.
-
-For an air-gapped host, load a trusted llama.cpp image archive and set
-`COURSE_LLAMA_IMAGE` to its local tag before starting Compose. The default
-remains the digest-pinned GHCR image.
-
-The automatic pack remains useful for unattended qualification. Its model
-initializer downloads once into the named volume and verifies the checksum:
-
-```bash
-COURSE_DB_MIGRATION_PASSWORD=synthetic_migration_42 \
-COURSE_DB_APP_PASSWORD=synthetic_runtime_42 \
-docker compose -f compose.yaml -f compose.offline.yaml up --build --detach
-```
-
-The first start downloads and loads the model, so readiness takes longer than
-the default simulation. New courses use the currently selected default backend;
-an existing course can switch its own current binding without rewriting prior
-versions. This preserves old mock-backed versions instead of silently
-relabeling them as model-generated.
-
-For a hosted OpenAI-compatible endpoint, keep the bearer token in a local file
-rather than Compose environment metadata:
-
-```bash
-COURSE_DB_MIGRATION_PASSWORD=synthetic_migration_42 \
-COURSE_DB_APP_PASSWORD=synthetic_runtime_42 \
-COURSE_AGENT_BASE_URL=https://provider.example/v1 \
-COURSE_AGENT_MODEL=provider-model-id \
-COURSE_AGENT_API_KEY_FILE=/absolute/path/to/local-token \
-docker compose -f compose.yaml -f compose.hosted.yaml up --build --detach
-```
-
-The public image never embeds a provider credential. A distribution-operated
-zero-configuration hosted experience must issue a bounded installation or
-account token from its gateway; it must not bake a long-lived API key into the
-image.
+The default backend is the visibly labelled deterministic Mock. The header
+model menu exposes three pinned Qwen choices. Authenticated users explicitly
+start a download; model bytes go to the named model volume, not the image.
+Exact size and SHA-256 verification precede activation, and an interrupted
+download can resume. The application does not silently relabel or retry failed
+local/hosted inference as Mock.
 
 ## Authority boundary
 
 | Fact | Authority |
 | --- | --- |
-| learner identity, password credential, session | PostgreSQL |
-| course project, saved brief, collection ownership | PostgreSQL |
-| generated outline versions and the approved-version pointer | PostgreSQL |
-| Agent run input/output provenance and delivery intent | PostgreSQL |
-| current backend binding, switch audit, delivery intent, rebuildable status | PostgreSQL |
-| delegated generation/revision execution and live work state | selected `AgentWorkPort/v2` backend |
+| user, credential, session | PostgreSQL |
+| course brief, collection ownership, versions, approval | PostgreSQL |
+| Agent input/output and binding provenance | PostgreSQL plus selected Agent backend |
+| Assignment, Episode, review, typed decision, seal | Kungfu native state through public CLI |
+| commands and presentation | non-authoritative Web surface |
 
-`course.course_outline_versions` is append-only for content: generating or
-revising inserts another version instead of overwriting a previous outline.
+`course.course_outline_versions` is append-only for generated content.
 Approval changes only version status and
-`course.course_projects.current_outline_version_id`. Mock execution state lives
-in the explicitly named `mock_agent_work` schema. OpenAI-compatible delivery
-state and idempotency records use the separate `agent_work` schema. The Web and
-domain layers depend on `AgentWorkPort/v2`; only the composition root selects
-and routes adapters.
+`course.course_projects.current_outline_version_id`. Mock execution state is
+separate in `mock_agent_work`; OpenAI-compatible idempotency state is separate
+in `agent_work`. The Web/domain layers depend on `AgentWorkPort/v2`.
 
-## Security model
+## Security boundary
 
-- Passwords use Node's built-in scrypt with `N=32768`, `r=8`, `p=1`, a random
-  16-byte salt, and a 32-byte derived key.
-- Session cookies are random 256-bit opaque values; PostgreSQL stores only
-  their SHA-256 hashes. Cookies are `HttpOnly`, `SameSite=Lax`, and optionally
-  `Secure`.
-- State-changing requests require the configured exact Origin and a
-  session-bound CSRF token. Authentication endpoints have a bounded in-memory
-  rate limiter and generic errors.
-- The browser never selects a learner, database role, workspace, or backend
-  binding. Queries are current-user scoped and PostgreSQL applies forced RLS to
-  sessions, enrollments, learner homework, and outbox rows.
-- Migrations use `course_migrator`; the application reconnects as
-  `course_app`, which is explicitly `NOBYPASSRLS`.
+- Passwords use Node scrypt with random salts.
+- Session cookies are random opaque values; PostgreSQL stores only their
+  SHA-256 hashes.
+- State changes require an exact configured Origin and a session CSRF token.
+- PostgreSQL uses a migration owner and an application role marked
+  `NOBYPASSRLS`; user-owned tables have forced row-level security.
+- The container runs as `node`, with a read-only root filesystem, no added
+  Linux capabilities, no Docker socket, and only named volumes.
 
-This is a reference security posture for disposable synthetic development data,
-not a production authentication certification.
-
-## Durable coordination
-
-Creating a course project creates its private work binding and provisioning
-outbox message in one PostgreSQL transaction. Generation and revision use stable
-idempotency keys. A course-level backend switch rejects concurrent pending work,
-records an auditable switch row, and provisions the target binding. Every
-outbox command snapshots its backend and binding so a later switch cannot
-reroute or relabel historical work. Each adapter records delivered keys before PostgreSQL
-acknowledges them, while `course.agent_runs.outbox_command_id` prevents a replay
-from creating a duplicate outline version. A restart or crash between adapter
-completion and outbox acknowledgement therefore replays safely. Stale
-processing locks are recovered after 30 seconds. Each visible outline version
-joins back to its owning `course.agent_runs` row so the UI can explain the
-action, prior-version input, creator feedback, backend, and transition that
-produced it. External providers also receive the stable idempotency key. If a
-provider does not honor that header, a crash before the adapter stores the
-response may repeat inference, but the business outbox still commits at most
-one course version.
+This remains a synthetic development reference, not a production
+authentication or public-ingress certification.
 
 ## Validation
 
 From the repository root:
 
-```bash
+```sh
 npm ci --ignore-scripts
 npm run check
-bash -n course-business-reference/scripts/compose-qualification.sh
+bash -n scripts/smoke-image.sh scripts/smoke-browser.sh
 ```
 
-The isolated Compose qualification starts on port `18090` and uses only
-synthetic accounts. It proves a crash after adapter completion, timeout retry,
-concurrent duplicate actions, per-account UUID and direct-RLS isolation,
-Origin/CSRF/body-size/rate-limit/session-expiry controls, the two-round golden
-path, database and application restart recovery, and a PostgreSQL
-backup/restore round trip. It stops containers while preserving named volumes
-and retains a machine-readable evidence JSON plus a run-specific database dump
-under the ignored `.artifacts/` directory:
+`scripts/smoke-image.sh` validates account isolation, PostgreSQL restart
+persistence, real Kungfu settlement, and runtime hardening. With a trusted
+pinned seed model mounted read-only,
+`scripts/smoke-local-image.sh` and `scripts/smoke-local-model.mjs` validate the
+explicit install, activation, real local generation, provenance, and subsequent
+Kungfu seal.
 
-```bash
-bash course-business-reference/scripts/compose-qualification.sh
-```
-
-## Forward-only evolution and successor integration
-
-Migrations are ordered, forward-only SQL files. Never edit an applied
-migration; append a new numbered file and keep empty-database and restore
-qualification.
-
-The later real integration is intentionally small and separate:
-
-| `AgentWorkPort/v2` field/action | Provisional future Hub mapping |
-| --- | --- |
-| `sourceIdentity` | stable external course-project identity |
-| `bindingId` | public Hub work binding coordinate |
-| `transitionId` | public current work transition/version |
-| `provision` | create/admit bounded course-outline work |
-| `generate_outline` | generate a first visible outline from the saved brief |
-| `revise_outline` | generate another version from the brief, prior version, and feedback |
-| `status`, `nextAction`, `audit` | public read model and typed next action |
-
-The OpenAI-compatible adapter proves this substitution seam without coupling
-the domain to one provider. A future Kungfu adapter must still use shared
-contract tests; it must not redesign accounts, enrollments, ownership, routes,
-or business-owned outline versions. Every real adapter fails closed rather than
-silently falling back to the mock.
+Migrations are ordered and forward-only. Never edit an applied migration;
+append a new numbered file and qualify both an empty database and restart
+recovery.

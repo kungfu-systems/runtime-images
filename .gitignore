@@ -2,6 +2,8 @@ node_modules/
 .kungfu/
 .DS_Store
 .artifacts/
+.playwright-cli/
+output/playwright/
 .env
 kungfu-episodes-cli-linux-x64.tar.gz
 kungfu-episodes-cli-linux-arm64.tar.gz

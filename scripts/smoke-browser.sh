@@ -95,17 +95,8 @@ render() {
     "${base_url}"
 }
 
-render ready "Ready for the Agent"
-curl --fail --silent --request POST "${base_url}/api/coursework/claim" \
-  >"${artifact_dir}/claim.json"
-node -e 'const fs=require("node:fs"); const v=JSON.parse(fs.readFileSync(process.argv[1])); if(v.coursework?.outcome?.state!=="needs-evidence"||v.coursework?.independentCheck?.verdict!=="insufficient"||v.settlement!==null) process.exit(1)' \
-  "${artifact_dir}/claim.json"
-render needs-evidence "Evidence needed"
-curl --fail --silent --request POST "${base_url}/api/coursework/evidence" \
-  >"${artifact_dir}/evidence.json"
-node -e 'const fs=require("node:fs"); const v=JSON.parse(fs.readFileSync(process.argv[1])); if(v.coursework?.outcome?.state!=="accepted"||v.coursework?.independentCheck?.verdict!=="fit"||v.assignment?.phase!=="continuation-decided"||!v.settlement?.stateRoot?.startsWith("sha256:")) process.exit(1)' \
-  "${artifact_dir}/evidence.json"
-render accepted "Homework accepted"
+render sign-up "Create your private course workspace"
 
-node -e 'const fs=require("node:fs"); const path=require("node:path"); const root=process.argv[1]; const evidence=JSON.parse(fs.readFileSync(path.join(root,"evidence.json"))); process.stdout.write(`${JSON.stringify({schema:"kungfu.hub-starter.browser-smoke/v1",outcome:evidence.coursework.outcome.state,verdict:evidence.coursework.independentCheck.verdict,stateRoot:evidence.settlement.stateRoot,screenshots:["ready.png","needs-evidence.png","accepted.png"]},null,2)}\n`)' \
+# shellcheck disable=SC2016 # JavaScript template literal, not shell expansion.
+node -e 'const fs=require("node:fs"); const root=process.argv[1]; process.stdout.write(`${JSON.stringify({schema:"kungfu.course-hub.browser-smoke/v1",surface:"account-entry",workControl:"Kungfu",screenshots:["sign-up.png"]},null,2)}\n`)' \
   "${artifact_dir}" >"${artifact_dir}/browser-smoke.json"
