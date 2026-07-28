@@ -35,6 +35,12 @@ The image contains Course Hub, the exact Kungfu CLI, and llama.cpp. PostgreSQL
 runs as the second Compose service. Model weights and hosted-provider
 credentials are never included in the image.
 
+The published installation also runs the same Hub image once as a network-free
+`bootstrap` service. It creates two random database credentials in a private
+named volume using exclusive, atomic files. PostgreSQL and the Hub mount those
+files read-only. A later restart validates and reuses them instead of rotating
+credentials behind existing database state. PostgreSQL has no host port.
+
 ## Authority model
 
 | Fact | Authority | Application projection |
@@ -108,7 +114,10 @@ apps/course-hub/
 Packaging policy remains outside the app:
 
 - `Dockerfile` assembles the reproducible product.
-- `compose.yaml` declares the supported local topology.
+- `compose.yaml` declares the supported local topology and persistent
+  installation configuration.
+- `.github/workflows/application.yml` publishes that topology as an OCI Compose
+  artifact and smokes a fresh no-checkout installation.
 - `contracts/` and `release/` bind claims to exact artifacts.
 - `scripts/` and `.github/workflows/` qualify source and images.
 

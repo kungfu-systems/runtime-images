@@ -25,12 +25,24 @@ export function validateComposeText(text) {
     'read_only: true',
     'no-new-privileges:true',
     '${HUB_BIND_ADDRESS:-127.0.0.1}:${HUB_PORT:-8080}:8080',
+    'condition: service_completed_successfully',
+    'COURSE_DB_MIGRATION_PASSWORD_FILE: /install-config/database-migration-password',
+    'COURSE_DB_APP_PASSWORD_FILE: /install-config/database-app-password',
+    'POSTGRES_PASSWORD_FILE: /install-config/database-migration-password',
+    'install-config:/install-config',
     'hub-state:/state',
     'course-models:/models',
     'course-postgres:/var/lib/postgresql/data',
     'driver: bridge',
   ]) {
     if (!text.includes(required)) throw new Error(`compose safety invariant missing: ${required}`);
+  }
+  const database = text.match(/^  database:\n([\s\S]*?)(?=^  hub:)/mu)?.[1] ?? '';
+  if (/^    ports:/mu.test(database)) {
+    throw new Error('PostgreSQL host-port publication is forbidden');
+  }
+  if (/\b(?:POSTGRES_PASSWORD|COURSE_DB_APP_PASSWORD):/u.test(text)) {
+    throw new Error('inline database passwords are forbidden');
   }
   return true;
 }

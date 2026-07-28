@@ -42,7 +42,52 @@ browser
 See [Architecture](docs/ARCHITECTURE.md) for the complete request and recovery
 flow.
 
-## Recommended first step: ask an Agent
+## Try it before reading the repository
+
+Requirements:
+
+- Docker Engine or Docker Desktop;
+- Docker Compose 2.34 or later;
+- `linux/amd64` or `linux/arm64`.
+
+Start the complete local application directly from its public OCI artifact:
+
+```sh
+docker compose -f oci://ghcr.io/kungfu-systems/runtime-images/hub-starter:compose-preview up --wait
+```
+
+On first use, Compose shows the remote application and interpolation variables
+for confirmation. Then open <http://127.0.0.1:8080>, register, create a course,
+and generate its first outline. No source checkout, `.env` file, database
+password, or model download is required.
+
+Choose another Web port with the same command:
+
+```sh
+HUB_PORT=9090 docker compose -f oci://ghcr.io/kungfu-systems/runtime-images/hub-starter:compose-preview up --wait
+```
+
+Then open <http://127.0.0.1:9090>. PostgreSQL is never published to a host port,
+so it cannot collide with a PostgreSQL installation already using `5432`.
+Course data, Kungfu state, optional model files, and generated database
+credentials persist in isolated named volumes.
+
+The initial backend is an explicitly labelled deterministic Mock, so the first
+start remains small. The single Hub image already contains llama.cpp; Qwen
+weights are downloaded only after the user chooses a model in the product.
+
+Stop without deleting data:
+
+```sh
+docker compose -f oci://ghcr.io/kungfu-systems/runtime-images/hub-starter:compose-preview stop
+```
+
+The project never automates `docker compose down -v`.
+
+> `compose-preview` is the pre-Alpha convenience channel. Qualified releases
+> also retain immutable application coordinates for reproducible evaluation.
+
+## Recommended next step: ask an Agent
 
 This repository is designed to be explained from its checked-in contracts and
 the Kungfu runtime inside the Docker image. A capable coding Agent can connect
@@ -54,8 +99,8 @@ Give the Agent this prompt:
 ```text
 Read AGENTS.md, docs/ARCHITECTURE.md, docs/EXTENDING.md, and docs/API.md.
 If the Hub is running, execute:
-  docker compose exec -T hub kungfu agent brief
-  docker compose exec -T hub kungfu agent verify --json
+  docker compose -f oci://ghcr.io/kungfu-systems/runtime-images/hub-starter:compose-preview exec -T hub kungfu agent brief
+  docker compose -f oci://ghcr.io/kungfu-systems/runtime-images/hub-starter:compose-preview exec -T hub kungfu agent verify --json
 Explain the product in terms of:
 1. the user-visible workflow;
 2. PostgreSQL, inference, and Kungfu authority;
@@ -70,53 +115,27 @@ commands, and KFD-3 discovery path without initializing product state.
 `kungfu agent verify --json` verifies that the installed `kungfu agent` command
 tree closes against its declared KFD-3 registry.
 
-## Run the product
-
-Requirements:
-
-- Docker with Compose v2;
-- `linux/amd64` or `linux/arm64`, including matching Docker Desktop platforms.
-
-Create a local environment file:
-
-```sh
-cp .env.example .env
-```
-
-The included values are synthetic and intended only for a disposable local
-installation. Start the Hub:
-
-```sh
-docker compose up --detach
-docker compose ps
-```
-
-Open <http://127.0.0.1:8080>, register, create a course, and generate its first
-outline. The initial backend is an explicitly labelled deterministic Mock, so
-the first start downloads no model.
+## Inspect the running product
 
 Inspect the Kungfu interface from the running image:
 
 ```sh
-docker compose exec -T hub kungfu agent brief
-docker compose exec -T hub kungfu agent verify --json
-docker compose exec -T hub kungfu agent work-model --json
-```
-
-Stop without deleting data:
-
-```sh
-docker compose stop
+docker compose -f oci://ghcr.io/kungfu-systems/runtime-images/hub-starter:compose-preview exec -T hub kungfu agent brief
+docker compose -f oci://ghcr.io/kungfu-systems/runtime-images/hub-starter:compose-preview exec -T hub kungfu agent verify --json
+docker compose -f oci://ghcr.io/kungfu-systems/runtime-images/hub-starter:compose-preview exec -T hub kungfu agent work-model --json
 ```
 
 Ordinary restart preserves the PostgreSQL, Kungfu, and model named volumes.
-The project never automates `docker compose down -v`.
+Direct `docker run` is intentionally not the supported installation surface:
+the reference needs a private PostgreSQL service and persistent generated
+credentials, which the published Compose application supplies safely.
 
 ## Explore the source with a fast edit-build-run loop
 
 The production Dockerfile consumes exact, prebuilt Kungfu packages. A Builder
 should not need to reproduce that supply chain just to change a prompt, route,
-domain rule, or page.
+domain rule, or page. Clone the repository only when ready to explore source;
+ordinary product evaluation needs no checkout.
 
 The developer overlay starts from the exact published Hub image and replaces
 only the checked-in Course Hub application source:
@@ -199,6 +218,7 @@ apps/course-hub/             canonical business application
   test/                      domain and boundary tests
 contracts/                   image/runtime claim boundary
 release/                     exact source, package, image, and CI identities
+.github/workflows/           exact image and OCI Compose application publication
 course-business-reference/   compatibility Compose entry only
 legacy/hub-starter/          retained former demonstration implementation
 docs/                        architecture, API, extension, and claim guides
@@ -234,7 +254,9 @@ and [`release/runtime.lock.json`](release/runtime.lock.json) bind the exact
 Kungfu source, architecture packages, base images, published image, and
 qualification run.
 
-To test another qualified candidate, set `KUNGFU_HUB_IMAGE` to an exact
+The supported one-command surface is published by
+`.github/workflows/application.yml` as an OCI Compose artifact. To test another
+qualified image from a source checkout, set `KUNGFU_HUB_IMAGE` to an exact
 `registry/path@sha256:<digest>` reference. Floating runtime tags are rejected.
 
 ## License

@@ -13,6 +13,7 @@ const contractText = await read('../contracts/hub-starter-runtime.contract.json'
 const lockText = await read('../release/runtime.lock.json');
 const imageWorkflow = await read('../.github/workflows/image.yml');
 const packageStageWorkflow = await read('../.github/workflows/package-stage.yml');
+const applicationWorkflow = await read('../.github/workflows/application.yml');
 const browser = await read('../apps/course-hub/web/app.js');
 const server = await read('../apps/course-hub/src/server.mjs');
 const workControl = await read('../apps/course-hub/src/kungfu-course-work-control.mjs');
@@ -55,6 +56,12 @@ if (/COPY[^\n]*\.gguf/iu.test(dockerfile)) {
   throw new Error('first-party image must not copy model weights');
 }
 for (const required of [
+  'bootstrap:',
+  'condition: service_completed_successfully',
+  'POSTGRES_PASSWORD_FILE: /install-config/database-migration-password',
+  'COURSE_DB_MIGRATION_PASSWORD_FILE: /install-config/database-migration-password',
+  'COURSE_DB_APP_PASSWORD_FILE: /install-config/database-app-password',
+  'install-config:/install-config',
   'course-postgres:/var/lib/postgresql/data',
   'course-models:/models',
   '${HUB_BIND_ADDRESS:-127.0.0.1}:${HUB_PORT:-8080}:8080',
@@ -65,6 +72,10 @@ for (const required of [
   if (!compose.includes(required)) throw new Error(`unified Compose invariant missing: ${required}`);
 }
 if (/^  llama:/mu.test(compose)) throw new Error('unified delivery must not require a llama sidecar');
+const databaseService = compose.match(/^  database:\n([\s\S]*?)(?=^  hub:)/mu)?.[1] ?? '';
+if (/^    ports:/mu.test(databaseService)) {
+  throw new Error('PostgreSQL must remain private to the Compose network');
+}
 
 for (const workflowInvariant of [
   'platforms: linux/amd64,linux/arm64',
@@ -90,6 +101,21 @@ for (const stagingInvariant of [
   if (!packageStageWorkflow.includes(stagingInvariant)) {
     throw new Error(`package staging workflow invariant missing: ${stagingInvariant}`);
   }
+}
+for (const applicationInvariant of [
+  'docker/setup-compose-action@',
+  'docker compose publish -y "${immutable}"',
+  'docker compose publish -y "${preview}"',
+  'compose-preview',
+  '-f "oci://${APPLICATION_REF}" up --wait',
+  'NetworkSettings.Ports["5432/tcp"] == null',
+]) {
+  if (!applicationWorkflow.includes(applicationInvariant)) {
+    throw new Error(`OCI Compose workflow invariant missing: ${applicationInvariant}`);
+  }
+}
+if (/down\s+-v/u.test(applicationWorkflow)) {
+  throw new Error('OCI Compose workflow must not delete named volumes');
 }
 
 if (contract.sourceBuild.kungfuSourceSha !== lock.kungfuSourceSha) {

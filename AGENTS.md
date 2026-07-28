@@ -48,6 +48,8 @@ not replace this application's business API or grant permission to mutate work.
   OpenAI-compatible inference adapters.
 - `apps/course-hub/src/local-model-manager.mjs` and `model-catalog.mjs` —
   pinned local model delivery and private llama.cpp process control.
+- `apps/course-hub/src/bootstrap-secrets.mjs` — one-shot, network-free
+  generation and reuse of database credentials in a named volume.
 - `apps/course-hub/src/outbox.mjs` — durable command delivery and recovery.
 - `apps/course-hub/src/kungfu-course-work-control.mjs` — public Kungfu CLI
   lifecycle adapter.
@@ -55,6 +57,8 @@ not replace this application's business API or grant permission to mutate work.
 - `apps/course-hub/web/` — non-authoritative browser projection.
 - `apps/course-hub/test/` — application and boundary tests.
 - `Dockerfile` and `compose.yaml` — canonical publication and installation.
+- `.github/workflows/application.yml` — trusted publication and fresh-install
+  smoke of the OCI Compose application used by non-source users.
 - `Dockerfile.dev` and `compose.dev.yaml` — fast source exploration over the
   exact published runtime.
 - `course-business-reference/` — compatibility Compose entry, not a second
@@ -90,6 +94,8 @@ vertical reference with explicit seams.
   receipts; do not construct private Kungfu state.
 - Applied migrations are never edited; add a forward-only numbered migration.
 - Runtime image references, packages, and model files remain exact and pinned.
+- Database credentials are generated once, passed through mounted files, and
+  never published in the Compose artifact or exposed as host ports.
 - The published container remains localhost-only by default, non-root,
   read-only, capability-free, and without Docker socket, host network, host
   paths, credentials, or model weights.
