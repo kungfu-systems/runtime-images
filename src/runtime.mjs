@@ -270,8 +270,8 @@ export class KungfuRuntime {
       source: { kind: 'hub-starter-guided-work', sourceId: assignmentId },
       retention: { policy: 'explicit-expiry-retain-bytes-v1', expiresAt: null },
       workDefinition: {
-        goal_id: assignmentId,
-        mission_id: initiativeId,
+        initiative_id: initiativeId,
+        assignment_id: assignmentId,
         title: this.courseName,
         objective: 'Design a three-section course outline with one learning objective per section.',
         owner_agent: 'hub-starter',
