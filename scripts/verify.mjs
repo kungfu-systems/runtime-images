@@ -176,6 +176,7 @@ for (const invariant of [
   'compose-v${BUILDCHAIN_VERSION}',
   'compose_config_with_retry',
   'max_attempts=12',
+  'grep -Fq "image: ${image_name}@${image_digest}" "${output_path}"',
   'docker compose -f "${repo_root}/compose.yaml" publish -y "${application_ref}"',
   'NetworkSettings.Ports["5432/tcp"] == null',
   'scripts/write-runtime-publish-evidence.mjs',

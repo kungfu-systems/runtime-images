@@ -213,7 +213,9 @@ compose_config_with_retry() {
   local status=1
 
   while [ "${attempt}" -le "${max_attempts}" ]; do
-    if compose_oci "${reference}" config >"${output_path}"; then
+    if compose_oci "${reference}" config >"${output_path}" \
+      && grep -Fq "image: ${image_name}@${image_digest}" "${output_path}" \
+      && grep -Fq 'host_ip: 127.0.0.1' "${output_path}"; then
       return 0
     else
       status=$?
