@@ -65,11 +65,18 @@ for (const workflowInvariant of [
   }
 }
 for (const stagingInvariant of [
-  'repos/kungfu-systems/kungfu/actions/runs/${KUNGFU_RUN_ID}',
+  'kungfu-run-id-amd64',
+  'kungfu-run-id-arm64',
+  'for run_id in "${KUNGFU_RUN_ID_AMD64}" "${KUNGFU_RUN_ID_ARM64}"',
+  'repos/kungfu-systems/kungfu/actions/runs/${run_id}',
   'completed\\tsuccess\\t',
+  'run-id: ${{ inputs.kungfu-run-id-amd64 }}',
+  'run-id: ${{ inputs.kungfu-run-id-arm64 }}',
   'pattern: kungfu-linux-x64-*',
   'pattern: kungfu-hub-cli-linux-arm64-*',
-  'sha256sum -c -',
+  'runs:{"linux/amd64":$runIdAmd64,"linux/arm64":$runIdArm64}',
+  'package_sha256_amd64=$(sha256sum stage/kungfu-episodes-cli-linux-x64.tar.gz',
+  'package_sha256_arm64=$(sha256sum stage/kungfu-episodes-cli-linux-arm64.tar.gz',
   "'.sourceCommit == $source and .productVersion == $version",
   'gh release create "${release_tag}"',
 ]) {
