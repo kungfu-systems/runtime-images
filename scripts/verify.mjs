@@ -67,7 +67,8 @@ for (const workflowInvariant of [
 for (const stagingInvariant of [
   'kungfu-run-id-amd64',
   'kungfu-run-id-arm64',
-  'for run_id in "${KUNGFU_RUN_ID_AMD64}" "${KUNGFU_RUN_ID_ARM64}"',
+  'validate_run "${KUNGFU_RUN_ID_AMD64}" Build',
+  "validate_run \"${KUNGFU_RUN_ID_ARM64}\" 'Linux ARM64 Alpha Qualification'",
   'repos/kungfu-systems/kungfu/actions/runs/${run_id}',
   'completed\\tsuccess\\t',
   'run-id: ${{ inputs.kungfu-run-id-amd64 }}',

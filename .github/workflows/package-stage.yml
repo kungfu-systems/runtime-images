@@ -37,11 +37,15 @@ jobs:
           [[ "${KUNGFU_RUN_ID_AMD64}" =~ ^[0-9]+$ ]]
           [[ "${KUNGFU_RUN_ID_ARM64}" =~ ^[0-9]+$ ]]
           [[ "${KUNGFU_SOURCE_SHA}" =~ ^[0-9a-f]{40}$ ]]
-          for run_id in "${KUNGFU_RUN_ID_AMD64}" "${KUNGFU_RUN_ID_ARM64}"; do
+          validate_run() {
+            local run_id="$1"
+            local workflow_name="$2"
             gh api "repos/kungfu-systems/kungfu/actions/runs/${run_id}" \
-              --jq '[.status, .conclusion, .head_sha] | @tsv' \
-              | grep -Fx $'completed\tsuccess\t'"${KUNGFU_SOURCE_SHA}"
-          done
+              --jq '[.status, .conclusion, .head_sha, .name] | @tsv' \
+              | grep -Fx $'completed\tsuccess\t'"${KUNGFU_SOURCE_SHA}"$'\t'"${workflow_name}"
+          }
+          validate_run "${KUNGFU_RUN_ID_AMD64}" Build
+          validate_run "${KUNGFU_RUN_ID_ARM64}" 'Linux ARM64 Alpha Qualification'
 
       - name: Download exact Linux amd64 package artifact
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
