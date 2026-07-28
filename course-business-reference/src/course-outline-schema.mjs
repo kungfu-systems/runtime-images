@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
-// Keep the provider-facing grammar compact. Application validation below owns
-// the text bounds so providers do not need to expand large maxLength values
-// into thousands of grammar repetitions.
-const text = { type: 'string' };
+// Bound every provider-facing string so a small grammar-constrained local model
+// cannot spend the whole context window extending one valid JSON string.
+const text = (maxLength) => ({ type: 'string', maxLength });
 
 export const COURSE_OUTLINE_SCHEMA = Object.freeze({
   type: 'object',
@@ -22,12 +21,12 @@ export const COURSE_OUTLINE_SCHEMA = Object.freeze({
     'changes',
   ],
   properties: {
-    title: text,
-    positioning: text,
-    audience: text,
-    promise: text,
-    delivery: text,
-    creatorAdvantage: text,
+    title: text(120),
+    positioning: text(180),
+    audience: text(160),
+    promise: text(180),
+    delivery: text(180),
+    creatorAdvantage: text(180),
     modules: {
       type: 'array',
       minItems: 3,
@@ -38,15 +37,15 @@ export const COURSE_OUTLINE_SCHEMA = Object.freeze({
         required: ['number', 'title', 'outcome', 'lessons', 'exercise'],
         properties: {
           number: { type: 'integer', minimum: 1, maximum: 3 },
-          title: text,
-          outcome: text,
+          title: text(100),
+          outcome: text(180),
           lessons: {
             type: 'array',
             minItems: 3,
             maxItems: 3,
-            items: text,
+            items: text(120),
           },
-          exercise: text,
+          exercise: text(220),
         },
       },
     },
@@ -54,15 +53,15 @@ export const COURSE_OUTLINE_SCHEMA = Object.freeze({
       type: 'array',
       minItems: 3,
       maxItems: 3,
-      items: text,
+      items: text(160),
     },
-    revisionNote: text,
-    summary: text,
+    revisionNote: text(180),
+    summary: text(220),
     changes: {
       type: 'array',
       minItems: 3,
       maxItems: 3,
-      items: text,
+      items: text(160),
     },
   },
 });

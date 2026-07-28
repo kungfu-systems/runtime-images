@@ -152,9 +152,9 @@ export function loadConfig() {
   }
   const outboxProcessingStaleSeconds = integer(
     'OUTBOX_PROCESSING_STALE_SECONDS',
-    30,
+    240,
     1,
-    300,
+    600,
   );
   return Object.freeze({
     port: Number(process.env.PORT ?? 8090),
