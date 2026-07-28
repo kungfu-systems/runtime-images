@@ -416,14 +416,14 @@ export class KungfuRuntime {
       .filter((value) => ROOT_PATTERN.test(value));
     const claimInput = join(this.control, 'completion-claim-round-1.json');
     await writeJsonAtomic(claimInput, {
-      missionId: metadata.initiativeId,
-      goalId: metadata.assignmentId,
+      initiativeId: metadata.initiativeId,
+      assignmentId: metadata.assignmentId,
       statement: 'I completed the three-section Agent/Kungfu course outline.',
       actor: 'hub-starter-agent-round-1',
       actorType: 'agent',
       source: 'kungfu',
       evidenceEpisodeIds: [],
-      goSet: [metadata.assignmentId],
+      assignmentSet: [metadata.assignmentId],
       acceptanceRoot,
       proofRoots,
       knownGaps: [],
@@ -437,8 +437,8 @@ export class KungfuRuntime {
     ]);
     const reviewInput = join(this.control, 'completion-review-round-1.json');
     await writeJsonAtomic(reviewInput, {
-      missionId: metadata.initiativeId,
-      goalId: metadata.assignmentId,
+      initiativeId: metadata.initiativeId,
+      assignmentId: metadata.assignmentId,
       reviewer: 'hub-starter-reviewer-round-1',
       reviewerSource: 'hub-starter-independent-review-round-1',
       source: 'kungfu',
@@ -458,8 +458,8 @@ export class KungfuRuntime {
     }
     const decisionInput = join(this.control, 'continuation-decision-round-1.json');
     await writeJsonAtomic(decisionInput, {
-      missionId: metadata.initiativeId,
-      goalId: metadata.assignmentId,
+      initiativeId: metadata.initiativeId,
+      assignmentId: metadata.assignmentId,
       reviewId: review.review.review_id,
       expectedReviewRoot: review.review_root,
       expectedPlanRoot: review.continuation_plan_root,
@@ -540,14 +540,14 @@ export class KungfuRuntime {
       const acceptanceRoot = root('hub-starter-course-outline-acceptance/v1');
       const claimInput = join(this.control, 'completion-claim-round-2.json');
       await writeJsonAtomic(claimInput, {
-        missionId: metadata.initiativeId,
-        goalId: metadata.assignmentId,
+        initiativeId: metadata.initiativeId,
+        assignmentId: metadata.assignmentId,
         statement: 'I completed the course outline and attached the requested artifact evidence.',
         actor: 'hub-starter-agent-round-2',
         actorType: 'agent',
         source: 'kungfu',
         evidenceEpisodeIds: [Number(episodeId)],
-        goSet: [metadata.assignmentId],
+        assignmentSet: [metadata.assignmentId],
         acceptanceRoot,
         proofRoots: [metadata.requestRoot, recordedArtifact.artifactRoot],
         knownGaps: [],
@@ -570,8 +570,8 @@ export class KungfuRuntime {
     }
     const reviewInput = join(this.control, 'completion-review-round-2.json');
     await writeJsonAtomic(reviewInput, {
-      missionId: metadata.initiativeId,
-      goalId: metadata.assignmentId,
+      initiativeId: metadata.initiativeId,
+      assignmentId: metadata.assignmentId,
       reviewer: 'hub-starter-reviewer-round-2',
       reviewerSource: 'hub-starter-independent-review-round-2',
       source: 'kungfu',
@@ -591,8 +591,8 @@ export class KungfuRuntime {
     }
     const decisionInput = join(this.control, 'continuation-decision-round-2.json');
     await writeJsonAtomic(decisionInput, {
-      missionId: metadata.initiativeId,
-      goalId: metadata.assignmentId,
+      initiativeId: metadata.initiativeId,
+      assignmentId: metadata.assignmentId,
       reviewId: review.review.review_id,
       expectedReviewRoot: review.review_root,
       expectedPlanRoot: review.continuation_plan_root,
