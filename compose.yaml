@@ -2,7 +2,7 @@ name: kungfu-hub-starter
 
 services:
   hub:
-    image: ${KUNGFU_HUB_IMAGE:-ghcr.io/kungfu-systems/runtime-images/hub-starter@sha256:5016b10da41984838ee3b815ea24f6e20be9f3fbd770fec321a40dfb2a64ba9b}
+    image: ${KUNGFU_HUB_IMAGE:-ghcr.io/kungfu-systems/runtime-images/hub-starter@sha256:5a18ccea22c53aeac3d606a414da8b8b52b91578ba9d4f6669e5a8ed9de9b47a}
     restart: unless-stopped
     read_only: true
     user: node

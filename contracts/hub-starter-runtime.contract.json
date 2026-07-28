@@ -1,6 +1,6 @@
 {
   "schema": "kungfu.hub-starter-runtime/v1",
-  "status": "source-packages-qualified",
+  "status": "qualified-development-candidate",
   "authority": {
     "initiativeAssignment": "Kungfu Mission Control Profile through public CLI commands",
     "episode": "Kungfu native journal",
