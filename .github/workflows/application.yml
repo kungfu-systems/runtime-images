@@ -25,7 +25,7 @@ jobs:
       - name: Set up Docker Compose
         uses: docker/setup-compose-action@4eb059ff7f16592f9c84d5ca339c53cb7c5064e2 # v2.3.0
         with:
-          version: v5.3.1
+          version: v5.1.2
       - name: Sign in to GHCR
         uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3
         with:
@@ -37,6 +37,7 @@ jobs:
           HUB_PORT: "18080"
         run: |
           set -euo pipefail
+          test "$(docker compose version --short)" = "5.1.2"
           npm ci --ignore-scripts
           npm run check
           docker compose config >"${RUNNER_TEMP}/compose.resolved.yaml"

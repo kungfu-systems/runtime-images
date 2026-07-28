@@ -65,7 +65,7 @@ for (const required of [
   'course-postgres:/var/lib/postgresql/data',
   'course-models:/models',
   'published: "${HUB_PORT:-8080}"',
-  'host_ip: "${HUB_BIND_ADDRESS:-127.0.0.1}"',
+  'host_ip: "127.0.0.1"',
   'read_only: true',
   'no-new-privileges:true',
   'cap_drop:',
@@ -111,6 +111,7 @@ for (const applicationInvariant of [
   'docker compose -f "oci://${APPLICATION_REF}" "$@"',
   'compose_oci up --wait',
   'NetworkSettings.Ports["5432/tcp"] == null',
+  'version: v5.1.2',
 ]) {
   if (!applicationWorkflow.includes(applicationInvariant)) {
     throw new Error(`OCI Compose workflow invariant missing: ${applicationInvariant}`);

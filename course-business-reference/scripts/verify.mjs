@@ -34,7 +34,7 @@ const [
 for (const required of [
   'postgres:17.6-bookworm@sha256:',
   'published: "${HUB_PORT:-8080}"',
-  'host_ip: "${HUB_BIND_ADDRESS:-127.0.0.1}"',
+  'host_ip: "127.0.0.1"',
   'course-postgres:/var/lib/postgresql/data',
   'course-models:/models',
   'COURSE_DB_APP_PASSWORD',

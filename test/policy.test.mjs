@@ -15,6 +15,8 @@ test('compose preserves the localhost, non-root, read-only boundary', () => {
   assert.match(compose, /condition: service_completed_successfully/u);
   assert.match(compose, /POSTGRES_PASSWORD_FILE/u);
   assert.match(compose, /COURSE_DB_APP_PASSWORD_FILE/u);
+  assert.match(compose, /host_ip: "127\.0\.0\.1"/u);
+  assert.doesNotMatch(compose, /host_ip\s*:[^\n]*\$\{/u);
   assert.doesNotMatch(
     compose.match(/^  database:\n([\s\S]*?)(?=^  hub:)/mu)?.[0] ?? '',
     /^    ports:/mu,
@@ -53,7 +55,7 @@ for (const [name, mutation, expected] of [
 ]) {
   test(`policy rejects ${name}`, () => {
     const candidate = name === 'public ingress'
-      ? compose.replace('host_ip: "${HUB_BIND_ADDRESS:-127.0.0.1}"', mutation)
+      ? compose.replace('host_ip: "127.0.0.1"', mutation)
       : compose.replace('    restart: unless-stopped', `    restart: unless-stopped${mutation}`);
     assert.throws(() => validateComposeText(candidate), expected);
   });
