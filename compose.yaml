@@ -81,7 +81,11 @@ services:
       database:
         condition: service_healthy
     ports:
-      - "${HUB_BIND_ADDRESS:-127.0.0.1}:${HUB_PORT:-8080}:8080"
+      - name: web
+        target: 8080
+        published: "${HUB_PORT:-8080}"
+        host_ip: "${HUB_BIND_ADDRESS:-127.0.0.1}"
+        protocol: tcp
     volumes:
       - hub-state:/state
       - course-models:/models

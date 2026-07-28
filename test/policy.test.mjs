@@ -48,12 +48,12 @@ for (const [name, mutation, expected] of [
   ['host network', '\n    network_mode: host', /host networking/u],
   ['Docker socket', '\n      - /var/run/docker.sock:/var/run/docker.sock', /Docker socket/u],
   ['capability addition', '\n    cap_add: [SYS_ADMIN]', /capability/u],
-  ['public ingress', '0.0.0.0:${HUB_PORT', /non-loopback/u],
+  ['public ingress', 'host_ip: "0.0.0.0"', /non-loopback/u],
   ['root user', '\n    user: root', /root runtime/u],
 ]) {
   test(`policy rejects ${name}`, () => {
     const candidate = name === 'public ingress'
-      ? compose.replace('${HUB_BIND_ADDRESS:-127.0.0.1}:${HUB_PORT', mutation)
+      ? compose.replace('host_ip: "${HUB_BIND_ADDRESS:-127.0.0.1}"', mutation)
       : compose.replace('    restart: unless-stopped', `    restart: unless-stopped${mutation}`);
     assert.throws(() => validateComposeText(candidate), expected);
   });

@@ -14,7 +14,7 @@ export function validateComposeText(text) {
     [/\binternal\s*:\s*true/iu, 'host-disconnected networks cannot serve the localhost Web contract'],
     [/docker\.sock/iu, 'Docker socket mounts are forbidden'],
     [/cap_add\s*:/iu, 'Linux capability additions are forbidden'],
-    [/(?:0\.0\.0\.0|::):\$?\{?HUB_PORT/iu, 'non-loopback publication is forbidden'],
+    [/\bhost_ip\s*:\s*["']?(?:0\.0\.0\.0|::)["']?/iu, 'non-loopback publication is forbidden'],
     [/\buser\s*:\s*["']?root/iu, 'root runtime users are forbidden'],
     [/\/~\/\.kungfu|\/home\/[^/]+\/\.kungfu/iu, 'real Kungfu homes are forbidden'],
   ];
@@ -24,7 +24,8 @@ export function validateComposeText(text) {
   for (const required of [
     'read_only: true',
     'no-new-privileges:true',
-    '${HUB_BIND_ADDRESS:-127.0.0.1}:${HUB_PORT:-8080}:8080',
+    'published: "${HUB_PORT:-8080}"',
+    'host_ip: "${HUB_BIND_ADDRESS:-127.0.0.1}"',
     'condition: service_completed_successfully',
     'COURSE_DB_MIGRATION_PASSWORD_FILE: /install-config/database-migration-password',
     'COURSE_DB_APP_PASSWORD_FILE: /install-config/database-app-password',
