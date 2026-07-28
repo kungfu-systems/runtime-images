@@ -1,8 +1,8 @@
 {
   "schema": "kungfu.hub-starter-runtime-lock/v1",
   "status": "qualified-development-candidate",
-  "image": "ghcr.io/kungfu-systems/runtime-images/hub-starter@sha256:5a18ccea22c53aeac3d606a414da8b8b52b91578ba9d4f6669e5a8ed9de9b47a",
-  "imageSourceRevision": "aac714434b868cdda343d89cda9975c7d13db83d",
+  "image": "ghcr.io/kungfu-systems/runtime-images/hub-starter@sha256:d2fb8c300bb61a1dadf605fbfab2b1438c067fd17320e287ff4b1d3f4991ca9b",
+  "imageSourceRevision": "ab3d293ada1eeec5ac07da4526906203f785f4bc",
   "kungfuSourceSha": "83e75ffc8ff3cc05199e257a180eac6a7380949d",
   "kungfuQualificationRuns": {
     "linux/amd64": "https://github.com/kungfu-systems/kungfu/actions/runs/30330617397",
@@ -21,5 +21,5 @@
   },
   "kungfuPackageVersion": "4.0.0-alpha.1",
   "runtimeBaseImage": "node:24-trixie-slim@sha256:ae91dcc111a68c9d2d81ff2a17bda61be126426176fde6fe7d08ab13b7f50573",
-  "qualificationRun": "https://github.com/kungfu-systems/runtime-images/actions/runs/30338579458"
+  "qualificationRun": "https://github.com/kungfu-systems/runtime-images/actions/runs/30347694326"
 }
