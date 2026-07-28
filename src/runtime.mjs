@@ -287,22 +287,22 @@ export class KungfuRuntime {
     const requestPath = join(this.control, 'assignment-request.json');
     await writeJsonAtomic(requestPath, request);
     const captured = await this.run([
-      'assignment', 'capture', '--request', requestPath, '--workspace', this.workspace, '--json',
+      'work', 'capture', '--request', requestPath, '--workspace', this.workspace, '--json',
     ]);
     const admitted = await this.run([
-      'assignment', 'admit', captured.requestPath, '--workspace', this.workspace,
+      'work', 'admit', captured.requestPath, '--workspace', this.workspace,
       '--actor', 'hub-starter', '--actor-type', 'agent',
     ]);
     const expires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
     const claimed = await this.run([
-      'assignment', 'claim', '--workspace', this.workspace,
+      'work', 'claim', '--workspace', this.workspace,
       '--initiative-id', initiativeId, '--assignment-id', assignmentId,
       '--owner', 'local-developer', '--agent', 'hub-starter', '--slot', identity.instanceId,
       '--lease-id', `lease-${identity.instanceId}`, '--lease-expires-at', expires,
       '--authorized-by', 'local-developer', '--actor-type', 'user',
     ]);
     const kickedOff = await this.run([
-      'assignment', 'kickoff', '--workspace', this.workspace,
+      'work', 'kickoff', '--workspace', this.workspace,
       '--initiative-id', initiativeId, '--assignment-id', assignmentId,
       '--actor', 'hub-starter', '--reason', 'Hub Starter became semantically ready',
     ]);
@@ -328,7 +328,7 @@ export class KungfuRuntime {
 
   async #status(metadata) {
     return this.run([
-      'assignment', 'status', '--workspace', this.workspace,
+      'work', 'status', '--workspace', this.workspace,
       '--initiative-id', metadata.initiativeId, '--assignment-id', metadata.assignmentId,
     ]);
   }
@@ -406,7 +406,7 @@ export class KungfuRuntime {
     if (status.completion_claim_count > 0) return this.state();
     if (status.phase === 'executing') {
       await this.run([
-        'assignment', 'stage', '--workspace', this.workspace,
+        'work', 'stage', '--workspace', this.workspace,
         '--initiative-id', metadata.initiativeId, '--assignment-id', metadata.assignmentId,
         '--actor', 'hub-starter', '--reason', 'Course-outline homework is ready for the first Agent submission',
       ]);
@@ -432,7 +432,7 @@ export class KungfuRuntime {
       ],
     });
     await this.run([
-      'assignment', 'claim-completion', claimInput, '--workspace', this.workspace,
+      'work', 'claim-completion', claimInput, '--workspace', this.workspace,
       '--authorized-by', 'hub-starter-agent-round-1',
     ]);
     const reviewInput = join(this.control, 'completion-review-round-1.json');
@@ -447,7 +447,7 @@ export class KungfuRuntime {
       proposedFollowups: [],
     });
     const review = await this.run([
-      'assignment', 'review', reviewInput, '--workspace', this.workspace,
+      'work', 'review', reviewInput, '--workspace', this.workspace,
       '--authorized-by', 'hub-starter-reviewer-round-1',
     ]);
     if (review.review?.verdict !== 'insufficient') {
@@ -471,7 +471,7 @@ export class KungfuRuntime {
       reason: 'The Agent claim has no sealed course-outline artifact, so request that evidence.',
     });
     await this.run([
-      'assignment', 'decide', decisionInput, '--workspace', this.workspace,
+      'work', 'decide', decisionInput, '--workspace', this.workspace,
       '--authorized-by', 'hub-starter-operator',
     ]);
     status = await this.#status(metadata);
@@ -556,7 +556,7 @@ export class KungfuRuntime {
         ],
       });
       await this.run([
-        'assignment', 'claim-completion', claimInput, '--workspace', this.workspace,
+        'work', 'claim-completion', claimInput, '--workspace', this.workspace,
         '--authorized-by', 'hub-starter-agent-round-2',
       ]);
     } else {
@@ -580,7 +580,7 @@ export class KungfuRuntime {
       proposedFollowups: [],
     });
     const review = await this.run([
-      'assignment', 'review', reviewInput, '--workspace', this.workspace,
+      'work', 'review', reviewInput, '--workspace', this.workspace,
       '--authorized-by', 'hub-starter-reviewer-round-2',
     ]);
     if (review.review?.verdict !== 'fit') {
@@ -604,15 +604,15 @@ export class KungfuRuntime {
       reason: 'The sealed course-outline evidence passed independent review.',
     });
     const decision = await this.run([
-      'assignment', 'decide', decisionInput, '--workspace', this.workspace,
+      'work', 'decide', decisionInput, '--workspace', this.workspace,
       '--authorized-by', 'hub-starter-operator',
     ]);
     const sealPlan = await this.run([
-      'assignment', 'seal', '--workspace', this.workspace,
+      'work', 'seal', '--workspace', this.workspace,
       '--initiative-id', metadata.initiativeId, '--assignment-id', metadata.assignmentId,
     ]);
     const seal = await this.run([
-      'assignment', 'seal', '--workspace', this.workspace,
+      'work', 'seal', '--workspace', this.workspace,
       '--initiative-id', metadata.initiativeId, '--assignment-id', metadata.assignmentId,
       '--execute', '--expected-state-root', sealPlan.state_root,
     ]);

@@ -133,5 +133,12 @@ const page = await readFile(new URL('../web/index.html', import.meta.url), 'utf8
 for (const productCopy of ['Selected homework', 'Agent submission', 'Independent check', 'Audit and developer details']) {
   if (!page.includes(productCopy)) throw new Error(`coursework product copy missing: ${productCopy}`);
 }
+const runtimeAdapter = await readFile(new URL('../src/runtime.mjs', import.meta.url), 'utf8');
+if (!runtimeAdapter.includes("'work', 'capture'")) {
+  throw new Error('runtime adapter does not use the current public Work command family');
+}
+if (runtimeAdapter.includes("'assignment',")) {
+  throw new Error('runtime adapter retains the retired top-level Assignment command family');
+}
 
 console.log('[verify] source, Compose, image boundary, and identity contracts passed');
