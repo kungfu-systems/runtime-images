@@ -146,5 +146,10 @@ if (!runtimeAdapter.includes('initiative_id: initiativeId') || !runtimeAdapter.i
 if (runtimeAdapter.includes('mission_id: initiativeId')) {
   throw new Error('runtime Assignment request retains the retired mission identity shorthand');
 }
+for (const retiredInput of ['missionId:', 'goalId:', 'goSet:']) {
+  if (runtimeAdapter.includes(retiredInput)) {
+    throw new Error(`runtime Assignment action retains retired input: ${retiredInput}`);
+  }
+}
 
 console.log('[verify] source, Compose, image boundary, and identity contracts passed');
