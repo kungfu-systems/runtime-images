@@ -16,14 +16,14 @@
   "state_ref": "buildchain/release-state/1-0-0-alpha-2",
   "state_path": "/home/runner/work/runtime-images/runtime-images/.buildchain/release-state/v1.0.0-alpha.2.json",
   "evidence_path": "/home/runner/work/runtime-images/runtime-images/.buildchain/release-evidence/v1.0.0-alpha.2/evidence.json",
-  "state": "publishing",
-  "previous_state": "prepared",
+  "state": "publish_failed",
+  "previous_state": "publishing",
   "actor": "kungfu-origin",
   "run_id": "30378372245",
   "superseded_by": "",
-  "failure": "",
+  "failure": "Command failed: bash scripts/publish-runtime-release.sh",
   "artifacts": [],
   "evidence": [],
   "created_at": "2026-07-28T16:29:15.617Z",
-  "updated_at": "2026-07-28T16:29:16.890Z"
+  "updated_at": "2026-07-28T16:33:30.106Z"
 }
