@@ -140,5 +140,11 @@ if (!runtimeAdapter.includes("'work', 'capture'")) {
 if (runtimeAdapter.includes("'assignment',")) {
   throw new Error('runtime adapter retains the retired top-level Assignment command family');
 }
+if (!runtimeAdapter.includes('initiative_id: initiativeId') || !runtimeAdapter.includes('assignment_id: assignmentId')) {
+  throw new Error('runtime Assignment request does not declare current native identities');
+}
+if (runtimeAdapter.includes('mission_id: initiativeId')) {
+  throw new Error('runtime Assignment request retains the retired mission identity shorthand');
+}
 
 console.log('[verify] source, Compose, image boundary, and identity contracts passed');
