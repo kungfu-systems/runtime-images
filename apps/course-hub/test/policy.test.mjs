@@ -75,7 +75,7 @@ test('course UI distinguishes inference from active native Kungfu management', a
     read('../web/app.js'),
     read('../web/style.css'),
     read('../src/work-control-projection.mjs'),
-    read('../../compose.yaml'),
+    read('../../../compose.yaml'),
   ]);
   assert.match(browser, /Work control: Kungfu/u);
   assert.match(browser, /<details class="work-control-panel" aria-label="Current work control">/u);
@@ -210,7 +210,7 @@ test('long inference delivery is bounded and single-flight', async () => {
     read('../src/course-outline-schema.mjs'),
     read('../src/outbox.mjs'),
     read('../src/config.mjs'),
-    read('../compose.yaml'),
+    read('../../../compose.yaml'),
   ]);
   assert.match(outlineSchema, /maxLength/u);
   assert.match(adapter, /deliveryStaleSeconds/u);

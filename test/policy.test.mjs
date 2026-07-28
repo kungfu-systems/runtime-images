@@ -5,8 +5,8 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 import { validateComposeText, validateImageReference } from '../src/policy.mjs';
-import { HubStarterClient } from '../src/client.mjs';
-import { projectCoursework } from '../src/runtime.mjs';
+import { HubStarterClient } from '../legacy/hub-starter/src/client.mjs';
+import { projectCoursework } from '../legacy/hub-starter/src/runtime.mjs';
 
 const compose = await readFile(new URL('../compose.yaml', import.meta.url), 'utf8');
 

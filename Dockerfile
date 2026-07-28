@@ -87,9 +87,9 @@ RUN apt-get update \
 COPY --from=dependencies --chown=root:root /build/node_modules /opt/course/node_modules
 COPY --from=package --chown=root:root /opt/kungfu /opt/kungfu
 COPY --from=llama --chown=root:root /app /opt/llama
-COPY --chown=root:root course-business-reference/src /opt/course/src
-COPY --chown=root:root course-business-reference/web /opt/course/web
-COPY --chown=root:root course-business-reference/migrations /opt/course/migrations
+COPY --chown=root:root apps/course-hub/src /opt/course/src
+COPY --chown=root:root apps/course-hub/web /opt/course/web
+COPY --chown=root:root apps/course-hub/migrations /opt/course/migrations
 RUN ln -s /opt/kungfu/kungfu /usr/local/bin/kungfu \
     && ln -s /opt/llama/llama-server /usr/local/bin/llama-server \
     && test -x /usr/local/bin/kungfu \

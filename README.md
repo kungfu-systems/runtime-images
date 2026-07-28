@@ -1,73 +1,180 @@
 # Kungfu Course Hub
 
-This repository publishes one Docker application for a small commercial
-Builder to understand and extend a Kungfu-managed Agent product.
+Kungfu Course Hub is a runnable, Apache-2.0 reference application for building
+an account-based Agent product with PostgreSQL business state and Kungfu work
+control.
 
-The current development candidate is a complete reference slice:
+It is intentionally concrete: a creator registers, describes a course, asks an
+Agent to generate an outline, keeps immutable versions, and approves one
+version. Every generated version then receives an independent Kungfu work
+record with Evidence, review, a typed decision, and a portable seal.
 
-- creators register and sign in;
-- PostgreSQL owns private per-account course collections, durable sessions,
-  immutable outline versions, approvals, backend bindings, and the outbox;
-- Mock, a user-installed local Qwen model, or a separately configured hosted
-  OpenAI-compatible provider generates visible course content;
-- Kungfu independently controls every generated course version through a real
-  Assignment, Evidence Episode, review, typed decision, and state seal.
+The project is useful in two ways:
 
-Inference answers “who generated the draft?” Kungfu answers “what work was
-claimed, evidenced, reviewed, decided, recovered, and sealed?” The UI presents
-those as separate truths.
+- run it to understand what a Kungfu-managed Agent product feels like;
+- fork the complete vertical slice to explore a real workflow of your own.
 
-> This is a pre-Alpha development candidate and a reference architecture. It is
-> not a production SaaS, public-ingress configuration, billing system, account
-> recovery service, or security certification.
+> This is a pre-Alpha development reference, not a production SaaS template.
+> It does not claim public-ingress security, account recovery, billing, SSO,
+> high availability, backups, or operational SLOs.
 
-## Run
+## Understand it in one minute
 
-Requirements: Docker with Compose v2 on `linux/amd64` or `linux/arm64`, including
-Docker Desktop on matching Intel or Apple Silicon Macs.
+Three systems have different jobs:
+
+| Question | Authority |
+| --- | --- |
+| Who is the user, and which business records are theirs? | PostgreSQL |
+| Which model produced this visible draft? | Mock, local Qwen, or a configured hosted provider |
+| Was the work claimed, evidenced, reviewed, decided, and sealed? | Kungfu |
+
+The Web application presents those facts, but does not become a second
+authority.
+
+```text
+browser
+  -> Course Hub API
+  -> PostgreSQL transaction + durable outbox
+       -> AgentWorkPort -> Mock / local Qwen / hosted provider
+       -> Kungfu public CLI -> Assignment / Evidence / review / decision / seal
+```
+
+See [Architecture](docs/ARCHITECTURE.md) for the complete request and recovery
+flow.
+
+## Recommended first step: ask an Agent
+
+This repository is designed to be explained from its checked-in contracts and
+the Kungfu runtime inside the Docker image. A capable coding Agent can connect
+the product UI, source code, PostgreSQL model, and KFD-3 interface faster than a
+file-by-file tour.
+
+Give the Agent this prompt:
+
+```text
+Read AGENTS.md, docs/ARCHITECTURE.md, docs/EXTENDING.md, and docs/API.md.
+If the Hub is running, execute:
+  docker compose exec -T hub kungfu agent brief
+  docker compose exec -T hub kungfu agent verify --json
+Explain the product in terms of:
+1. the user-visible workflow;
+2. PostgreSQL, inference, and Kungfu authority;
+3. the exact files I would change for my workflow;
+4. the invariants I must preserve.
+Do not modify code until you have proposed an extension map.
+```
+
+`kungfu agent brief` is the complete offline first read from the exact Kungfu
+runtime shipped in the image. It exposes the value, constraints, modes, public
+commands, and KFD-3 discovery path without initializing product state.
+`kungfu agent verify --json` verifies that the installed `kungfu agent` command
+tree closes against its declared KFD-3 registry.
+
+## Run the product
+
+Requirements:
+
+- Docker with Compose v2;
+- `linux/amd64` or `linux/arm64`, including matching Docker Desktop platforms.
+
+Create a local environment file:
 
 ```sh
-COURSE_DB_MIGRATION_PASSWORD=synthetic_migration_42 \
-COURSE_DB_APP_PASSWORD=synthetic_runtime_42 \
+cp .env.example .env
+```
+
+The included values are synthetic and intended only for a disposable local
+installation. Start the Hub:
+
+```sh
 docker compose up --detach
+docker compose ps
 ```
 
 Open <http://127.0.0.1:8080>, register, create a course, and generate its first
-outline. The default Agent is an explicitly labelled deterministic Mock, so the
-first start downloads no model.
+outline. The initial backend is an explicitly labelled deterministic Mock, so
+the first start downloads no model.
 
-The checked-in Compose file binds only to loopback. To expose a disposable
-preview to one trusted LAN, set both the bind address and matching public
-origin explicitly:
+Inspect the Kungfu interface from the running image:
 
 ```sh
-HUB_BIND_ADDRESS=192.168.1.20 \
-HUB_PUBLIC_ORIGIN=http://192.168.1.20:8080 \
-COURSE_DB_MIGRATION_PASSWORD=synthetic_migration_42 \
-COURSE_DB_APP_PASSWORD=synthetic_runtime_42 \
-docker compose up --detach
+docker compose exec -T hub kungfu agent brief
+docker compose exec -T hub kungfu agent verify --json
+docker compose exec -T hub kungfu agent work-model --json
 ```
 
-Ordinary stop/restart preserves all named volumes. This project never
-automatically runs `docker compose down -v`.
+Stop without deleting data:
+
+```sh
+docker compose stop
+```
+
+Ordinary restart preserves the PostgreSQL, Kungfu, and model named volumes.
+The project never automates `docker compose down -v`.
+
+## Explore the source with a fast edit-build-run loop
+
+The production Dockerfile consumes exact, prebuilt Kungfu packages. A Builder
+should not need to reproduce that supply chain just to change a prompt, route,
+domain rule, or page.
+
+The developer overlay starts from the exact published Hub image and replaces
+only the checked-in Course Hub application source:
+
+```sh
+COMPOSE_PROJECT_NAME=kungfu-course-hub-dev \
+docker compose -f compose.yaml -f compose.dev.yaml up --build --detach
+```
+
+After editing `apps/course-hub/`, rerun the same command. The build reuses the
+published Kungfu and llama.cpp runtime and does not download model weights.
+
+Use a different `COMPOSE_PROJECT_NAME` for each experiment so its named volumes
+remain isolated. The developer overlay is for source exploration; the root
+`Dockerfile` and trusted workflow remain the reproducible publication path.
+
+## Choose an exploration path
+
+| Goal | Start here |
+| --- | --- |
+| Change course fields, prompt, output, or UI | [Customize the course workflow](docs/EXTENDING.md#customize-the-course-workflow) |
+| Add a non-OpenAI inference provider | [Add an Agent backend](docs/EXTENDING.md#add-an-agent-backend) |
+| Build a different business workflow | [Create another domain workflow](docs/EXTENDING.md#create-another-domain-workflow) |
+| Understand the HTTP surface | [API guide](docs/API.md) |
+| Understand the authority and recovery model | [Architecture](docs/ARCHITECTURE.md) |
+| Understand every directory | [Project map](docs/MAP.md) |
+
+The narrowest extension is configuration: a hosted OpenAI-compatible provider
+requires no source changes. A new course shape touches the domain and Web
+layers. A new business workflow should retain the platform invariants while
+replacing course-specific tables, commands, artifacts, and presentation.
+
+## Product capabilities
+
+- creator registration and login with opaque sessions;
+- PostgreSQL-enforced per-account isolation using forced row-level security;
+- private course collections and immutable generated versions;
+- one approved-version pointer per course;
+- durable, idempotent Agent command delivery and restart recovery;
+- visible Mock, user-installed local Qwen, and optional hosted inference;
+- no silent fallback to Mock after selecting local or hosted inference;
+- one stable Kungfu binding per course;
+- one native work lifecycle per generated version;
+- retained Evidence, independent review, typed decision, and seal roots;
+- non-root, read-only, capability-free container execution.
 
 ## One image, optional models
 
-There is one first-party Hub image for every delivery mode. It includes:
+The first-party image includes:
 
 - the Course Hub Web application and migrations;
-- the exact architecture-matched Kungfu public CLI package;
+- the exact architecture-matched Kungfu public CLI;
 - the llama.cpp runtime;
 - no model weights and no provider credential.
 
-After signing in, open **AI: Mock** in the header. A model is downloaded only
-after **Download** is clicked, is streamed into the named model volume, checked
-against its pinned byte count and SHA-256, and atomically installed. Activation
-starts the private llama.cpp process inside the same container. A partial
-download is resumable.
-
-The initial catalog deliberately offers different capability and storage
-levels:
+After signing in, open **AI: Mock** in the header. A local model is downloaded
+only after **Download** is clicked. The runtime streams it into the named model
+volume, validates its pinned byte count and SHA-256, and installs it atomically.
 
 | Choice | Download | Intended use |
 | --- | ---: | --- |
@@ -75,53 +182,33 @@ levels:
 | Qwen3 1.7B Q8_0 | 1,834,426,016 bytes | balanced local drafting |
 | Qwen3 4B Q4_K_M | 2,497,280,256 bytes | stronger course design |
 
-The runtime never silently falls back to Mock when a selected local or hosted
-provider fails. Existing saved versions retain their original provider, model,
-delivery mode, backend binding, and transition provenance.
-
 A hosted OpenAI-compatible provider is an optional deployment overlay. Mount
-its token as a local secret file and set `COURSE_HOSTED_AGENT_BASE_URL`,
-`COURSE_HOSTED_AGENT_MODEL`, `COURSE_HOSTED_AGENT_PROVIDER_LABEL`, and
-`COURSE_HOSTED_AGENT_API_KEY_FILE`. The public image does not contain a shared
-provider key.
+its token as a local secret file and set
+`COURSE_HOSTED_AGENT_BASE_URL`, `COURSE_HOSTED_AGENT_MODEL`,
+`COURSE_HOSTED_AGENT_PROVIDER_LABEL`, and
+`COURSE_HOSTED_AGENT_API_KEY_FILE`.
 
-## Authority and handoff
+## Repository shape
 
-| Concern | Authority |
-| --- | --- |
-| identity, session, account isolation | PostgreSQL |
-| course brief, collection, versions, approval | PostgreSQL |
-| inference output and model provenance | selected Agent backend, persisted by PostgreSQL |
-| work claim, Evidence, review, decision, recovery, seal | Kungfu public CLI and native state |
-| presentation and commands | non-authoritative Web application |
+```text
+apps/course-hub/             canonical business application
+  migrations/                PostgreSQL schemas, roles, RLS, and domain state
+  src/                       domain, adapters, outbox, Kungfu work control
+  web/                       browser product surface
+  contracts/                 AgentWorkPort schemas
+  test/                      domain and boundary tests
+contracts/                   image/runtime claim boundary
+release/                     exact source, package, image, and CI identities
+course-business-reference/   compatibility Compose entry only
+legacy/hub-starter/          retained former demonstration implementation
+docs/                        architecture, API, extension, and claim guides
+scripts/                     source and image qualification
+```
 
-Each course has one stable `kungfu:course:<course-id>` binding. Each generated
-version receives its own immutable work artifact and native lifecycle. The Web
-application does not construct private Kungfu records: it uses packaged public
-JSON CLI commands, stores only stable roots and receipts with the business
-version, and can resume an interrupted lifecycle from native status.
-
-The collapsed **Work control · current truth** card shows the actual handoff:
-Agent output → business version → Kungfu Assignment → Evidence → independent
-review → typed decision → seal.
-
-## Reproducible delivery
-
-[`contracts/hub-starter-runtime.contract.json`](contracts/hub-starter-runtime.contract.json)
-and [`release/runtime.lock.json`](release/runtime.lock.json) bind:
-
-- the exact Kungfu source commit and amd64/arm64 package SHA-256 values;
-- the digest-pinned Node and llama.cpp base images;
-- the exact published multi-platform Hub image and qualification run;
-- the non-root, read-only, no-Docker-socket runtime boundary.
-
-The Dockerfile consumes already built Kungfu packages. It does not clone or
-compile Kungfu and does not copy a model, checkout, compiler toolchain, package
-cache, Docker credential, or build secret into the final image.
-
-To test a separately qualified candidate, set `KUNGFU_HUB_IMAGE` to an exact
-`registry/path@sha256:<digest>` reference. Floating tags are rejected by the
-source contract.
+The canonical application is `apps/course-hub/`. `npm start`, the production
+Dockerfile, and the test suite all point to it. The former demonstration remains
+available as `npm run start:legacy`; it is not part of the published Course Hub
+image.
 
 ## Validation
 
@@ -131,24 +218,26 @@ npm run check
 bash -n scripts/smoke-image.sh scripts/smoke-browser.sh
 ```
 
-The image smoke uses synthetic users and isolated named volumes to prove:
-account isolation, migration/application role separation, Mock generation,
-real Kungfu Evidence/review/decision/seal settlement, restart persistence,
-non-root execution, a read-only root filesystem, and no added Linux
-capabilities. `scripts/smoke-local-model.mjs` additionally qualifies
-click-install, activation, real local inference output, and its subsequent
-Kungfu settlement when a pinned seed model is supplied through
-`scripts/smoke-local-image.sh`.
+The full image smoke proves account isolation, database role separation, Mock
+generation, real Kungfu settlement, restart persistence, non-root execution, a
+read-only root filesystem, and no added Linux capabilities. Local-model smoke
+also proves explicit installation, activation, visible model output,
+provenance, and subsequent Kungfu settlement.
 
-The former `course-business-reference/` entry remains as a compatibility path
-for older automation, but it now launches this same unified first-party image;
-it is no longer a second product or image.
-
-See [`docs/MAP.md`](docs/MAP.md) for the repository map and
-[`docs/DEVELOPMENT-CANDIDATE.md`](docs/DEVELOPMENT-CANDIDATE.md) for explicit
+See [Development candidate boundary](docs/DEVELOPMENT-CANDIDATE.md) for exact
 claims and non-claims.
+
+## Reproducible delivery
+
+[`contracts/hub-starter-runtime.contract.json`](contracts/hub-starter-runtime.contract.json)
+and [`release/runtime.lock.json`](release/runtime.lock.json) bind the exact
+Kungfu source, architecture packages, base images, published image, and
+qualification run.
+
+To test another qualified candidate, set `KUNGFU_HUB_IMAGE` to an exact
+`registry/path@sha256:<digest>` reference. Floating runtime tags are rejected.
 
 ## License
 
-Apache-2.0. See [`LICENSE`](LICENSE). Project names and marks are addressed in
-[`TRADEMARK.md`](TRADEMARK.md).
+Apache-2.0. See [LICENSE](LICENSE). Project names and marks are addressed in
+[TRADEMARK.md](TRADEMARK.md).

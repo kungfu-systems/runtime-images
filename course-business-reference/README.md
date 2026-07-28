@@ -1,14 +1,18 @@
 # Course business reference compatibility path
 
-This directory contains the PostgreSQL course domain, Web product, migrations,
-and tests used by the unified Kungfu Course Hub image. It is no longer a
-separate image or a Mock-only product.
+This directory retains compatibility Compose files and qualification scripts
+for older automation. It is no longer a source tree, separate image, or
+Mock-only product.
 
 The root [`Dockerfile`](../Dockerfile) assembles this application together with
 the architecture-matched Kungfu public CLI and llama.cpp runtime. The root
 [`compose.yaml`](../compose.yaml) is the canonical installation surface. This
 directory's Compose file remains for existing development automation and
 launches the same `KUNGFU_HUB_IMAGE`.
+
+The canonical application source is [`apps/course-hub/`](../apps/course-hub/).
+New development should start from the root
+[`README.md`](../README.md) and [`docs/EXTENDING.md`](../docs/EXTENDING.md).
 
 ## What the reference proves
 
