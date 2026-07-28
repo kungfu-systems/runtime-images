@@ -30,6 +30,15 @@ jobs:
             while IFS= read -r encoded; do
               message=$(printf '%s' "${encoded}" | base64 --decode | jq -r '.commit.message')
               sha=$(printf '%s' "${encoded}" | base64 --decode | jq -r '.sha')
+              parent_count=$(printf '%s' "${encoded}" | base64 --decode | jq '.parents | length')
+              committer_login=$(printf '%s' "${encoded}" | base64 --decode | jq -r '.committer.login // ""')
+              if [[ "${parent_count}" -gt 1 \
+                && "${committer_login}" == web-flow \
+                && "${message}" =~ ^Merge\ pull\ request\ \#[0-9]+\ from\ kungfu-systems/ ]]; then
+                echo "commit ${sha} is a GitHub-generated merge of separately checked commits"
+                checked=$((checked + 1))
+                continue
+              fi
               grep -Eiq '^Signed-off-by: .+ <[^>]+>$' <<<"${message}" || {
                 echo "commit ${sha} has no DCO signoff" >&2
                 exit 1
