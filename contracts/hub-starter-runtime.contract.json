@@ -1,6 +1,6 @@
 {
   "schema": "kungfu.hub-starter-runtime/v1",
-  "status": "development-pre-alpha",
+  "status": "source-packages-qualified",
   "authority": {
     "initiativeAssignment": "Kungfu Mission Control Profile through public CLI commands",
     "episode": "Kungfu native journal",
@@ -8,15 +8,19 @@
     "secondaryDatabase": false
   },
   "sourceBuild": {
-    "kungfuSourceSha": "pending",
+    "kungfuSourceSha": "83e75ffc8ff3cc05199e257a180eac6a7380949d",
+    "qualificationRuns": {
+      "linux/amd64": "https://github.com/kungfu-systems/kungfu/actions/runs/30330617397",
+      "linux/arm64": "https://github.com/kungfu-systems/kungfu/actions/runs/30330528786"
+    },
     "packages": {
       "linux/amd64": {
         "name": "kungfu-episodes-cli-linux-x64.tar.gz",
-        "sha256": "pending"
+        "sha256": "c58add4d6530541b1a7e4233573f13502a306614a8bb79e0bd60988b78f061ca"
       },
       "linux/arm64": {
         "name": "kungfu-episodes-cli-linux-arm64.tar.gz",
-        "sha256": "pending"
+        "sha256": "36085af2deeb62e35b7e147ad573281f5961877fc35cd2e54ed3ed52d5fbe4ab"
       }
     }
   },

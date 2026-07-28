@@ -1,20 +1,25 @@
 {
   "schema": "kungfu.hub-starter-runtime-lock/v1",
-  "status": "implementation-pending-qualification",
+  "status": "source-packages-qualified",
   "image": null,
   "imageSourceRevision": null,
-  "kungfuSourceSha": "pending",
+  "kungfuSourceSha": "83e75ffc8ff3cc05199e257a180eac6a7380949d",
+  "kungfuQualificationRuns": {
+    "linux/amd64": "https://github.com/kungfu-systems/kungfu/actions/runs/30330617397",
+    "linux/arm64": "https://github.com/kungfu-systems/kungfu/actions/runs/30330528786"
+  },
+  "packageRelease": "https://github.com/kungfu-systems/runtime-images/releases/tag/hub-runtime-83e75ffc8ff3-runs-30330617397-30330528786",
   "kungfuPackages": {
     "linux/amd64": {
       "name": "kungfu-episodes-cli-linux-x64.tar.gz",
-      "sha256": "pending"
+      "sha256": "c58add4d6530541b1a7e4233573f13502a306614a8bb79e0bd60988b78f061ca"
     },
     "linux/arm64": {
       "name": "kungfu-episodes-cli-linux-arm64.tar.gz",
-      "sha256": "pending"
+      "sha256": "36085af2deeb62e35b7e147ad573281f5961877fc35cd2e54ed3ed52d5fbe4ab"
     }
   },
-  "kungfuPackageVersion": "pending",
+  "kungfuPackageVersion": "4.0.0-alpha.1",
   "runtimeBaseImage": "node:24-trixie-slim@sha256:ae91dcc111a68c9d2d81ff2a17bda61be126426176fde6fe7d08ab13b7f50573",
   "qualificationRun": null
 }
