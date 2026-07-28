@@ -25,7 +25,7 @@ export function validateComposeText(text) {
     'read_only: true',
     'no-new-privileges:true',
     'published: "${HUB_PORT:-8080}"',
-    'host_ip: "${HUB_BIND_ADDRESS:-127.0.0.1}"',
+    'host_ip: "127.0.0.1"',
     'condition: service_completed_successfully',
     'COURSE_DB_MIGRATION_PASSWORD_FILE: /install-config/database-migration-password',
     'COURSE_DB_APP_PASSWORD_FILE: /install-config/database-app-password',
@@ -44,6 +44,9 @@ export function validateComposeText(text) {
   }
   if (/\b(?:POSTGRES_PASSWORD|COURSE_DB_APP_PASSWORD):/u.test(text)) {
     throw new Error('inline database passwords are forbidden');
+  }
+  if (/host_ip\s*:[^\n]*\$\{/u.test(text)) {
+    throw new Error('OCI host_ip must not depend on interpolation');
   }
   return true;
 }
