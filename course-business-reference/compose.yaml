@@ -24,7 +24,7 @@ services:
       retries: 30
 
   app:
-    image: ${KUNGFU_HUB_IMAGE:-ghcr.io/kungfu-systems/runtime-images/hub-starter@sha256:5a18ccea22c53aeac3d606a414da8b8b52b91578ba9d4f6669e5a8ed9de9b47a}
+    image: ${KUNGFU_HUB_IMAGE:-ghcr.io/kungfu-systems/runtime-images/hub-starter@sha256:d2fb8c300bb61a1dadf605fbfab2b1438c067fd17320e287ff4b1d3f4991ca9b}
     restart: unless-stopped
     read_only: true
     user: node
