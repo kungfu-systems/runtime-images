@@ -174,6 +174,8 @@ for (const invariant of [
   'agent verify --json',
   'scripts/smoke-image.sh',
   'compose-v${BUILDCHAIN_VERSION}',
+  'compose_config_with_retry',
+  'max_attempts=12',
   'docker compose -f "${repo_root}/compose.yaml" publish -y "${application_ref}"',
   'NetworkSettings.Ports["5432/tcp"] == null',
   'scripts/write-runtime-publish-evidence.mjs',

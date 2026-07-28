@@ -205,13 +205,37 @@ compose_oci() {
   return "${status}"
 }
 
+compose_config_with_retry() {
+  local reference="$1"
+  local output_path="$2"
+  local attempt=1
+  local max_attempts=12
+  local status=1
+
+  while [ "${attempt}" -le "${max_attempts}" ]; do
+    if compose_oci "${reference}" config >"${output_path}"; then
+      return 0
+    else
+      status=$?
+    fi
+    if [ "${attempt}" -eq "${max_attempts}" ]; then
+      break
+    fi
+    echo "Compose application ${reference} is not readable yet; retrying (${attempt}/${max_attempts})" >&2
+    sleep 5
+    attempt=$((attempt + 1))
+  done
+
+  return "${status}"
+}
+
 if docker buildx imagetools inspect "${application_ref}" >/dev/null 2>&1; then
   echo "Reusing existing exact Compose application ${application_ref}"
-  compose_oci "${application_ref}" config >"${application_config_path}"
+  compose_config_with_retry "${application_ref}" "${application_config_path}"
 else
   KUNGFU_HUB_IMAGE="${image_name}@${image_digest}" \
     docker compose -f "${repo_root}/compose.yaml" publish -y "${application_ref}"
-  compose_oci "${application_ref}" config >"${application_config_path}"
+  compose_config_with_retry "${application_ref}" "${application_config_path}"
 fi
 
 grep -F "image: ${image_name}@${image_digest}" "${application_config_path}"
