@@ -1,23 +1,21 @@
-name: Compose application
+name: Compose application qualification
 
 on:
   workflow_dispatch:
 
 permissions:
   contents: read
-  packages: write
 
 jobs:
-  publish:
-    name: Publish and smoke OCI Compose application
+  qualify:
+    name: Dry-run one-command application
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
     steps:
-      - name: Check out exact application source
+      - name: Check out exact source
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
-      - name: Set up Node
+      - name: Use Node.js 24
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "24"
@@ -26,134 +24,19 @@ jobs:
         uses: docker/setup-compose-action@4eb059ff7f16592f9c84d5ca339c53cb7c5064e2 # v2.3.0
         with:
           version: v5.1.2
-      - name: Set up Buildx
-        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3
-      - name: Sign in to GHCR
-        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ github.token }}
-      - name: Verify source and resolved installation
+      - name: Verify source and resolved application
         env:
           HUB_PORT: "18080"
         run: |
           set -euo pipefail
-          test "$(docker compose version --short)" = "5.1.2"
-          npm ci --ignore-scripts
+          npm ci --ignore-scripts --registry=https://registry.npmjs.org/
           npm run check
           docker compose config >"${RUNNER_TEMP}/compose.resolved.yaml"
           grep -F 'published: "18080"' "${RUNNER_TEMP}/compose.resolved.yaml"
+          grep -F 'host_ip: 127.0.0.1' "${RUNNER_TEMP}/compose.resolved.yaml"
           if sed -n '/^  database:/,/^  hub:/p' "${RUNNER_TEMP}/compose.resolved.yaml" | grep -q '^    ports:'; then
             echo 'PostgreSQL must not publish a host port' >&2
             exit 1
           fi
-      - name: Resolve application identities
-        id: identity
-        shell: bash
-        run: |
-          set -euo pipefail
-          immutable="ghcr.io/${GITHUB_REPOSITORY}/hub-starter:compose-${GITHUB_SHA::12}"
-          preview="ghcr.io/${GITHUB_REPOSITORY}/hub-starter:compose-preview"
-          echo "immutable=${immutable}" >>"${GITHUB_OUTPUT}"
-          echo "preview=${preview}" >>"${GITHUB_OUTPUT}"
-      - name: Publish immutable application candidate
-        env:
-          IMMUTABLE_REF: ${{ steps.identity.outputs.immutable }}
-        run: docker compose publish -y "${IMMUTABLE_REF}"
-      - name: Smoke a fresh one-command installation
-        env:
-          APPLICATION_REF: ${{ steps.identity.outputs.immutable }}
-          COMPOSE_PROJECT_NAME: kungfu-course-hub-oci-${{ github.run_id }}-${{ github.run_attempt }}
-          HUB_PORT: "18080"
-        run: |
-          set -euo pipefail
-          smoke_dir=$(mktemp -d)
-          cd "${smoke_dir}"
-          compose_oci() {
-            set +o pipefail
-            yes | docker compose -f "oci://${APPLICATION_REF}" "$@"
-            local status=${PIPESTATUS[1]}
-            set -o pipefail
-            return "${status}"
-          }
-          cleanup() {
-            compose_oci down >/dev/null 2>&1 || true
-          }
-          trap cleanup EXIT
-          compose_oci up --wait --wait-timeout 300
-          curl --fail --silent http://127.0.0.1:18080/readyz |
-            jq -e '.ready == true and .database == "ready" and .inference == "ready"' >/dev/null
-          compose_oci exec -T hub kungfu agent verify --json |
-            jq -e '.ok == true' >/dev/null
-          database_id=$(compose_oci ps -q database)
-          test -n "${database_id}"
-          docker inspect "${database_id}" |
-            jq -e '.[0].NetworkSettings.Ports["5432/tcp"] == null' >/dev/null
-          compose_oci down
-          trap - EXIT
-      - name: Promote verified preview channel
-        id: promotion
-        env:
-          IMMUTABLE_REF: ${{ steps.identity.outputs.immutable }}
-          PREVIEW_REF: ${{ steps.identity.outputs.preview }}
-        run: |
-          set -euo pipefail
-          previous_preview_digest=none
-          if digest=$(docker buildx imagetools inspect "${PREVIEW_REF}" \
-            --format '{{.Manifest.Digest}}' 2>/dev/null); then
-            previous_preview_digest="${digest}"
-          fi
-          candidate_digest=$(docker buildx imagetools inspect "${IMMUTABLE_REF}" \
-            --format '{{.Manifest.Digest}}')
-          docker buildx imagetools create \
-            --prefer-index=false \
-            --tag "${PREVIEW_REF}" \
-            "${IMMUTABLE_REF}"
-          promoted_digest=
-          for _ in 1 2 3 4 5; do
-            promoted_digest=$(docker buildx imagetools inspect "${PREVIEW_REF}" \
-              --format '{{.Manifest.Digest}}')
-            if [ "${promoted_digest}" = "${candidate_digest}" ]; then
-              break
-            fi
-            sleep 2
-          done
-          test "${promoted_digest}" = "${candidate_digest}"
-          echo "previous=${previous_preview_digest}" >>"${GITHUB_OUTPUT}"
-          echo "promoted=${promoted_digest}" >>"${GITHUB_OUTPUT}"
-      - name: Verify promoted preview channel
-        env:
-          PREVIEW_REF: ${{ steps.identity.outputs.preview }}
-          HUB_PORT: "18081"
-        run: |
-          set -euo pipefail
-          verify_dir=$(mktemp -d)
-          cd "${verify_dir}"
-          set +o pipefail
-          yes | docker compose -f "oci://${PREVIEW_REF}" config >preview.resolved.yaml
-          status=${PIPESTATUS[1]}
-          set -o pipefail
-          test "${status}" -eq 0
-          grep -F 'host_ip: 127.0.0.1' preview.resolved.yaml
-          grep -F 'published: "18081"' preview.resolved.yaml
-      - name: Retain application coordinates
-        env:
-          IMMUTABLE_REF: ${{ steps.identity.outputs.immutable }}
-          PREVIEW_REF: ${{ steps.identity.outputs.preview }}
-          PREVIOUS_PREVIEW_DIGEST: ${{ steps.promotion.outputs.previous }}
-          PROMOTED_PREVIEW_DIGEST: ${{ steps.promotion.outputs.promoted }}
-        run: |
-          {
-            echo '### OCI Compose application'
-            echo
-            echo "\`${IMMUTABLE_REF}\`"
-            echo
-            echo "Promoted \`${PREVIEW_REF}@${PROMOTED_PREVIEW_DIGEST}\`"
-            echo
-            echo "Previous preview digest: \`${PREVIOUS_PREVIEW_DIGEST}\`"
-            echo
-            echo '```sh'
-            echo "docker compose -f oci://${PREVIEW_REF} up --wait"
-            echo '```'
-          } >>"${GITHUB_STEP_SUMMARY}"
+      - name: Confirm dry-run boundary
+        run: echo "This workflow does not log in, push an image, publish an OCI application, or move compose-preview."

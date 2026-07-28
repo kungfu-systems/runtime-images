@@ -14,6 +14,13 @@ const lockText = await read('../release/runtime.lock.json');
 const imageWorkflow = await read('../.github/workflows/image.yml');
 const packageStageWorkflow = await read('../.github/workflows/package-stage.yml');
 const applicationWorkflow = await read('../.github/workflows/application.yml');
+const verifyWorkflow = await read('../.github/workflows/verify.yml');
+const promotionWorkflow = await read('../.github/workflows/buildchain-ref-promotion.yml');
+const buildchainConfig = await read('../buildchain.toml');
+const publishRuntime = await read('./publish-runtime-release.sh');
+const publishEvidence = await read('./write-runtime-publish-evidence.mjs');
+const requiredArtifacts = await read('./required-publish-artifacts.mjs');
+const releaseImpactText = await read('../.buildchain/release-impact.json');
 const browser = await read('../apps/course-hub/web/app.js');
 const server = await read('../apps/course-hub/src/server.mjs');
 const workControl = await read('../apps/course-hub/src/kungfu-course-work-control.mjs');
@@ -24,6 +31,7 @@ const projectMap = await read('../docs/MAP.md');
 const packageManifest = JSON.parse(await read('../package.json'));
 const contract = JSON.parse(contractText);
 const lock = JSON.parse(lockText);
+const releaseImpact = JSON.parse(releaseImpactText);
 
 validateComposeText(compose);
 JSON.parse(await read('../package.json'));
@@ -78,70 +86,143 @@ if (/^    ports:/mu.test(databaseService)) {
   throw new Error('PostgreSQL must remain private to the Compose network');
 }
 
-for (const workflowInvariant of [
-  'platforms: linux/amd64,linux/arm64',
-  'runner: ubuntu-24.04-arm',
-  'docker-architecture: arm64',
-  'package-sha256-amd64',
-  'package-sha256-arm64',
-  'kungfu-episodes-cli-linux-arm64.tar.gz',
-]) {
-  if (!imageWorkflow.includes(workflowInvariant)) {
-    throw new Error(`multi-platform image workflow invariant missing: ${workflowInvariant}`);
-  }
-}
 for (const stagingInvariant of [
   'kungfu-run-id-amd64',
   'kungfu-run-id-arm64',
   'validate_run "${KUNGFU_RUN_ID_AMD64}" Build',
   "validate_run \"${KUNGFU_RUN_ID_ARM64}\" 'Linux ARM64 Alpha Qualification'",
-  'package_sha256_amd64=$(sha256sum stage/kungfu-episodes-cli-linux-x64.tar.gz',
-  'package_sha256_arm64=$(sha256sum stage/kungfu-episodes-cli-linux-arm64.tar.gz',
-  'gh release create "${release_tag}"',
+  'actions/upload-artifact@',
+  'authority:"qualification-only"',
 ]) {
   if (!packageStageWorkflow.includes(stagingInvariant)) {
-    throw new Error(`package staging workflow invariant missing: ${stagingInvariant}`);
+    throw new Error(`package qualification workflow invariant missing: ${stagingInvariant}`);
   }
 }
-for (const applicationInvariant of [
-  'docker/setup-compose-action@',
-  'docker/setup-buildx-action@',
-  'docker compose publish -y "${IMMUTABLE_REF}"',
-  'docker buildx imagetools create',
-  '--prefer-index=false',
-  'compose-preview',
-  'docker compose -f "oci://${APPLICATION_REF}" "$@"',
-  'compose_oci up --wait',
-  'NetworkSettings.Ports["5432/tcp"] == null',
-  'Verify promoted preview channel',
-  'test "${promoted_digest}" = "${candidate_digest}"',
+
+for (const [name, workflow] of [
+  ['image candidate', imageWorkflow],
+  ['package input', packageStageWorkflow],
+  ['Compose application', applicationWorkflow],
+]) {
+  for (const forbidden of [
+    'packages: write',
+    'docker/login-action@',
+    'docker compose publish',
+    'docker buildx imagetools create',
+    'gh release create',
+    'push: true',
+  ]) {
+    if (workflow.includes(forbidden)) {
+      throw new Error(`${name} manual workflow retains publication authority: ${forbidden}`);
+    }
+  }
+}
+
+for (const invariant of [
+  'kungfu-systems/buildchain/actions/validate-config@v3',
+  'require-version-state: "true"',
+  'require-lifecycle-stages: "verify,publish"',
+  'name: check',
+  'npm run check',
+]) {
+  if (!verifyWorkflow.includes(invariant)) {
+    throw new Error(`Buildchain Verify workflow invariant missing: ${invariant}`);
+  }
+}
+
+for (const invariant of [
+  'workflow_run:',
+  'workflows: ["Verify"]',
+  'Reject manual apply',
+  "inputs['dry-run'] != 'true'",
+  'kungfu-systems/buildchain/actions/promote-buildchain-ref@v3-alpha',
+  'kungfu-systems/buildchain/actions/promote-buildchain-ref@v3',
+  'required-status-check: "check"',
+  'publish-transaction: "true"',
+  'publish-required-artifacts-json:',
+  'release-passport: "true"',
+  'release-passport-impact-json: ".buildchain/release-impact.json"',
+  'github-release: "true"',
+  'docker/setup-qemu-action@v3',
   'version: v5.1.2',
 ]) {
-  if (!applicationWorkflow.includes(applicationInvariant)) {
-    throw new Error(`OCI Compose workflow invariant missing: ${applicationInvariant}`);
+  if (!promotionWorkflow.includes(invariant)) {
+    throw new Error(`Buildchain promotion workflow invariant missing: ${invariant}`);
   }
 }
-if (/down\s+-v/u.test(applicationWorkflow)) {
-  throw new Error('OCI Compose workflow must not delete named volumes');
+
+for (const invariant of [
+  'path = "package.json"',
+  'path = ".buildchain/release-impact.json"',
+  '[lifecycle.verify]',
+  '"npm run check"',
+  '[lifecycle.publish]',
+  '"bash scripts/publish-runtime-release.sh"',
+]) {
+  if (!buildchainConfig.includes(invariant)) {
+    throw new Error(`Buildchain consumer configuration invariant missing: ${invariant}`);
+  }
 }
-const immutablePublishIndex = applicationWorkflow.indexOf(
-  '- name: Publish immutable application candidate',
+
+for (const invariant of [
+  'linux/amd64,linux/arm64',
+  '--provenance mode=max',
+  '--sbom=true',
+  'scripts/smoke-image.sh',
+  'compose-v${BUILDCHAIN_VERSION}',
+  'docker compose -f "${repo_root}/compose.yaml" publish -y "${application_ref}"',
+  'NetworkSettings.Ports["5432/tcp"] == null',
+  'scripts/write-runtime-publish-evidence.mjs',
+  '--prefer-index=false',
+  'compose-preview',
+  'test "${promoted_preview_digest}" = "${application_digest}"',
+]) {
+  if (!publishRuntime.includes(invariant)) {
+    throw new Error(`Buildchain publish lifecycle invariant missing: ${invariant}`);
+  }
+}
+if (/down\s+-v/u.test(publishRuntime)) {
+  throw new Error('Buildchain publish lifecycle must not delete named volumes');
+}
+const exactApplicationSmoke = publishRuntime.indexOf(
+  'compose_oci "${application_ref}" up --wait --wait-timeout 300',
 );
-const candidateSmokeIndex = applicationWorkflow.indexOf(
-  '- name: Smoke a fresh one-command installation',
+const evidenceWrite = publishRuntime.indexOf(
+  'node "${repo_root}/scripts/write-runtime-publish-evidence.mjs"',
 );
-const previewPromotionIndex = applicationWorkflow.indexOf(
-  '- name: Promote verified preview channel',
+const previewPromotion = publishRuntime.indexOf(
+  'docker buildx imagetools create',
 );
 if (
-  immutablePublishIndex < 0
-  || candidateSmokeIndex <= immutablePublishIndex
-  || previewPromotionIndex <= candidateSmokeIndex
+  exactApplicationSmoke < 0
+  || evidenceWrite <= exactApplicationSmoke
+  || previewPromotion <= evidenceWrite
 ) {
-  throw new Error('preview promotion must follow immutable publication and exact candidate smoke');
+  throw new Error('exact application smoke and evidence validation must precede preview promotion');
 }
-if (applicationWorkflow.includes('docker compose publish -y "${PREVIEW_REF}"')) {
-  throw new Error('preview must copy the verified manifest instead of being republished');
+
+for (const refTemplate of ['v{version}', 'compose-v{version}']) {
+  if (!requiredArtifacts.includes(refTemplate)) {
+    throw new Error(`required release artifact template missing: ${refTemplate}`);
+  }
+}
+for (const field of [
+  'source_sha: sourceSha',
+  'release_sha: releaseSha',
+  'release_material_sha: releaseMaterialSha',
+  'publish_tooling_sha: publishToolingSha',
+  'BUILDCHAIN_REQUIRED_ARTIFACTS',
+]) {
+  if (!publishEvidence.includes(field)) {
+    throw new Error(`publish evidence binding missing: ${field}`);
+  }
+}
+if (
+  releaseImpact.release.line !== 'v0.2'
+  || releaseImpact.versionImpact.final !== 'minor'
+  || releaseImpact.surfaceImpacts.length < 3
+) {
+  throw new Error('release impact ledger does not describe the governed v0.2 alpha surface');
 }
 
 if (contract.sourceBuild.kungfuSourceSha !== lock.kungfuSourceSha) {

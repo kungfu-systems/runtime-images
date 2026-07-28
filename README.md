@@ -221,7 +221,9 @@ apps/course-hub/             canonical business application
   test/                      domain and boundary tests
 contracts/                   image/runtime claim boundary
 release/                     exact source, package, image, and CI identities
-.github/workflows/           exact image and OCI Compose application publication
+buildchain.toml              Buildchain-owned verify and publish lifecycles
+.buildchain/                 release impact and generated transaction evidence
+.github/workflows/           verification, dry runs, and governed promotion
 course-business-reference/   compatibility Compose entry only
 legacy/hub-starter/          retained former demonstration implementation
 docs/                        architecture, API, extension, and claim guides
@@ -257,10 +259,31 @@ and [`release/runtime.lock.json`](release/runtime.lock.json) bind the exact
 Kungfu source, architecture packages, base images, published image, and
 qualification run.
 
-The supported one-command surface is published by
-`.github/workflows/application.yml` as an OCI Compose artifact. To test another
-qualified image from a source checkout, set `KUNGFU_HUB_IMAGE` to an exact
-`registry/path@sha256:<digest>` reference. Floating runtime tags are rejected.
+Buildchain owns version selection, exact alpha and release refs, the image and
+OCI Compose publish transaction, durable evidence, finalization, and the
+Release Passport. Repository code still owns the Dockerfile, Compose source,
+registry inspection, multi-platform smoke, and evidence adapter.
+
+The exact release artifacts use these coordinates:
+
+```text
+ghcr.io/kungfu-systems/runtime-images/hub-starter:v<VERSION>
+ghcr.io/kungfu-systems/runtime-images/hub-starter:compose-v<VERSION>
+```
+
+`compose-preview` remains the low-friction pre-Alpha channel. It moves only
+after the exact versioned application passes a fresh installation smoke and
+the repository has written complete transaction evidence. The GitHub Release
+retains that evidence and the Buildchain Release Passport.
+
+The manual Image candidate, Compose application, and Kungfu package input
+workflows are qualification-only. They cannot authenticate to GHCR, publish a
+release artifact, or move `compose-preview`. A non-dry-run release starts only
+after a protected alpha or release merge succeeds in `Verify`.
+
+To test another qualified image from a source checkout, set
+`KUNGFU_HUB_IMAGE` to an exact `registry/path@sha256:<digest>` reference.
+Floating runtime tags are rejected.
 
 ## License
 
