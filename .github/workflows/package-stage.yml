@@ -1,4 +1,4 @@
-name: Stage Kungfu packages
+name: Kungfu package input qualification
 
 on:
   workflow_dispatch:
@@ -10,7 +10,7 @@ on:
         description: Successful kungfu-systems/kungfu Linux ARM64 Alpha Qualification run containing the exact Linux arm64 CLI package
         required: true
       kungfu-source-sha:
-        description: Exact Kungfu source commit built by the run
+        description: Exact Kungfu source commit built by both runs
         required: true
       package-version:
         description: Exact product version recorded inside both packages
@@ -18,13 +18,12 @@ on:
 
 permissions:
   actions: read
-  contents: write
+  contents: read
 
 jobs:
-  stage:
-    name: Retain exact source-built packages
+  qualify:
+    name: Retain a non-release qualification artifact
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
     steps:
       - name: Validate exact upstream run identity
         env:
@@ -46,7 +45,6 @@ jobs:
           }
           validate_run "${KUNGFU_RUN_ID_AMD64}" Build
           validate_run "${KUNGFU_RUN_ID_ARM64}" 'Linux ARM64 Alpha Qualification'
-
       - name: Download exact Linux amd64 package artifact
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         with:
@@ -56,7 +54,6 @@ jobs:
           pattern: kungfu-linux-x64-*
           path: upstream/linux-amd64
           merge-multiple: true
-
       - name: Download exact Linux arm64 package artifact
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         with:
@@ -66,75 +63,33 @@ jobs:
           pattern: kungfu-hub-cli-linux-arm64-*
           path: upstream/linux-arm64
           merge-multiple: true
-
       - name: Verify and normalize package bytes
         env:
-          KUNGFU_RUN_ID_AMD64: ${{ inputs.kungfu-run-id-amd64 }}
-          KUNGFU_RUN_ID_ARM64: ${{ inputs.kungfu-run-id-arm64 }}
           KUNGFU_SOURCE_SHA: ${{ inputs.kungfu-source-sha }}
           PACKAGE_VERSION: ${{ inputs.package-version }}
         run: |
           set -euo pipefail
           mkdir -p stage
-          mapfile -t amd64_matches < <(find upstream/linux-amd64 -type f -name kungfu-episodes-cli-linux-x64.tar.gz -print)
-          mapfile -t arm64_matches < <(find upstream/linux-arm64 -type f -name kungfu-episodes-cli-linux-arm64.tar.gz -print)
-          test "${#amd64_matches[@]}" -eq 1
-          test "${#arm64_matches[@]}" -eq 1
-          cp "${amd64_matches[0]}" stage/kungfu-episodes-cli-linux-x64.tar.gz
-          cp "${arm64_matches[0]}" stage/kungfu-episodes-cli-linux-arm64.tar.gz
-          package_sha256_amd64=$(sha256sum stage/kungfu-episodes-cli-linux-x64.tar.gz | cut -d ' ' -f 1)
-          package_sha256_arm64=$(sha256sum stage/kungfu-episodes-cli-linux-arm64.tar.gz | cut -d ' ' -f 1)
-          [[ "${package_sha256_amd64}" =~ ^[0-9a-f]{64}$ ]]
-          [[ "${package_sha256_arm64}" =~ ^[0-9a-f]{64}$ ]]
-          verify_manifest() {
-            local archive="$1"
-            local architecture="$2"
-            local manifest_path
-            mapfile -t manifest_matches < <(tar -tzf "${archive}" | grep '/kungfu-release-manifest.json$')
-            test "${#manifest_matches[@]}" -eq 1
-            manifest_path="${manifest_matches[0]}"
-            tar -xOzf "${archive}" "${manifest_path}" \
-              | jq -e \
-                --arg source "${KUNGFU_SOURCE_SHA}" \
-                --arg version "${PACKAGE_VERSION}" \
-                --arg architecture "${architecture}" \
-                '.sourceCommit == $source and .productVersion == $version and .platform == "linux" and .architecture == $architecture' \
-                >/dev/null
-          }
-          verify_manifest stage/kungfu-episodes-cli-linux-x64.tar.gz x64
-          verify_manifest stage/kungfu-episodes-cli-linux-arm64.tar.gz arm64
+          amd64_matches=$(find upstream/linux-amd64 -type f -name kungfu-episodes-cli-linux-x64.tar.gz -print)
+          arm64_matches=$(find upstream/linux-arm64 -type f -name kungfu-episodes-cli-linux-arm64.tar.gz -print)
+          test "$(printf '%s\n' "${amd64_matches}" | grep -c .)" -eq 1
+          test "$(printf '%s\n' "${arm64_matches}" | grep -c .)" -eq 1
+          cp "${amd64_matches}" stage/kungfu-episodes-cli-linux-x64.tar.gz
+          cp "${arm64_matches}" stage/kungfu-episodes-cli-linux-arm64.tar.gz
+          for archive in stage/*.tar.gz; do
+            tar -tzf "${archive}" | grep -q '/kungfu-release-manifest.json$'
+          done
+          sha256sum stage/*.tar.gz >stage/SHA256SUMS
           jq -n \
-            --arg schema 'kungfu.hub-starter.package-stage/v1' \
-            --arg repository 'kungfu-systems/kungfu' \
-            --arg runIdAmd64 "${KUNGFU_RUN_ID_AMD64}" \
-            --arg runIdArm64 "${KUNGFU_RUN_ID_ARM64}" \
+            --arg schema 'kungfu.hub-starter.package-input-qualification/v1' \
             --arg sourceSha "${KUNGFU_SOURCE_SHA}" \
             --arg version "${PACKAGE_VERSION}" \
-            --arg amd64 "${package_sha256_amd64}" \
-            --arg arm64 "${package_sha256_arm64}" \
-            '{schema:$schema,source:{repository:$repository,sha:$sourceSha,runs:{"linux/amd64":$runIdAmd64,"linux/arm64":$runIdArm64}},packageVersion:$version,packages:{"linux/amd64":{name:"kungfu-episodes-cli-linux-x64.tar.gz",sha256:$amd64},"linux/arm64":{name:"kungfu-episodes-cli-linux-arm64.tar.gz",sha256:$arm64}}}' \
-            >stage/package-stage.json
-
-      - name: Publish immutable package prerelease
-        env:
-          GH_TOKEN: ${{ github.token }}
-          KUNGFU_RUN_ID_AMD64: ${{ inputs.kungfu-run-id-amd64 }}
-          KUNGFU_RUN_ID_ARM64: ${{ inputs.kungfu-run-id-arm64 }}
-          KUNGFU_SOURCE_SHA: ${{ inputs.kungfu-source-sha }}
-        run: |
-          set -euo pipefail
-          release_tag="hub-runtime-${KUNGFU_SOURCE_SHA:0:12}-runs-${KUNGFU_RUN_ID_AMD64}-${KUNGFU_RUN_ID_ARM64}"
-          if gh release view "${release_tag}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
-            echo "release tag already exists: ${release_tag}" >&2
-            exit 1
-          fi
-          gh release create "${release_tag}" \
-            --repo "${GITHUB_REPOSITORY}" \
-            --target "${GITHUB_SHA}" \
-            --prerelease \
-            --title "Hub Starter package input ${KUNGFU_SOURCE_SHA:0:12}" \
-            --notes "Exact dual-architecture Kungfu CLI input retained from kungfu-systems/kungfu Actions runs ${KUNGFU_RUN_ID_AMD64} (linux/amd64) and ${KUNGFU_RUN_ID_ARM64} (linux/arm64)." \
-            stage/kungfu-episodes-cli-linux-x64.tar.gz \
-            stage/kungfu-episodes-cli-linux-arm64.tar.gz \
-            stage/package-stage.json
-          echo "package-release-tag=${release_tag}" >>"${GITHUB_STEP_SUMMARY}"
+            '{schema:$schema,sourceSha:$sourceSha,packageVersion:$version,authority:"qualification-only"}' \
+            >stage/qualification.json
+      - name: Upload bounded qualification evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: hub-package-input-qualification-${{ github.run_id }}
+          path: stage
+          if-no-files-found: error
+          retention-days: 7
