@@ -70,6 +70,27 @@ test('course UI makes Agent contribution and work handoff visible', async () => 
   assert.match(browser, /not system-prefilled copy/u);
 });
 
+test('course UI distinguishes app-only coordination from future Kungfu management', async () => {
+  const [browser, styles, projection, compose] = await Promise.all([
+    read('../web/app.js'),
+    read('../web/style.css'),
+    read('../src/work-control-projection.mjs'),
+    read('../compose.yaml'),
+  ]);
+  assert.match(browser, /Work control: App-only/u);
+  assert.match(browser, /This course is running without Kungfu management/u);
+  assert.match(browser, /No native Kungfu Evidence Episode/u);
+  assert.match(browser, /Without Kungfu · what you see now/u);
+  assert.match(browser, /With Kungfu · next adapter/u);
+  assert.match(browser, /Open the real Kungfu walkthrough/u);
+  assert.match(projection, /nativeCourseBinding: false/u);
+  assert.match(projection, /kungfu\.hub-starter\.readiness\/v1/u);
+  assert.match(compose, /COURSE_WORK_CONTROL_DEMO_STATUS_URL/u);
+  assert.match(styles, /\.work-control-panel/u);
+  assert.match(styles, /\.current-control-flow/u);
+  assert.match(styles, /\.control-comparison/u);
+});
+
 test('course UI accepts placeholder examples with Tab and explains staged actions', async () => {
   const [browser, styles] = await Promise.all([
     read('../web/app.js'),

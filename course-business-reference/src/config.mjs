@@ -33,6 +33,33 @@ const optionalSecret = (name, fileName) => {
   return value;
 };
 
+const optionalHttpUrl = (name) => {
+  const raw = process.env[name]?.trim() ?? '';
+  if (!raw) return '';
+  const url = new URL(raw);
+  if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) {
+    throw new Error(`${name} must be an HTTP(S) URL without credentials`);
+  }
+  if (url.search || url.hash) {
+    throw new Error(`${name} must not contain a query or fragment`);
+  }
+  return url.toString();
+};
+
+function workControlConfig() {
+  const statusUrl = optionalHttpUrl('COURSE_WORK_CONTROL_DEMO_STATUS_URL');
+  const browserUrl = optionalHttpUrl('COURSE_WORK_CONTROL_DEMO_BROWSER_URL');
+  if (Boolean(statusUrl) !== Boolean(browserUrl)) {
+    throw new Error('course work-control demo status and browser URLs must be configured together');
+  }
+  return Object.freeze({
+    enabled: Boolean(statusUrl),
+    statusUrl,
+    browserUrl,
+    timeoutMs: integer('COURSE_WORK_CONTROL_DEMO_TIMEOUT_MS', 1_500, 250, 5_000),
+  });
+}
+
 function inferenceConfig(backend) {
   if (backend === 'mock') {
     return Object.freeze({
@@ -156,6 +183,7 @@ export function loadConfig() {
     1,
     600,
   );
+  const workControl = workControlConfig();
   return Object.freeze({
     port: Number(process.env.PORT ?? 8090),
     publicOrigin: new URL(origin).origin,
@@ -169,6 +197,7 @@ export function loadConfig() {
     sessionSecure: boolean('SESSION_SECURE'),
     sessionHours,
     outboxProcessingStaleSeconds,
+    workControl,
     stateDir: process.env.STATE_DIR ?? '/state',
     qualificationRunId,
     qualificationTimeoutOnce,

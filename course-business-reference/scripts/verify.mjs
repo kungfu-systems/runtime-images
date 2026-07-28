@@ -14,6 +14,7 @@ const [
   contract,
   server,
   browser,
+  workControl,
 ] = await Promise.all([
   read('compose.yaml'),
   read('compose.offline.yaml'),
@@ -25,6 +26,7 @@ const [
   read('contracts/agent-work-port.v2.json'),
   read('src/server.mjs'),
   read('web/app.js'),
+  read('src/work-control-projection.mjs'),
 ]);
 JSON.parse(contract);
 
@@ -65,6 +67,23 @@ for (const required of [
 ]) {
   if (!server.includes(required) && !browser.includes(required)) {
     throw new Error(`Interactive runtime UI invariant missing: ${required}`);
+  }
+}
+for (const required of [
+  'mode: \'app-only\'',
+  'nativeCourseBinding: false',
+  'kungfu.hub-starter.readiness/v1',
+]) {
+  if (!workControl.includes(required)) {
+    throw new Error(`Work-control truth boundary missing: ${required}`);
+  }
+}
+for (const required of [
+  'COURSE_WORK_CONTROL_DEMO_STATUS_URL',
+  'COURSE_WORK_CONTROL_DEMO_BROWSER_URL',
+]) {
+  if (!compose.includes(required)) {
+    throw new Error(`Optional work-control demo configuration missing: ${required}`);
   }
 }
 const databaseService = compose.match(/^  database:\n([\s\S]*?)(?=^  app:)/mu)?.[0] ?? '';
