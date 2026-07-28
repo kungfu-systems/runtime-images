@@ -105,12 +105,16 @@ for (const stagingInvariant of [
 }
 for (const applicationInvariant of [
   'docker/setup-compose-action@',
-  'docker compose publish -y "${immutable}"',
-  'docker compose publish -y "${preview}"',
+  'docker/setup-buildx-action@',
+  'docker compose publish -y "${IMMUTABLE_REF}"',
+  'docker buildx imagetools create',
+  '--prefer-index=false',
   'compose-preview',
   'docker compose -f "oci://${APPLICATION_REF}" "$@"',
   'compose_oci up --wait',
   'NetworkSettings.Ports["5432/tcp"] == null',
+  'Verify promoted preview channel',
+  'test "${promoted_digest}" = "${candidate_digest}"',
   'version: v5.1.2',
 ]) {
   if (!applicationWorkflow.includes(applicationInvariant)) {
@@ -119,6 +123,25 @@ for (const applicationInvariant of [
 }
 if (/down\s+-v/u.test(applicationWorkflow)) {
   throw new Error('OCI Compose workflow must not delete named volumes');
+}
+const immutablePublishIndex = applicationWorkflow.indexOf(
+  '- name: Publish immutable application candidate',
+);
+const candidateSmokeIndex = applicationWorkflow.indexOf(
+  '- name: Smoke a fresh one-command installation',
+);
+const previewPromotionIndex = applicationWorkflow.indexOf(
+  '- name: Promote verified preview channel',
+);
+if (
+  immutablePublishIndex < 0
+  || candidateSmokeIndex <= immutablePublishIndex
+  || previewPromotionIndex <= candidateSmokeIndex
+) {
+  throw new Error('preview promotion must follow immutable publication and exact candidate smoke');
+}
+if (applicationWorkflow.includes('docker compose publish -y "${PREVIEW_REF}"')) {
+  throw new Error('preview must copy the verified manifest instead of being republished');
 }
 
 if (contract.sourceBuild.kungfuSourceSha !== lock.kungfuSourceSha) {

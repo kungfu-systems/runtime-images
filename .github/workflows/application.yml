@@ -26,6 +26,8 @@ jobs:
         uses: docker/setup-compose-action@4eb059ff7f16592f9c84d5ca339c53cb7c5064e2 # v2.3.0
         with:
           version: v5.1.2
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3
       - name: Sign in to GHCR
         uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3
         with:
@@ -46,17 +48,19 @@ jobs:
             echo 'PostgreSQL must not publish a host port' >&2
             exit 1
           fi
-      - name: Publish immutable and preview application tags
+      - name: Resolve application identities
         id: identity
         shell: bash
         run: |
           set -euo pipefail
           immutable="ghcr.io/${GITHUB_REPOSITORY}/hub-starter:compose-${GITHUB_SHA::12}"
           preview="ghcr.io/${GITHUB_REPOSITORY}/hub-starter:compose-preview"
-          docker compose publish -y "${immutable}"
-          docker compose publish -y "${preview}"
           echo "immutable=${immutable}" >>"${GITHUB_OUTPUT}"
           echo "preview=${preview}" >>"${GITHUB_OUTPUT}"
+      - name: Publish immutable application candidate
+        env:
+          IMMUTABLE_REF: ${{ steps.identity.outputs.immutable }}
+        run: docker compose publish -y "${IMMUTABLE_REF}"
       - name: Smoke a fresh one-command installation
         env:
           APPLICATION_REF: ${{ steps.identity.outputs.immutable }}
@@ -88,15 +92,66 @@ jobs:
             jq -e '.[0].NetworkSettings.Ports["5432/tcp"] == null' >/dev/null
           compose_oci down
           trap - EXIT
+      - name: Promote verified preview channel
+        id: promotion
+        env:
+          IMMUTABLE_REF: ${{ steps.identity.outputs.immutable }}
+          PREVIEW_REF: ${{ steps.identity.outputs.preview }}
+        run: |
+          set -euo pipefail
+          previous_preview_digest=none
+          if digest=$(docker buildx imagetools inspect "${PREVIEW_REF}" \
+            --format '{{.Manifest.Digest}}' 2>/dev/null); then
+            previous_preview_digest="${digest}"
+          fi
+          candidate_digest=$(docker buildx imagetools inspect "${IMMUTABLE_REF}" \
+            --format '{{.Manifest.Digest}}')
+          docker buildx imagetools create \
+            --prefer-index=false \
+            --tag "${PREVIEW_REF}" \
+            "${IMMUTABLE_REF}"
+          promoted_digest=
+          for _ in 1 2 3 4 5; do
+            promoted_digest=$(docker buildx imagetools inspect "${PREVIEW_REF}" \
+              --format '{{.Manifest.Digest}}')
+            if [ "${promoted_digest}" = "${candidate_digest}" ]; then
+              break
+            fi
+            sleep 2
+          done
+          test "${promoted_digest}" = "${candidate_digest}"
+          echo "previous=${previous_preview_digest}" >>"${GITHUB_OUTPUT}"
+          echo "promoted=${promoted_digest}" >>"${GITHUB_OUTPUT}"
+      - name: Verify promoted preview channel
+        env:
+          PREVIEW_REF: ${{ steps.identity.outputs.preview }}
+          HUB_PORT: "18081"
+        run: |
+          set -euo pipefail
+          verify_dir=$(mktemp -d)
+          cd "${verify_dir}"
+          set +o pipefail
+          yes | docker compose -f "oci://${PREVIEW_REF}" config >preview.resolved.yaml
+          status=${PIPESTATUS[1]}
+          set -o pipefail
+          test "${status}" -eq 0
+          grep -F 'host_ip: 127.0.0.1' preview.resolved.yaml
+          grep -F 'published: "18081"' preview.resolved.yaml
       - name: Retain application coordinates
         env:
           IMMUTABLE_REF: ${{ steps.identity.outputs.immutable }}
           PREVIEW_REF: ${{ steps.identity.outputs.preview }}
+          PREVIOUS_PREVIEW_DIGEST: ${{ steps.promotion.outputs.previous }}
+          PROMOTED_PREVIEW_DIGEST: ${{ steps.promotion.outputs.promoted }}
         run: |
           {
             echo '### OCI Compose application'
             echo
             echo "\`${IMMUTABLE_REF}\`"
+            echo
+            echo "Promoted \`${PREVIEW_REF}@${PROMOTED_PREVIEW_DIGEST}\`"
+            echo
+            echo "Previous preview digest: \`${PREVIOUS_PREVIEW_DIGEST}\`"
             echo
             echo '```sh'
             echo "docker compose -f oci://${PREVIEW_REF} up --wait"

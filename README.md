@@ -87,6 +87,8 @@ The project never automates `docker compose down -v`.
 
 > `compose-preview` is the pre-Alpha convenience channel. Qualified releases
 > also retain immutable application coordinates for reproducible evaluation.
+> The channel moves only after that exact immutable artifact passes a fresh
+> installation smoke; the promoted preview retains the same OCI digest.
 
 ## Recommended next step: ask an Agent
 
