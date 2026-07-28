@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "contract": "kungfu-buildchain-impact",
+  "release": {
+    "tag": "v1.0.0-alpha.8",
+    "line": "v1.0",
+    "version": "1.0.0-alpha.8"
+  },
+  "versionImpact": {
+    "final": "major",
+    "source": "runtime-images-buildchain-migration",
+    "rationale": "The first Buildchain-governed product line establishes the v1.0 alpha namespace for the existing Course Hub image and OCI Compose application without removing the pre-Alpha preview route."
+  },
+  "surfaceImpacts": [
+    {
+      "id": "hub-starter-buildchain-release",
+      "impact": "major",
+      "class": "release-governance",
+      "rationale": "Buildchain now establishes the first governed v1.0 alpha line and owns version selection, exact publication, durable evidence, release finalization, and the Release Passport.",
+      "source": ".github/workflows/buildchain-ref-promotion.yml"
+    },
+    {
+      "id": "hub-starter-multi-platform-image",
+      "impact": "minor",
+      "class": "container-runtime",
+      "rationale": "The existing linux/amd64 and linux/arm64 Course Hub image becomes an exact versioned release artifact with retained SBOM, provenance, and native-contract smoke evidence.",
+      "source": "scripts/publish-runtime-release.sh"
+    },
+    {
+      "id": "hub-starter-oci-compose",
+      "impact": "minor",
+      "class": "installation",
+      "rationale": "The one-command OCI Compose application becomes an exact versioned release artifact while the verified compose-preview convenience channel remains compatible.",
+      "source": "compose.yaml"
+    }
+  ],
+  "classification": "major",
+  "breaking": false,
+  "security": false,
+  "migrationRequired": false,
+  "summary": "Runtime Images v1.0 alpha publishes the Course Hub image and one-command Compose application through one Buildchain-owned, evidence-gated transaction."
+}

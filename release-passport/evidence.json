@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "version": "1.0.0-alpha.8",
+  "channel": "alpha",
+  "source_sha": "f8fcc58511cf185e53129ad8df1c68ed0d7ce2d4",
+  "release_sha": "5a2aeacaeff6280b91bc2afd8fd9a5f2f7609b58",
+  "target_ref": "alpha/v1/v1.0",
+  "release_material_sha": "5a2aeacaeff6280b91bc2afd8fd9a5f2f7609b58",
+  "publish_tooling_sha": "5a2aeacaeff6280b91bc2afd8fd9a5f2f7609b58",
+  "artifacts": [
+    {
+      "group": "image",
+      "kind": "oci",
+      "name": "ghcr.io/kungfu-systems/runtime-images/hub-starter",
+      "ref": "v1.0.0-alpha.8",
+      "digest": "sha256:785310c47c28877da7e119c43655065452120bb5a75b8a4295ac6347279e2f64"
+    },
+    {
+      "group": "application",
+      "kind": "oci",
+      "name": "ghcr.io/kungfu-systems/runtime-images/hub-starter",
+      "ref": "compose-v1.0.0-alpha.8",
+      "digest": "sha256:f1a378a870d1c9d20da2d08993c23297e98b8cb475c1a056173aa16d4044549d"
+    }
+  ]
+}
