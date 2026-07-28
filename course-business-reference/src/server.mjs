@@ -13,6 +13,7 @@ import { LocalModelManager } from './local-model-manager.mjs';
 import { OutboxDispatcher } from './outbox.mjs';
 import { createQualificationFaults } from './qualification-faults.mjs';
 import { createRateLimiter } from './security.mjs';
+import { WorkControlProjection } from './work-control-projection.mjs';
 
 const config = loadConfig();
 const pool = await initializeDatabase(config);
@@ -29,6 +30,7 @@ const agentWorkPort = new AgentWorkRouter({
 });
 const localModel = new LocalModelManager(config.localModel);
 await localModel.initialize();
+const workControl = new WorkControlProjection(config.workControl);
 const dispatcher = new OutboxDispatcher(pool, agentWorkPort, createQualificationFaults(config));
 const domain = new CourseDomain(pool, agentWorkPort, dispatcher, config);
 const webRoot = fileURLToPath(new URL('../web/', import.meta.url));
@@ -98,6 +100,7 @@ async function runtimeDescription() {
   }
   return {
     defaultBackend: config.backend,
+    workControl: await workControl.publicStatus(),
     backends: {
       mock: {
         ...backendDescription('mock'),

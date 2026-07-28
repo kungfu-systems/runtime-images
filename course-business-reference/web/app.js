@@ -4,13 +4,21 @@ const app = document.querySelector('#app');
 const account = document.querySelector('#account');
 const backendBanner = document.querySelector('#backend-banner');
 const runtimeMenu = document.querySelector('#runtime-menu');
+const workControlMenu = document.querySelector('#work-control-menu');
 let session = null;
 let runtimeState = {
   defaultBackend: 'mock',
   backends: {},
+  workControl: {
+    mode: 'app-only',
+    label: 'App-only coordination',
+    nativeCourseBinding: false,
+    hubStarterDemo: { configured: false, reachable: false, ready: false },
+  },
 };
 let selectedBackend = localStorage.getItem('course-agent-backend') || 'mock';
 let runtimeMenuOpen = false;
+let workControlMenuOpen = false;
 let runtimePoll = null;
 let backendState = {
   kind: 'mock',
@@ -152,6 +160,83 @@ function renderRuntimeMenu() {
   scheduleRuntimePoll();
 }
 
+function initializeWorkControlMenu() {
+  if (workControlMenu.dataset.initialized) return;
+  workControlMenu.innerHTML = `
+    <button class="runtime-trigger work-control-trigger" data-work-control-toggle aria-expanded="false">
+      <span class="runtime-dot control"></span>
+      <span>Work control: App-only</span>
+      <span aria-hidden="true">⌄</span>
+    </button>
+    <section class="runtime-popover work-control-popover" aria-label="Work control">
+      <p class="step">Work control for this course app</p>
+      <h2>Generation works. Kungfu is not connected yet.</h2>
+      <div class="control-menu-state">
+        <span class="control-state-mark">NOW</span>
+        <div>
+          <strong>PostgreSQL + application outbox</strong>
+          <small>The app delegates, retries, saves versions, and records your approval.</small>
+        </div>
+      </div>
+      <div class="control-menu-state future">
+        <span class="control-state-mark">KF</span>
+        <div>
+          <strong>Kungfu-managed work</strong>
+          <small>Adds a native Assignment, evidence, independent review, typed decisions, recovery, and a state seal.</small>
+        </div>
+      </div>
+      <div data-hub-demo-status></div>
+      <p class="runtime-note">Kungfu does not write the course outline. It makes the delegated work accountable and independently checkable.</p>
+    </section>`;
+  workControlMenu.dataset.initialized = 'true';
+}
+
+function renderHubDemoStatus(container) {
+  const demo = runtimeState.workControl?.hubStarterDemo ?? {};
+  if (!demo.configured) {
+    container.innerHTML = `
+      <p class="hub-demo-status unavailable">
+        <strong>Real Kungfu walkthrough</strong>
+        <span>No neighboring Hub Starter URL is configured for this deployment.</span>
+      </p>`;
+    return;
+  }
+  const state = demo.ready ? 'ready' : demo.reachable ? 'checking' : 'unavailable';
+  const label = demo.ready
+    ? `Ready · phase ${demo.phase}`
+    : demo.reachable
+      ? `Reachable · phase ${demo.phase}`
+      : 'Currently unavailable';
+  container.innerHTML = `
+    <div class="hub-demo-status ${state}">
+      <div>
+        <strong>Real Kungfu walkthrough</strong>
+        <span>${escapeHtml(label)} · separate from this course</span>
+      </div>
+      <a href="${escapeHtml(demo.browserUrl)}" target="_blank" rel="noopener">Open ↗</a>
+    </div>`;
+}
+
+function renderWorkControlMenu() {
+  initializeWorkControlMenu();
+  const trigger = workControlMenu.querySelector('[data-work-control-toggle]');
+  const popover = workControlMenu.querySelector('.work-control-popover');
+  trigger.classList.toggle('active', workControlMenuOpen);
+  trigger.setAttribute('aria-expanded', String(workControlMenuOpen));
+  popover.classList.toggle('open', workControlMenuOpen);
+  renderHubDemoStatus(workControlMenu.querySelector('[data-hub-demo-status]'));
+}
+
+workControlMenu.addEventListener('click', (event) => {
+  const toggle = event.target.closest('[data-work-control-toggle]');
+  if (!toggle) return;
+  event.stopPropagation();
+  workControlMenuOpen = !workControlMenuOpen;
+  runtimeMenuOpen = false;
+  renderRuntimeMenu();
+  renderWorkControlMenu();
+});
+
 function updateSelectedRuntimePanels() {
   const runtime = backendPresentation(selectedBackend);
   const dashboard = app.querySelector('[data-selected-runtime-panel="dashboard"]');
@@ -203,6 +288,7 @@ async function refreshRuntime({ keepOpen = false } = {}) {
   }
   if (!keepOpen) runtimeMenuOpen = false;
   renderRuntimeMenu();
+  renderWorkControlMenu();
 }
 
 function selectRuntime(kind) {
@@ -220,7 +306,9 @@ runtimeMenu.addEventListener('click', async (event) => {
   const toggle = event.target.closest('[data-runtime-toggle]');
   if (toggle) {
     runtimeMenuOpen = !runtimeMenuOpen;
+    workControlMenuOpen = false;
     renderRuntimeMenu();
+    renderWorkControlMenu();
     return;
   }
   const choice = event.target.closest('[data-runtime-select]');
@@ -242,9 +330,11 @@ runtimeMenu.addEventListener('click', async (event) => {
 });
 
 document.addEventListener('click', () => {
-  if (!runtimeMenuOpen) return;
+  if (!runtimeMenuOpen && !workControlMenuOpen) return;
   runtimeMenuOpen = false;
+  workControlMenuOpen = false;
   renderRuntimeMenu();
+  renderWorkControlMenu();
 });
 
 function activeAgentLabel() {
@@ -855,6 +945,93 @@ function renderCourseBinding(course, runtime) {
     </section>`;
 }
 
+function renderWorkControlPanel(course, selected, isCurrent) {
+  const demo = runtimeState.workControl?.hubStarterDemo ?? {};
+  const generated = Boolean(selected);
+  const approval = isCurrent
+    ? `Version ${selected.versionNumber} approved in PostgreSQL`
+    : generated
+      ? `Version ${selected.versionNumber} awaits your approval`
+      : 'No course version exists yet';
+  const hubStatus = demo.configured
+    ? demo.ready
+      ? `The neighboring Hub Starter is ready in phase “${demo.phase}”.`
+      : demo.reachable
+        ? `The neighboring Hub Starter is reachable in phase “${demo.phase}”.`
+        : 'The neighboring Hub Starter link is configured but is currently unavailable.'
+    : 'No neighboring Hub Starter walkthrough is configured.';
+  const demoLink = demo.configured
+    ? `<a class="hub-demo-link" href="${escapeHtml(demo.browserUrl)}" target="_blank" rel="noopener">Open the real Kungfu walkthrough on this machine ↗</a>`
+    : '';
+  return `
+    <section class="work-control-panel" aria-label="Current work control">
+      <div class="control-panel-heading">
+        <div>
+          <p class="step">Work control · current truth</p>
+          <h2>This course is running without Kungfu management.</h2>
+          <p>The Agent can generate a useful draft and PostgreSQL can preserve it. What is missing is an independent, native record that proves how delegated work was assigned, evidenced, reviewed, decided, and recovered.</p>
+        </div>
+        <span class="control-mode-badge">APP-ONLY</span>
+      </div>
+      <ol class="current-control-flow">
+        <li class="live">
+          <span>1</span>
+          <div><strong>Delegated</strong><p>Application outbox command</p></div>
+          <em>APP RECORD</em>
+        </li>
+        <li class="${generated ? 'live' : ''}">
+          <span>2</span>
+          <div><strong>Agent output</strong><p>${generated ? `Version ${selected.versionNumber} returned` : 'Waiting for Generate'}</p></div>
+          <em>${generated ? 'OUTPUT' : 'PENDING'}</em>
+        </li>
+        <li class="missing">
+          <span>3</span>
+          <div><strong>Evidence</strong><p>No native Kungfu Evidence Episode</p></div>
+          <em>NOT CONNECTED</em>
+        </li>
+        <li class="missing">
+          <span>4</span>
+          <div><strong>Independent review</strong><p>Only the creator reviews this version</p></div>
+          <em>NOT CONNECTED</em>
+        </li>
+        <li class="${isCurrent ? 'live' : 'missing'}">
+          <span>5</span>
+          <div><strong>Decision & recovery</strong><p>${escapeHtml(approval)}; no Kungfu decision or seal</p></div>
+          <em>${isCurrent ? 'BUSINESS DECISION' : 'NO SEAL'}</em>
+        </li>
+      </ol>
+      <div class="control-comparison">
+        <article>
+          <p class="step">Without Kungfu · what you see now</p>
+          <h3>The app coordinates its own happy path.</h3>
+          <ul>
+            <li>Its outbox handles delivery and retries.</li>
+            <li>The selected Agent returns course content.</li>
+            <li>PostgreSQL owns versions and creator approval.</li>
+            <li>Failures are application-specific operational facts.</li>
+          </ul>
+        </article>
+        <article class="future">
+          <p class="step">With Kungfu · next adapter</p>
+          <h3>The work becomes independently governable.</h3>
+          <ul>
+            <li>A bounded Assignment says who owns the work.</li>
+            <li>Evidence binds inspectable output to the claim.</li>
+            <li>An independent review drives request-work or close.</li>
+            <li>Typed decisions, recovery receipts, and a seal prove the result.</li>
+          </ul>
+        </article>
+      </div>
+      <div class="hub-demo-callout ${demo.ready ? 'ready' : ''}">
+        <div>
+          <strong>See the difference in a real Kungfu runtime</strong>
+          <p>${escapeHtml(hubStatus)} It demonstrates real Assignment, evidence, review, decision, and seal state, but it does not own this user account or course.</p>
+        </div>
+        ${demoLink}
+      </div>
+    </section>`;
+}
+
 function friendlyFailureMessage(failure) {
   const detail = String(failure?.detail ?? '');
   if (/invalid JSON|Unterminated string|incomplete structured output/iu.test(detail)) {
@@ -927,6 +1104,7 @@ async function showCourse(id, message = '', selectedVersionId = null) {
       <span>This course currently uses ${escapeHtml(courseRuntime.short)}. Switch it below; saved versions keep their original source.</span>
     </section>
     ${renderCourseBinding(course, courseRuntime)}
+    ${renderWorkControlPanel(course, selected, isCurrent)}
     ${renderOperationFailure(course)}
     <section class="course-workspace">
       <aside>

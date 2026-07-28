@@ -29,6 +29,20 @@ improve, and approve actions show one visible lifecycle stage per second with
 entry and exit motion while the real request runs; these stages explain the
 application workflow and never claim to expose hidden model reasoning.
 
+The course page also makes the work-control boundary explicit. It labels the
+current implementation as **App-only coordination**, shows which facts come
+from the application outbox, Agent backend, PostgreSQL, and creator approval,
+and contrasts that path with a future Kungfu-managed Assignment, Evidence,
+independent review, typed decision, recovery, and seal. Operators may configure
+a read-only link to a separate Hub Starter walkthrough; its readiness is shown
+without claiming that it manages the current course or user account:
+
+```bash
+COURSE_WORK_CONTROL_DEMO_STATUS_URL=http://127.0.0.1:8080/healthz \
+COURSE_WORK_CONTROL_DEMO_BROWSER_URL=http://127.0.0.1:8080/ \
+docker compose up --build --detach
+```
+
 ## Run locally
 
 Use synthetic development passwords and a project name that does not overlap
