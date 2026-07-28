@@ -22,12 +22,59 @@ fi
 mkdir -p "${artifact_dir}"
 profile_dir="$(mktemp -d "${TMPDIR:-/tmp}/kungfu-hub-browser.XXXXXX")"
 
+run_chrome_until_artifact() {
+  artifact_path="$1"
+  artifact_kind="$2"
+  expected_text="$3"
+  shift 3
+
+  if [[ "${artifact_kind}" == html ]]; then
+    "${chrome_bin}" "$@" >"${artifact_path}" &
+  else
+    : >"${artifact_path}"
+    "${chrome_bin}" "$@" >/dev/null &
+  fi
+  browser_pid=$!
+  browser_deadline=$((SECONDS + 90))
+  browser_status=0
+  while kill -0 "${browser_pid}" 2>/dev/null; do
+    if [[ "${artifact_kind}" == html ]]; then
+      if grep -F "${expected_text}" "${artifact_path}" >/dev/null 2>&1; then
+        break
+      fi
+    elif [[ -s "${artifact_path}" ]]; then
+      break
+    fi
+    if (( SECONDS >= browser_deadline )); then
+      kill "${browser_pid}" 2>/dev/null || true
+      wait "${browser_pid}" 2>/dev/null || true
+      echo "browser smoke timed out waiting for ${artifact_path}" >&2
+      return 1
+    fi
+    sleep 1
+  done
+  if kill -0 "${browser_pid}" 2>/dev/null; then
+    kill "${browser_pid}" 2>/dev/null || true
+    wait "${browser_pid}" 2>/dev/null || true
+  else
+    wait "${browser_pid}" || browser_status=$?
+    if (( browser_status != 0 )); then
+      return "${browser_status}"
+    fi
+  fi
+  if [[ "${artifact_kind}" == html ]]; then
+    grep -F "${expected_text}" "${artifact_path}" >/dev/null
+  else
+    test -s "${artifact_path}"
+  fi
+}
+
 render() {
   state="$1"
   expected="$2"
   html_path="${artifact_dir}/${state}.html"
   png_path="${artifact_dir}/${state}.png"
-  "${chrome_bin}" \
+  run_chrome_until_artifact "${html_path}" html "${expected}" \
     --headless=new \
     --disable-gpu \
     --no-first-run \
@@ -35,9 +82,8 @@ render() {
     --user-data-dir="${profile_dir}" \
     --virtual-time-budget=8000 \
     --dump-dom \
-    "${base_url}" >"${html_path}"
-  grep -F "${expected}" "${html_path}" >/dev/null
-  "${chrome_bin}" \
+    "${base_url}"
+  run_chrome_until_artifact "${png_path}" png '' \
     --headless=new \
     --disable-gpu \
     --no-first-run \
@@ -46,8 +92,7 @@ render() {
     --virtual-time-budget=8000 \
     --window-size=1440,1100 \
     --screenshot="${png_path}" \
-    "${base_url}" >/dev/null
-  test -s "${png_path}"
+    "${base_url}"
 }
 
 render ready "Ready for the Agent"
