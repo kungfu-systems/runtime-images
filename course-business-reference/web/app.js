@@ -964,72 +964,80 @@ function renderWorkControlPanel(course, selected, isCurrent) {
     ? `<a class="hub-demo-link" href="${escapeHtml(demo.browserUrl)}" target="_blank" rel="noopener">Open the real Kungfu walkthrough on this machine ↗</a>`
     : '';
   return `
-    <section class="work-control-panel" aria-label="Current work control">
-      <div class="control-panel-heading">
-        <div>
-          <p class="step">Work control · current truth</p>
-          <h2>This course is running without Kungfu management.</h2>
-          <p>The Agent can generate a useful draft and PostgreSQL can preserve it. What is missing is an independent, native record that proves how delegated work was assigned, evidenced, reviewed, decided, and recovered.</p>
+    <details class="work-control-panel" aria-label="Current work control">
+      <summary class="control-panel-heading control-panel-summary">
+        <span class="control-summary-copy">
+          <span class="step">Work control · current truth</span>
+          <span class="control-summary-title">This course is running without Kungfu management.</span>
+        </span>
+        <span class="control-summary-actions">
+          <span class="control-mode-badge">APP-ONLY</span>
+          <span class="control-expand-label">
+            See what Kungfu adds
+            <span class="control-chevron" aria-hidden="true">⌄</span>
+          </span>
+        </span>
+      </summary>
+      <div class="work-control-body">
+        <p class="control-body-intro">The Agent can generate a useful draft and PostgreSQL can preserve it. What is missing is an independent, native record that proves how delegated work was assigned, evidenced, reviewed, decided, and recovered.</p>
+        <ol class="current-control-flow">
+          <li class="live">
+            <span>1</span>
+            <div><strong>Delegated</strong><p>Application outbox command</p></div>
+            <em>APP RECORD</em>
+          </li>
+          <li class="${generated ? 'live' : ''}">
+            <span>2</span>
+            <div><strong>Agent output</strong><p>${generated ? `Version ${selected.versionNumber} returned` : 'Waiting for Generate'}</p></div>
+            <em>${generated ? 'OUTPUT' : 'PENDING'}</em>
+          </li>
+          <li class="missing">
+            <span>3</span>
+            <div><strong>Evidence</strong><p>No native Kungfu Evidence Episode</p></div>
+            <em>NOT CONNECTED</em>
+          </li>
+          <li class="missing">
+            <span>4</span>
+            <div><strong>Independent review</strong><p>Only the creator reviews this version</p></div>
+            <em>NOT CONNECTED</em>
+          </li>
+          <li class="${isCurrent ? 'live' : 'missing'}">
+            <span>5</span>
+            <div><strong>Decision & recovery</strong><p>${escapeHtml(approval)}; no Kungfu decision or seal</p></div>
+            <em>${isCurrent ? 'BUSINESS DECISION' : 'NO SEAL'}</em>
+          </li>
+        </ol>
+        <div class="control-comparison">
+          <article>
+            <p class="step">Without Kungfu · what you see now</p>
+            <h3>The app coordinates its own happy path.</h3>
+            <ul>
+              <li>Its outbox handles delivery and retries.</li>
+              <li>The selected Agent returns course content.</li>
+              <li>PostgreSQL owns versions and creator approval.</li>
+              <li>Failures are application-specific operational facts.</li>
+            </ul>
+          </article>
+          <article class="future">
+            <p class="step">With Kungfu · next adapter</p>
+            <h3>The work becomes independently governable.</h3>
+            <ul>
+              <li>A bounded Assignment says who owns the work.</li>
+              <li>Evidence binds inspectable output to the claim.</li>
+              <li>An independent review drives request-work or close.</li>
+              <li>Typed decisions, recovery receipts, and a seal prove the result.</li>
+            </ul>
+          </article>
         </div>
-        <span class="control-mode-badge">APP-ONLY</span>
-      </div>
-      <ol class="current-control-flow">
-        <li class="live">
-          <span>1</span>
-          <div><strong>Delegated</strong><p>Application outbox command</p></div>
-          <em>APP RECORD</em>
-        </li>
-        <li class="${generated ? 'live' : ''}">
-          <span>2</span>
-          <div><strong>Agent output</strong><p>${generated ? `Version ${selected.versionNumber} returned` : 'Waiting for Generate'}</p></div>
-          <em>${generated ? 'OUTPUT' : 'PENDING'}</em>
-        </li>
-        <li class="missing">
-          <span>3</span>
-          <div><strong>Evidence</strong><p>No native Kungfu Evidence Episode</p></div>
-          <em>NOT CONNECTED</em>
-        </li>
-        <li class="missing">
-          <span>4</span>
-          <div><strong>Independent review</strong><p>Only the creator reviews this version</p></div>
-          <em>NOT CONNECTED</em>
-        </li>
-        <li class="${isCurrent ? 'live' : 'missing'}">
-          <span>5</span>
-          <div><strong>Decision & recovery</strong><p>${escapeHtml(approval)}; no Kungfu decision or seal</p></div>
-          <em>${isCurrent ? 'BUSINESS DECISION' : 'NO SEAL'}</em>
-        </li>
-      </ol>
-      <div class="control-comparison">
-        <article>
-          <p class="step">Without Kungfu · what you see now</p>
-          <h3>The app coordinates its own happy path.</h3>
-          <ul>
-            <li>Its outbox handles delivery and retries.</li>
-            <li>The selected Agent returns course content.</li>
-            <li>PostgreSQL owns versions and creator approval.</li>
-            <li>Failures are application-specific operational facts.</li>
-          </ul>
-        </article>
-        <article class="future">
-          <p class="step">With Kungfu · next adapter</p>
-          <h3>The work becomes independently governable.</h3>
-          <ul>
-            <li>A bounded Assignment says who owns the work.</li>
-            <li>Evidence binds inspectable output to the claim.</li>
-            <li>An independent review drives request-work or close.</li>
-            <li>Typed decisions, recovery receipts, and a seal prove the result.</li>
-          </ul>
-        </article>
-      </div>
-      <div class="hub-demo-callout ${demo.ready ? 'ready' : ''}">
-        <div>
-          <strong>See the difference in a real Kungfu runtime</strong>
-          <p>${escapeHtml(hubStatus)} It demonstrates real Assignment, evidence, review, decision, and seal state, but it does not own this user account or course.</p>
+        <div class="hub-demo-callout ${demo.ready ? 'ready' : ''}">
+          <div>
+            <strong>See the difference in a real Kungfu runtime</strong>
+            <p>${escapeHtml(hubStatus)} It demonstrates real Assignment, evidence, review, decision, and seal state, but it does not own this user account or course.</p>
+          </div>
+          ${demoLink}
         </div>
-        ${demoLink}
       </div>
-    </section>`;
+    </details>`;
 }
 
 function friendlyFailureMessage(failure) {

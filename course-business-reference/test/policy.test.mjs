@@ -78,6 +78,10 @@ test('course UI distinguishes app-only coordination from future Kungfu managemen
     read('../compose.yaml'),
   ]);
   assert.match(browser, /Work control: App-only/u);
+  assert.match(browser, /<details class="work-control-panel" aria-label="Current work control">/u);
+  assert.match(browser, /<summary class="control-panel-heading control-panel-summary">/u);
+  assert.doesNotMatch(browser, /<details class="work-control-panel"[^>]*\sopen(?:\s|>)/u);
+  assert.match(browser, /See what Kungfu adds/u);
   assert.match(browser, /This course is running without Kungfu management/u);
   assert.match(browser, /No native Kungfu Evidence Episode/u);
   assert.match(browser, /Without Kungfu · what you see now/u);
@@ -87,6 +91,8 @@ test('course UI distinguishes app-only coordination from future Kungfu managemen
   assert.match(projection, /kungfu\.hub-starter\.readiness\/v1/u);
   assert.match(compose, /COURSE_WORK_CONTROL_DEMO_STATUS_URL/u);
   assert.match(styles, /\.work-control-panel/u);
+  assert.match(styles, /\.control-panel-summary/u);
+  assert.match(styles, /\.work-control-panel\[open\] \.control-chevron/u);
   assert.match(styles, /\.current-control-flow/u);
   assert.match(styles, /\.control-comparison/u);
 });
