@@ -54,7 +54,7 @@ export function createOutlineRequest(config, command) {
   return {
     model: config.model,
     temperature: 0.35,
-    max_tokens: 3000,
+    max_tokens: 4096,
     seed: seedFor(command.idempotencyKey),
     messages: [
       {
@@ -68,6 +68,7 @@ export function createOutlineRequest(config, command) {
           'Do not begin every module title by repeating words from the working title.',
           'Transform the brief into specific decisions, practice, and evidence; do not merely repeat or rename input fields.',
           'The summary and changes fields must describe concrete course content you produced, such as module sequencing or exercises. Never copy or summarize these instructions.',
+          'Keep every field concise and keep the complete JSON response under 6000 characters.',
           'Do not reveal hidden reasoning. Return only the requested structured result.',
         ].join(' '),
       },
