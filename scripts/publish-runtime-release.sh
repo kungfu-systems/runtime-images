@@ -42,6 +42,7 @@ input_dir="${evidence_dir}/runtime-inputs"
 image_manifest_path="${evidence_dir}/hub-image-manifest.json"
 application_config_path="${evidence_dir}/hub-application-config.yaml"
 application_source_path="${evidence_dir}/hub-application-source.yaml"
+application_source_config_path="${evidence_dir}/hub-application-source-config.yaml"
 application_smoke_path="${evidence_dir}/hub-application-readiness.json"
 
 mkdir -p "${input_dir}"
@@ -249,10 +250,17 @@ if docker buildx imagetools inspect "${application_ref}" >/dev/null 2>&1; then
   echo "Reusing existing exact Compose application ${application_ref}"
   compose_config_with_retry "${application_ref}" "${application_config_path}"
 else
-  KUNGFU_HUB_IMAGE="${image_name}@${image_digest}" \
-    docker compose -f "${repo_root}/compose.yaml" config >"${application_source_path}"
-  compose_config_has_exact_image "${application_source_path}"
-  grep -Fq 'host_ip: 127.0.0.1' "${application_source_path}"
+  awk -v image="${image_name}@${image_digest}" '
+    index($0, "image: ${KUNGFU_HUB_IMAGE:-") {
+      sub(/image: .*/, "image: " image)
+    }
+    { print }
+  ' "${repo_root}/compose.yaml" >"${application_source_path}"
+  test "$(grep -Fc "image: ${image_name}@${image_digest}" "${application_source_path}")" -eq 2
+  grep -Fq '${HUB_PORT:-8080}' "${application_source_path}"
+  docker compose -f "${application_source_path}" config >"${application_source_config_path}"
+  compose_config_has_exact_image "${application_source_config_path}"
+  grep -Fq 'host_ip: 127.0.0.1' "${application_source_config_path}"
   docker compose -f "${application_source_path}" publish -y "${application_ref}"
   compose_config_with_retry "${application_ref}" "${application_config_path}"
 fi
