@@ -29,7 +29,7 @@ for (const [name, mutation, expected] of [
 ]) {
   test(`policy rejects ${name}`, () => {
     const candidate = name === 'public ingress'
-      ? compose.replace('127.0.0.1:${HUB_PORT', mutation)
+      ? compose.replace('${HUB_BIND_ADDRESS:-127.0.0.1}:${HUB_PORT', mutation)
       : compose.replace('    restart: unless-stopped', `    restart: unless-stopped${mutation}`);
     assert.throws(() => validateComposeText(candidate), expected);
   });

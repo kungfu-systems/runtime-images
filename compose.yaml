@@ -1,6 +1,28 @@
-name: kungfu-hub-starter
+name: kungfu-course-hub
 
 services:
+  database:
+    image: postgres:17.6-bookworm@sha256:f3bd19c606e442c3d7bdfa8002e03fe260a1023351e0ea4598032022b68dd6e3
+    restart: unless-stopped
+    user: postgres
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    environment:
+      POSTGRES_DB: course_reference
+      POSTGRES_USER: course_migrator
+      POSTGRES_PASSWORD: ${COURSE_DB_MIGRATION_PASSWORD:?set COURSE_DB_MIGRATION_PASSWORD}
+    volumes:
+      - course-postgres:/var/lib/postgresql/data
+    networks:
+      - hub-private
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U course_migrator -d course_reference"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
   hub:
     image: ${KUNGFU_HUB_IMAGE:-ghcr.io/kungfu-systems/runtime-images/hub-starter@sha256:5a18ccea22c53aeac3d606a414da8b8b52b91578ba9d4f6669e5a8ed9de9b47a}
     restart: unless-stopped
@@ -13,16 +35,38 @@ services:
     tmpfs:
       - /tmp:size=64m,mode=1777
     environment:
-      HUB_INSTANCE_LABEL: ${HUB_INSTANCE_LABEL:-local}
-      HUB_COURSE_NAME: ${HUB_COURSE_NAME:-Agent/Kungfu Course}
+      PORT: "8080"
+      PUBLIC_ORIGIN: ${HUB_PUBLIC_ORIGIN:-http://127.0.0.1:8080}
+      DATABASE_URL: postgresql://course_migrator:${COURSE_DB_MIGRATION_PASSWORD}@database:5432/course_reference
+      APP_DATABASE_URL: postgresql://course_app:${COURSE_DB_APP_PASSWORD:?set COURSE_DB_APP_PASSWORD}@database:5432/course_reference
+      COURSE_DB_APP_PASSWORD: ${COURSE_DB_APP_PASSWORD}
+      AGENT_WORK_BACKEND: ${COURSE_AGENT_BACKEND:-mock}
+      AGENT_WORK_TIMEOUT_MS: ${COURSE_AGENT_TIMEOUT_MS:-180000}
+      COURSE_LOCAL_MODEL_MANAGEMENT: "true"
+      COURSE_LOCAL_MODELS_ROOT: /models
+      COURSE_LLAMA_SERVER_BIN: /opt/llama/llama-server
+      COURSE_LLAMA_SERVER_PORT: "8081"
+      COURSE_HOSTED_AGENT_BASE_URL: ${COURSE_HOSTED_AGENT_BASE_URL:-}
+      COURSE_HOSTED_AGENT_MODEL: ${COURSE_HOSTED_AGENT_MODEL:-}
+      COURSE_HOSTED_AGENT_PROVIDER_LABEL: ${COURSE_HOSTED_AGENT_PROVIDER_LABEL:-}
+      COURSE_HOSTED_AGENT_API_KEY_FILE: ${COURSE_HOSTED_AGENT_API_KEY_FILE:-}
+      COURSE_HOSTED_AGENT_TIMEOUT_MS: ${COURSE_HOSTED_AGENT_TIMEOUT_MS:-120000}
+      SESSION_SECURE: ${COURSE_SESSION_SECURE:-false}
+      SESSION_HOURS: ${COURSE_SESSION_HOURS:-24}
+      OUTBOX_PROCESSING_STALE_SECONDS: ${COURSE_OUTBOX_PROCESSING_STALE_SECONDS:-240}
+      STATE_DIR: /state
+    depends_on:
+      database:
+        condition: service_healthy
     ports:
-      - "127.0.0.1:${HUB_PORT:-8080}:8080"
+      - "${HUB_BIND_ADDRESS:-127.0.0.1}:${HUB_PORT:-8080}:8080"
     volumes:
       - hub-state:/state
+      - course-models:/models
     networks:
       - hub-private
     healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8080/healthz').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8080/readyz').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
       interval: 5s
       timeout: 4s
       start_period: 90s
@@ -33,5 +77,9 @@ networks:
     driver: bridge
 
 volumes:
+  course-postgres:
+    name: ${COMPOSE_PROJECT_NAME:-kungfu-course-hub}-postgres
   hub-state:
-    name: ${COMPOSE_PROJECT_NAME:-kungfu-hub-starter}-state
+    name: ${COMPOSE_PROJECT_NAME:-kungfu-course-hub}-state
+  course-models:
+    name: ${COMPOSE_PROJECT_NAME:-kungfu-course-hub}-models

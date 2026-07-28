@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import { readFileSync } from 'node:fs';
+import { QWEN_MODEL_CATALOG } from './model-catalog.mjs';
 
 const required = (name) => {
   const value = process.env[name]?.trim();
@@ -99,42 +100,61 @@ function inferenceConfig(backend) {
   });
 }
 
-function localModelConfig(enabled, inferences) {
-  if (!enabled) return Object.freeze({ enabled: false });
-  const inference = inferences['openai-compatible'];
-  if (!inference || inference.delivery !== 'local') {
-    throw new Error('local model management requires a local OpenAI-compatible backend');
+function hostedInferenceConfig() {
+  const raw = process.env.COURSE_HOSTED_AGENT_BASE_URL?.trim() ?? '';
+  if (!raw) return null;
+  const baseUrl = new URL(raw);
+  if (!['http:', 'https:'].includes(baseUrl.protocol) || baseUrl.username || baseUrl.password) {
+    throw new Error('COURSE_HOSTED_AGENT_BASE_URL must be an HTTP(S) URL without credentials');
   }
-  const path = required('COURSE_LOCAL_MODEL_PATH');
-  if (!/^\/models\/[A-Za-z0-9._-]+\.gguf$/u.test(path)) {
-    throw new Error('COURSE_LOCAL_MODEL_PATH must be a GGUF file directly under /models');
+  if (baseUrl.search || baseUrl.hash) {
+    throw new Error('COURSE_HOSTED_AGENT_BASE_URL must not contain a query or fragment');
   }
-  const url = new URL(required('COURSE_LOCAL_MODEL_URL'));
-  if (url.protocol !== 'https:' || url.username || url.password) {
-    throw new Error('COURSE_LOCAL_MODEL_URL must be an HTTPS URL without credentials');
+  const model = required('COURSE_HOSTED_AGENT_MODEL');
+  if (model.length > 160) throw new Error('COURSE_HOSTED_AGENT_MODEL is too long');
+  const provider =
+    process.env.COURSE_HOSTED_AGENT_PROVIDER_LABEL?.trim() || 'Hosted provider';
+  if (provider.length > 80) throw new Error('COURSE_HOSTED_AGENT_PROVIDER_LABEL is too long');
+  return Object.freeze({
+    kind: 'hosted',
+    label: `${provider} Course Designer`,
+    provider,
+    model,
+    simulated: false,
+    delivery: 'hosted',
+    baseUrl: baseUrl.toString().replace(/\/+$/u, ''),
+    apiKey: optionalSecret(
+      'COURSE_HOSTED_AGENT_API_KEY',
+      'COURSE_HOSTED_AGENT_API_KEY_FILE',
+    ),
+    timeoutMs: integer('COURSE_HOSTED_AGENT_TIMEOUT_MS', 120_000, 5_000, 300_000),
+  });
+}
+
+function localModelConfig(enabled) {
+  if (!enabled) return Object.freeze({ enabled: false, catalog: QWEN_MODEL_CATALOG });
+  const modelsRoot = process.env.COURSE_LOCAL_MODELS_ROOT?.trim() || '/models';
+  if (!/^\/[A-Za-z0-9._/-]+$/u.test(modelsRoot) || modelsRoot.includes('..')) {
+    throw new Error('COURSE_LOCAL_MODELS_ROOT must be an absolute safe path');
   }
-  const sha256 = required('COURSE_LOCAL_MODEL_SHA256').toLowerCase();
-  if (!/^[0-9a-f]{64}$/u.test(sha256)) {
-    throw new Error('COURSE_LOCAL_MODEL_SHA256 must be a lowercase SHA-256 digest');
+  const llamaBin = process.env.COURSE_LLAMA_SERVER_BIN?.trim() || '/opt/llama/llama-server';
+  if (!/^\/[A-Za-z0-9._/-]+$/u.test(llamaBin) || llamaBin.includes('..')) {
+    throw new Error('COURSE_LLAMA_SERVER_BIN must be an absolute safe path');
   }
-  const bytes = integer('COURSE_LOCAL_MODEL_BYTES', 0, 1, 20 * 1024 * 1024 * 1024);
-  const sourceLabel = process.env.COURSE_LOCAL_MODEL_SOURCE_LABEL?.trim() || 'Pinned model source';
-  if (sourceLabel.length > 80) throw new Error('COURSE_LOCAL_MODEL_SOURCE_LABEL is too long');
   return Object.freeze({
     enabled: true,
-    path,
-    url: url.toString(),
-    sha256,
-    bytes,
-    sourceLabel,
-    seedFile: process.env.COURSE_LOCAL_MODEL_SEED_FILE?.trim() ?? '',
-    inferenceKind: 'openai-compatible',
+    catalog: QWEN_MODEL_CATALOG,
+    modelsRoot,
+    llamaBin,
+    serverHost: '127.0.0.1',
+    serverPort: integer('COURSE_LLAMA_SERVER_PORT', 8081, 1024, 65_535),
+    seedRoot: process.env.COURSE_LOCAL_MODEL_SEED_ROOT?.trim() ?? '',
   });
 }
 
 export function loadConfig() {
   const backend = process.env.AGENT_WORK_BACKEND ?? 'mock';
-  if (!['mock', 'openai-compatible'].includes(backend)) {
+  if (!['mock', 'openai-compatible', 'hosted'].includes(backend)) {
     throw new Error(`unsupported AGENT_WORK_BACKEND: ${backend}`);
   }
   const appPassword = required('COURSE_DB_APP_PASSWORD');
@@ -142,15 +162,33 @@ export function loadConfig() {
     throw new Error('COURSE_DB_APP_PASSWORD must be 16-128 safe ASCII characters');
   }
   const origin = process.env.PUBLIC_ORIGIN ?? 'http://127.0.0.1:8090';
-  const localModelManagement = boolean('COURSE_LOCAL_MODEL_MANAGEMENT');
+  const localModelManagement = boolean('COURSE_LOCAL_MODEL_MANAGEMENT', true);
   const inferences = {
     mock: inferenceConfig('mock'),
   };
-  if (backend === 'openai-compatible' || localModelManagement) {
+  if (localModelManagement) {
+    inferences['openai-compatible'] = Object.freeze({
+      kind: 'openai-compatible',
+      label: 'Local Qwen Course Designer',
+      provider: 'Local Qwen',
+      model: 'Select and activate a model',
+      simulated: false,
+      delivery: 'local',
+      baseUrl: `http://127.0.0.1:${integer('COURSE_LLAMA_SERVER_PORT', 8081, 1024, 65_535)}/v1`,
+      apiKey: '',
+      timeoutMs: integer('AGENT_WORK_TIMEOUT_MS', 180_000, 5_000, 300_000),
+      dynamicLocalModel: true,
+    });
+  } else if (backend === 'openai-compatible') {
     inferences['openai-compatible'] = inferenceConfig('openai-compatible');
   }
+  const hosted = hostedInferenceConfig();
+  if (hosted) inferences.hosted = hosted;
+  if (!inferences[backend]) {
+    throw new Error(`configured AGENT_WORK_BACKEND is unavailable: ${backend}`);
+  }
   const inference = inferences[backend];
-  const localModel = localModelConfig(localModelManagement, inferences);
+  const localModel = localModelConfig(localModelManagement);
   const qualificationRunId = process.env.COURSE_QUALIFICATION_RUN_ID?.trim() ?? '';
   if (qualificationRunId && !/^[A-Za-z0-9._-]{1,80}$/u.test(qualificationRunId)) {
     throw new Error('COURSE_QUALIFICATION_RUN_ID contains unsupported characters');
@@ -199,6 +237,7 @@ export function loadConfig() {
     outboxProcessingStaleSeconds,
     workControl,
     stateDir: process.env.STATE_DIR ?? '/state',
+    kungfuBin: process.env.KUNGFU_BIN ?? '/opt/kungfu/kungfu',
     qualificationRunId,
     qualificationTimeoutOnce,
     qualificationCrashAfterAdapterOnce,

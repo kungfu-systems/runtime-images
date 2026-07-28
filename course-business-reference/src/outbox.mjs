@@ -4,10 +4,11 @@ import { transaction } from './db.mjs';
 import { projectedStatusAfterDeliveryFailure } from './outbox-recovery.mjs';
 
 export class OutboxDispatcher {
-  constructor(pool, agentWorkPort, hooks = {}) {
+  constructor(pool, agentWorkPort, hooks = {}, workControl = null) {
     this.pool = pool;
     this.agentWorkPort = agentWorkPort;
     this.hooks = hooks;
+    this.workControl = workControl;
     this.processingStaleSeconds = hooks.processingStaleSeconds ?? 30;
     this.running = false;
     this.userDrains = new Map();
@@ -45,11 +46,12 @@ export class OutboxDispatcher {
           [this.processingStaleSeconds],
         );
         const selected = await client.query(
-          `SELECT o.*, h.course_project_id,
+          `SELECT o.*, h.course_project_id, p.title AS course_title,
                   h.backend_kind AS current_backend_kind,
                   h.backend_binding_id AS current_backend_binding_id
            FROM course.command_outbox o
            JOIN course.learner_homeworks h ON h.id = o.learner_homework_id
+           JOIN course.course_projects p ON p.id = h.course_project_id
            WHERE o.state = 'pending' AND o.available_at <= now()
            ORDER BY o.created_at
            FOR UPDATE OF o SKIP LOCKED LIMIT 1`,
@@ -71,12 +73,40 @@ export class OutboxDispatcher {
           contract: AGENT_WORK_CONTRACT,
           type: message.command_type,
           idempotencyKey: message.idempotency_key,
-          sourceIdentity: `course-homework:${message.learner_homework_id}`,
+          sourceIdentity: `${message.backend_kind}:course-homework:${message.learner_homework_id}`,
           bindingId: message.backend_binding_id,
           backendKind: message.backend_kind,
           payload: message.payload,
         });
         await this.hooks.afterExecute?.(message, view);
+        let workControlResult = null;
+        if (
+          ['generate_outline', 'revise_outline'].includes(message.command_type)
+          && view.latestOutput
+        ) {
+          if (!this.workControl) {
+            throw new Error('Kungfu work control is required for generated course versions');
+          }
+          workControlResult = await this.workControl.settleVersion({
+            courseId: message.course_project_id,
+            versionId: message.id,
+            courseTitle: message.course_title,
+            action: message.command_type,
+            generator: {
+              backend: message.backend_kind,
+              bindingId: view.bindingId,
+              transitionId: view.transitionId,
+              provider: view.latestOutput.inference?.provider
+                ?? (view.simulated ? 'deterministic simulation' : 'selected provider'),
+              model: view.latestOutput.inference?.model ?? 'none',
+              delivery: view.simulated
+                ? 'mock'
+                : view.latestOutput.inference?.delivery ?? 'external',
+              simulated: view.simulated,
+            },
+            outline: view.latestOutput,
+          });
+        }
         await transaction(this.pool, { userId }, async (client) => {
           if (
             ['generate_outline', 'revise_outline'].includes(message.command_type)
@@ -109,18 +139,23 @@ export class OutboxDispatcher {
             if (!priorVersion.rowCount) {
               await client.query(
                 `INSERT INTO course.course_outline_versions
-                  (user_id, course_project_id, version_number, source_run_id,
-                   outline, change_summary)
-                 SELECT $1, $2, COALESCE(max(version_number), 0) + 1, $3,
-                        $4::jsonb, $5
+                  (id, user_id, course_project_id, version_number, source_run_id,
+                   outline, change_summary, work_control, work_control_state)
+                 SELECT $1, $2, $3, COALESCE(max(version_number), 0) + 1, $4,
+                        $5::jsonb, $6, $7::jsonb, $8
                  FROM course.course_outline_versions
-                 WHERE course_project_id = $2`,
+                 WHERE course_project_id = $3`,
                 [
+                  message.id,
                   userId,
                   message.course_project_id,
                   run.rows[0].id,
                   JSON.stringify(view.latestOutput),
                   String(view.latestOutput.revisionNote ?? 'A new Agent-generated course outline.'),
+                  JSON.stringify(workControlResult),
+                  workControlResult?.decision?.action === 'close'
+                    ? 'kungfu-sealed'
+                    : 'kungfu-needs-evidence',
                 ],
               );
             }

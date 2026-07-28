@@ -146,8 +146,8 @@ export class CourseDomain {
       const project = await client.query(
         `INSERT INTO course.course_projects
           (user_id, title, target_learner, learner_problem, promised_outcome,
-           creator_expertise, delivery_constraints)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
+           creator_expertise, delivery_constraints, kungfu_binding_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, 'kungfu:course:' || gen_random_uuid()::text)
          RETURNING id`,
         [
           userId,
@@ -158,6 +158,12 @@ export class CourseDomain {
           values.creatorExpertise,
           values.deliveryConstraints,
         ],
+      );
+      await client.query(
+        `UPDATE course.course_projects
+         SET kungfu_binding_id = 'kungfu:course:' || id::text
+         WHERE id = $1`,
+        [project.rows[0].id],
       );
       const homework = await client.query(
         `INSERT INTO course.learner_homeworks
@@ -216,7 +222,8 @@ export class CourseDomain {
       if (!result.rowCount) return null;
       const versions = await client.query(
         `SELECT v.id, v.version_number, v.status, v.outline, v.change_summary,
-                v.created_at, v.approved_at, r.action AS agent_action,
+                v.created_at, v.approved_at, v.work_control, v.work_control_state,
+                r.action AS agent_action,
                 r.backend_kind AS agent_backend, r.transition_id,
                 r.backend_binding_id AS agent_backend_binding_id,
                 r.input AS agent_input, r.created_at AS agent_completed_at
@@ -265,6 +272,7 @@ export class CourseDomain {
       },
       backendKind: project.backend_kind,
       backendStatus: project.projected_status,
+      kungfuBindingId: project.kungfu_binding_id,
       backendSwitches: project.backend_switches.map((entry) => ({
         from: entry.from_backend_kind,
         to: entry.to_backend_kind,
@@ -290,6 +298,8 @@ export class CourseDomain {
         changeSummary: version.change_summary,
         createdAt: version.created_at,
         approvedAt: version.approved_at,
+        workControlState: version.work_control_state,
+        workControl: version.work_control,
         agentRun: {
           action: version.agent_action,
           backend: version.agent_backend,

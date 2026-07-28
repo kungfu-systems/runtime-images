@@ -1,130 +1,152 @@
-# Kungfu runtime images
+# Kungfu Course Hub
 
-This repository publishes source-bound development images for running Kungfu
-products. Its first deliverable is **Kungfu Hub Starter**, a Docker-first,
-localhost-only way to see real Kungfu-managed work in a browser.
+This repository publishes one Docker application for a small commercial
+Builder to understand and extend a Kungfu-managed Agent product.
 
-> This is a pre-Alpha development candidate. It is not production-ready,
-> authenticated, multi-user, highly available, or an official Kungfu Alpha or
-> stable release.
+The current development candidate is a complete reference slice:
 
-## Start the course demo
+- creators register and sign in;
+- PostgreSQL owns private per-account course collections, durable sessions,
+  immutable outline versions, approvals, backend bindings, and the outbox;
+- Mock, a user-installed local Qwen model, or a separately configured hosted
+  OpenAI-compatible provider generates visible course content;
+- Kungfu independently controls every generated course version through a real
+  Assignment, Evidence Episode, review, typed decision, and state seal.
 
-Requirements: Docker with Compose v2. This path is native on Apple Silicon Macs
-(`linux/arm64`) and Intel Macs or Linux x86-64 hosts (`linux/amd64`). Windows is
-not qualified in this candidate. Its intended compatibility path is Docker
-Desktop's Linux-container mode, not a native Windows container, and remains a
-non-claim until an actual Windows smoke is retained. The checked-in Compose file
-pins the qualified development candidate by digest. Run:
+Inference answers “who generated the draft?” Kungfu answers “what work was
+claimed, evidenced, reviewed, decided, recovered, and sealed?” The UI presents
+those as separate truths.
 
-```sh
-docker compose up
-```
+> This is a pre-Alpha development candidate and a reference architecture. It is
+> not a production SaaS, public-ingress configuration, billing system, account
+> recovery service, or security certification.
 
-Open <http://127.0.0.1:8080>. You arrive at a single-user course backend for
-**Agent/Kungfu Course**, not an infrastructure dashboard. The first assignment
-is already selected. Use the two actions in order:
+## Run
 
-1. **Agent claims homework is done** — the independent reviewer rejects the
-   claim because no Evidence Episode is attached, so Kungfu requests evidence
-   and does not settle the Assignment.
-2. **Produce evidence and request review** — a deterministic script creates the
-   homework artifact, publishes its exact bytes, attaches the payload reference
-   to one Episode, and submits a new claim. The reviewer accepts it and Kungfu
-   closes and seals the Assignment.
-
-The page keeps Episode details, payload hashes, receipts, and the final state
-root collapsed until you ask for them. This makes the human workflow primary
-while preserving the native audit trail underneath. Pull time is excluded from
-the five-minute semantic-readiness target. The container does not mount the
-Docker socket, your Home directory, `~/.kungfu`, credentials, or host paths.
-
-To test a separately qualified candidate, set `KUNGFU_HUB_IMAGE` to another
-exact digest. Tags and floating references are rejected by the source contract.
-
-`docker compose down` stops the project while retaining its named state
-volume. This project never runs `docker compose down -v` automatically. Remove
-development state only as a deliberate, separately reviewed action.
-
-## What is real
-
-On an empty named volume, the container uses the architecture-matched packaged
-public Kungfu CLI to:
-
-1. capture and admit the course as a native Initiative and Assignment;
-2. claim a bounded execution lease and enter the executing phase;
-3. reject an unproved completion claim through independent review and emit the
-   follow-up decision `request-evidence`;
-4. publish deterministic homework bytes and attach their payload reference to
-   a native Evidence Episode;
-5. accept the evidence-backed claim, close the Assignment, and create a portable
-   content-addressed state seal.
-
-The Web process does not read private storage records and does not own a second
-database. It invokes public JSON CLI commands and projects their receipts. The
-optional Node client is similarly bounded:
-
-```js
-import { HubStarterClient } from '@kungfu-tech/hub-starter-runtime/client';
-
-const hub = new HubStarterClient();
-console.log(await hub.state());
-```
-
-For a second isolated course, create another disposable project with a
-different course name and port:
+Requirements: Docker with Compose v2 on `linux/amd64` or `linux/arm64`, including
+Docker Desktop on matching Intel or Apple Silicon Macs.
 
 ```sh
-COMPOSE_PROJECT_NAME=my-course HUB_PORT=8081 \
-  HUB_COURSE_NAME="Responsible AI Workshop" docker compose up
+COURSE_DB_MIGRATION_PASSWORD=synthetic_migration_42 \
+COURSE_DB_APP_PASSWORD=synthetic_runtime_42 \
+docker compose up --detach
 ```
 
-On its fresh named volume, the adapter admits that course name through the
-public Assignment request. It changes the example's domain behavior without
-modifying Kungfu Core or constructing internal storage records.
+Open <http://127.0.0.1:8080>, register, create a course, and generate its first
+outline. The default Agent is an explicitly labelled deterministic Mock, so the
+first start downloads no model.
 
-## Reproducible identity
+The checked-in Compose file binds only to loopback. To expose a disposable
+preview to one trusted LAN, set both the bind address and matching public
+origin explicitly:
+
+```sh
+HUB_BIND_ADDRESS=192.168.1.20 \
+HUB_PUBLIC_ORIGIN=http://192.168.1.20:8080 \
+COURSE_DB_MIGRATION_PASSWORD=synthetic_migration_42 \
+COURSE_DB_APP_PASSWORD=synthetic_runtime_42 \
+docker compose up --detach
+```
+
+Ordinary stop/restart preserves all named volumes. This project never
+automatically runs `docker compose down -v`.
+
+## One image, optional models
+
+There is one first-party Hub image for every delivery mode. It includes:
+
+- the Course Hub Web application and migrations;
+- the exact architecture-matched Kungfu public CLI package;
+- the llama.cpp runtime;
+- no model weights and no provider credential.
+
+After signing in, open **AI: Mock** in the header. A model is downloaded only
+after **Download** is clicked, is streamed into the named model volume, checked
+against its pinned byte count and SHA-256, and atomically installed. Activation
+starts the private llama.cpp process inside the same container. A partial
+download is resumable.
+
+The initial catalog deliberately offers different capability and storage
+levels:
+
+| Choice | Download | Intended use |
+| --- | ---: | --- |
+| Qwen3 0.6B Q4_K_M | 396,705,472 bytes | fastest end-to-end evaluation |
+| Qwen3 1.7B Q8_0 | 1,834,426,016 bytes | balanced local drafting |
+| Qwen3 4B Q4_K_M | 2,497,280,256 bytes | stronger course design |
+
+The runtime never silently falls back to Mock when a selected local or hosted
+provider fails. Existing saved versions retain their original provider, model,
+delivery mode, backend binding, and transition provenance.
+
+A hosted OpenAI-compatible provider is an optional deployment overlay. Mount
+its token as a local secret file and set `COURSE_HOSTED_AGENT_BASE_URL`,
+`COURSE_HOSTED_AGENT_MODEL`, `COURSE_HOSTED_AGENT_PROVIDER_LABEL`, and
+`COURSE_HOSTED_AGENT_API_KEY_FILE`. The public image does not contain a shared
+provider key.
+
+## Authority and handoff
+
+| Concern | Authority |
+| --- | --- |
+| identity, session, account isolation | PostgreSQL |
+| course brief, collection, versions, approval | PostgreSQL |
+| inference output and model provenance | selected Agent backend, persisted by PostgreSQL |
+| work claim, Evidence, review, decision, recovery, seal | Kungfu public CLI and native state |
+| presentation and commands | non-authoritative Web application |
+
+Each course has one stable `kungfu:course:<course-id>` binding. Each generated
+version receives its own immutable work artifact and native lifecycle. The Web
+application does not construct private Kungfu records: it uses packaged public
+JSON CLI commands, stores only stable roots and receipts with the business
+version, and can resume an interrupted lifecycle from native status.
+
+The collapsed **Work control · current truth** card shows the actual handoff:
+Agent output → business version → Kungfu Assignment → Evidence → independent
+review → typed decision → seal.
+
+## Reproducible delivery
 
 [`contracts/hub-starter-runtime.contract.json`](contracts/hub-starter-runtime.contract.json)
 and [`release/runtime.lock.json`](release/runtime.lock.json) bind:
 
-- the exact Kungfu source commit;
-- the SHA-256 of both x86-64 and ARM64 Linux CLI packages;
-- the digest-pinned multi-platform Node runtime base;
-- the exact published runtime image digest and its source revision;
-- the retained native amd64 and arm64 GitHub Actions qualification run.
+- the exact Kungfu source commit and amd64/arm64 package SHA-256 values;
+- the digest-pinned Node and llama.cpp base images;
+- the exact published multi-platform Hub image and qualification run;
+- the non-root, read-only, no-Docker-socket runtime boundary.
 
-The Dockerfile consumes the already source-built package. It does not clone or
-compile Kungfu. The final stage copies only that package plus the small runtime
-adapter into a digest-pinned Node runtime; it contains no Kungfu checkout,
-compiler toolchain, package cache, Docker credentials, or build secret.
+The Dockerfile consumes already built Kungfu packages. It does not clone or
+compile Kungfu and does not copy a model, checkout, compiler toolchain, package
+cache, Docker credential, or build secret into the final image.
 
-## Isolation and persistence
+To test a separately qualified candidate, set `KUNGFU_HUB_IMAGE` to an exact
+`registry/path@sha256:<digest>` reference. Floating tags are rejected by the
+source contract.
 
-Compose binds the service to loopback, drops every Linux capability, enables
-`no-new-privileges`, runs as the non-root `node` user, and makes the root
-filesystem read-only. Each Compose project gets one explicitly named state
-volume and one writer. A fresh volume mints one instance identity; restart
-preserves the identity and native state. Use a different
-`COMPOSE_PROJECT_NAME`, `HUB_PORT`, and `HUB_INSTANCE_LABEL` for a second
-isolated instance.
+## Validation
 
-See [`docs/MAP.md`](docs/MAP.md) for review routes and
-[`docs/DEVELOPMENT-CANDIDATE.md`](docs/DEVELOPMENT-CANDIDATE.md) for the claim
-boundary and official-Alpha substitution seam.
+```sh
+npm ci --ignore-scripts
+npm run check
+bash -n scripts/smoke-image.sh scripts/smoke-browser.sh
+```
 
-## Course business reference
+The image smoke uses synthetic users and isolated named volumes to prove:
+account isolation, migration/application role separation, Mock generation,
+real Kungfu Evidence/review/decision/seal settlement, restart persistence,
+non-root execution, a read-only root filesystem, and no added Linux
+capabilities. `scripts/smoke-local-model.mjs` additionally qualifies
+click-install, activation, real local inference output, and its subsequent
+Kungfu settlement when a pinned seed model is supplied through
+`scripts/smoke-local-image.sh`.
 
-[`course-business-reference/`](course-business-reference/) is a separate,
-mock-backed PostgreSQL example for commercial Builders. It adds creator
-registration and login, a private per-account course collection, immutable
-course-outline versions, a durable command outbox, and a versioned Agent-work
-port without coupling the business schema or primary Web experience to one
-inference engine. The small core image defaults to an explicit deterministic
-simulation. An OpenAI-compatible adapter can instead use a hosted endpoint or
-the optional local llama.cpp delivery pack without changing the course schema.
-It runs as its own loopback-only Compose project and does not replace or share
-the Hub's state.
+The former `course-business-reference/` entry remains as a compatibility path
+for older automation, but it now launches this same unified first-party image;
+it is no longer a second product or image.
+
+See [`docs/MAP.md`](docs/MAP.md) for the repository map and
+[`docs/DEVELOPMENT-CANDIDATE.md`](docs/DEVELOPMENT-CANDIDATE.md) for explicit
+claims and non-claims.
 
 ## License
 

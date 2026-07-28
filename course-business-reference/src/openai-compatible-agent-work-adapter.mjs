@@ -11,8 +11,8 @@ import {
   assertCourseOutline,
 } from './course-outline-schema.mjs';
 
-const bindingFor = (source) =>
-  `openai:${createHash('sha256').update(source).digest('hex').slice(0, 24)}`;
+const bindingFor = (source, kind) =>
+  `openai:${kind}:${createHash('sha256').update(source).digest('hex').slice(0, 24)}`;
 const transitionFor = (binding, version) =>
   `openai-transition:${binding.slice(7)}:${version}`;
 
@@ -158,34 +158,35 @@ export class OpenAICompatibleAgentWorkAdapter extends AgentWorkPort {
   constructor(pool, config, fetchImplementation = fetch) {
     super();
     this.pool = pool;
-    this.config = config;
+    this.configProvider = typeof config === 'function' ? config : () => config;
     this.fetch = fetchImplementation;
   }
 
   async health() {
-    const response = await this.fetch(`${this.config.baseUrl}/models`, {
-      headers: authorization(this.config.apiKey),
-      signal: AbortSignal.timeout(Math.min(this.config.timeoutMs, 5_000)),
+    const config = this.configProvider();
+    const response = await this.fetch(`${config.baseUrl}/models`, {
+      headers: authorization(config.apiKey),
+      signal: AbortSignal.timeout(Math.min(config.timeoutMs, 5_000)),
     });
     if (!response.ok) throw new Error(`inference provider health returned ${response.status}`);
     return {
-      kind: this.config.kind,
-      provider: this.config.provider,
-      model: this.config.model,
-      delivery: this.config.delivery,
+      kind: config.kind,
+      provider: config.provider,
+      model: config.model,
+      delivery: config.delivery,
     };
   }
 
-  async infer(command) {
-    const response = await this.fetch(`${this.config.baseUrl}/chat/completions`, {
+  async infer(command, config = this.configProvider()) {
+    const response = await this.fetch(`${config.baseUrl}/chat/completions`, {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
         'idempotency-key': command.idempotencyKey,
-        ...authorization(this.config.apiKey),
+        ...authorization(config.apiKey),
       },
-      body: JSON.stringify(createOutlineRequest(this.config, command)),
-      signal: AbortSignal.timeout(this.config.timeoutMs),
+      body: JSON.stringify(createOutlineRequest(config, command)),
+      signal: AbortSignal.timeout(config.timeoutMs),
     });
     const text = await response.text();
     if (Buffer.byteLength(text) > 512 * 1024) {
@@ -200,15 +201,16 @@ export class OpenAICompatibleAgentWorkAdapter extends AgentWorkPort {
     } catch {
       throw new Error('inference provider returned an invalid response envelope');
     }
-    return parseOutlineResponse(value, this.config, command);
+    return parseOutlineResponse(value, config, command);
   }
 
   async execute(command) {
     assertCommand(command);
+    const config = this.configProvider();
     if (!['provision', 'generate_outline', 'revise_outline'].includes(command.type)) {
       throw new Error(`action ${command.type} is not supported by the course inference backend`);
     }
-    const bindingId = command.bindingId ?? bindingFor(command.sourceIdentity);
+    const bindingId = command.bindingId ?? bindingFor(command.sourceIdentity, config.kind);
     const prior = await this.pool.query(
       `SELECT result FROM agent_work.deliveries
        WHERE idempotency_key = $1 AND state = 'completed'`,
@@ -222,12 +224,12 @@ export class OpenAICompatibleAgentWorkAdapter extends AgentWorkPort {
       [
         bindingId,
         command.sourceIdentity,
-        this.config.provider,
-        this.config.model,
+        config.provider,
+        config.model,
         JSON.stringify([{
           type: 'provisioned',
           label: 'external-model',
-          detail: `Course work provisioned for ${this.config.provider}.`,
+          detail: `Course work provisioned for ${config.provider}.`,
         }]),
       ],
     );
@@ -239,7 +241,7 @@ export class OpenAICompatibleAgentWorkAdapter extends AgentWorkPort {
       throw new Error('course inference work binding does not match');
     }
     if (command.type === 'provision') {
-      const result = toView(work.rows[0], this.config);
+      const result = toView(work.rows[0], config);
       await this.pool.query(
         `INSERT INTO agent_work.deliveries
           (idempotency_key, binding_id, command_type, state, result, completed_at)
@@ -249,7 +251,7 @@ export class OpenAICompatibleAgentWorkAdapter extends AgentWorkPort {
       );
       return result;
     }
-    const deliveryStaleSeconds = Math.ceil(this.config.timeoutMs / 1_000) + 30;
+    const deliveryStaleSeconds = Math.ceil(config.timeoutMs / 1_000) + 30;
     const claimed = await this.pool.query(
       `INSERT INTO agent_work.deliveries
         (idempotency_key, binding_id, command_type, state, started_at)
@@ -272,7 +274,7 @@ export class OpenAICompatibleAgentWorkAdapter extends AgentWorkPort {
       throw new Error('course inference delivery is already in progress');
     }
     try {
-      const output = await this.infer(command);
+      const output = await this.infer(command, config);
       const client = await this.pool.connect();
       try {
         await client.query('BEGIN');
@@ -295,7 +297,7 @@ export class OpenAICompatibleAgentWorkAdapter extends AgentWorkPort {
         audit.push({
           type: command.type === 'revise_outline' ? 'outline-revised' : 'outline-generated',
           label: 'external-model',
-          detail: `${this.config.provider} returned a schema-validated course outline.`,
+          detail: `${config.provider} returned a schema-validated course outline.`,
         });
         const updated = await client.query(
           `UPDATE agent_work.works
@@ -306,11 +308,11 @@ export class OpenAICompatibleAgentWorkAdapter extends AgentWorkPort {
             bindingId,
             JSON.stringify(output),
             JSON.stringify(audit),
-            this.config.provider,
-            this.config.model,
+            config.provider,
+            config.model,
           ],
         );
-        const result = toView(updated.rows[0], this.config);
+        const result = toView(updated.rows[0], config);
         await client.query(
           `UPDATE agent_work.deliveries
            SET state = 'completed', result = $2::jsonb, completed_at = now()
@@ -337,11 +339,14 @@ export class OpenAICompatibleAgentWorkAdapter extends AgentWorkPort {
   }
 
   async read(bindingId) {
-    if (!String(bindingId).startsWith('openai:')) throw new Error('invalid course inference binding');
+    const config = this.configProvider();
+    if (!String(bindingId).startsWith(`openai:${config.kind}:`)) {
+      throw new Error('invalid course inference binding');
+    }
     const result = await this.pool.query(
       'SELECT * FROM agent_work.works WHERE binding_id = $1',
       [bindingId],
     );
-    return result.rowCount ? toView(result.rows[0], this.config) : null;
+    return result.rowCount ? toView(result.rows[0], config) : null;
   }
 }

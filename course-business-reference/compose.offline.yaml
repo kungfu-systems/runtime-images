@@ -1,87 +1,9 @@
 name: kungfu-course-business-reference
 
-x-course-model:
-  url: &course-model-url https://huggingface.co/unsloth/Qwen3-0.6B-GGUF/resolve/50968a4468ef4233ed78cd7c3de230dd1d61a56b/Qwen3-0.6B-Q4_K_M.gguf
-  sha256: &course-model-sha256 ac2d97712095a558e31573f62f466a3f9d93990898b0ec79d7c974c1780d524a
-
+# Compatibility overlay retained for older commands. It no longer downloads a
+# model at startup: the unified product has one image and requires explicit,
+# authenticated click-to-install model delivery.
 services:
-  model-init:
-    image: alpine:3.22@sha256:14358309a308569c32bdc37e2e0e9694be33a9d99e68afb0f5ff33cc1f695dce
-    restart: "no"
-    read_only: true
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    tmpfs:
-      - /tmp:size=8m,mode=1777
-    environment:
-      MODEL_URL: *course-model-url
-      MODEL_SHA256: *course-model-sha256
-    command:
-      - /bin/sh
-      - -euc
-      - |
-        target=/models/Qwen3-0.6B-Q4_K_M.gguf
-        if [ -f "$$target" ]; then
-          echo "$$MODEL_SHA256  $$target" | sha256sum -c -
-          exit 0
-        fi
-        wget -c -O "$$target.part" "$$MODEL_URL"
-        echo "$$MODEL_SHA256  $$target.part" | sha256sum -c -
-        mv "$$target.part" "$$target"
-    volumes:
-      - course-models:/models
-    networks:
-      - course-private
-
-  llama:
-    image: ${COURSE_LLAMA_IMAGE:-ghcr.io/ggml-org/llama.cpp:server@sha256:a576442ad3649c0b5ea74e20ad29a17c121117f32607cfe59ff27cc38066f874}
-    restart: unless-stopped
-    read_only: true
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    tmpfs:
-      - /tmp:size=64m,mode=1777
-    command:
-      - --model
-      - /models/Qwen3-0.6B-Q4_K_M.gguf
-      - --host
-      - 0.0.0.0
-      - --port
-      - "8080"
-      - --ctx-size
-      - "4096"
-      - --parallel
-      - "1"
-      - --jinja
-      - --reasoning
-      - "off"
-      - --chat-template-kwargs
-      - '{"enable_thinking":false}'
-    depends_on:
-      model-init:
-        condition: service_completed_successfully
-    volumes:
-      - course-models:/models:ro
-    networks:
-      - course-private
-
   app:
     environment:
-      AGENT_WORK_BACKEND: openai-compatible
-      AGENT_WORK_BASE_URL: http://llama:8080/v1
-      AGENT_WORK_MODEL: Qwen3-0.6B-Q4_K_M
-      AGENT_WORK_PROVIDER_LABEL: Local Qwen
-      AGENT_WORK_DELIVERY: local
-      AGENT_WORK_API_KEY_FILE: ""
-      AGENT_WORK_TIMEOUT_MS: ${COURSE_AGENT_TIMEOUT_MS:-180000}
-    depends_on:
-      llama:
-        condition: service_started
-
-volumes:
-  course-models:
-    name: ${COMPOSE_PROJECT_NAME:-kungfu-course-business-reference}-models
+      COURSE_LOCAL_MODEL_MANAGEMENT: "true"

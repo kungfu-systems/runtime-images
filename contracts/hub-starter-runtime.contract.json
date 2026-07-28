@@ -1,11 +1,42 @@
 {
-  "schema": "kungfu.hub-starter-runtime/v1",
-  "status": "qualified-development-candidate",
+  "schema": "kungfu.course-hub-runtime/v2",
+  "status": "development-candidate",
   "authority": {
-    "initiativeAssignment": "Kungfu Mission Control Profile through public CLI commands",
-    "episode": "Kungfu native journal",
-    "web": "non-authoritative thin projection",
-    "secondaryDatabase": false
+    "identitySessionsCoursesVersionsApprovals": "PostgreSQL with forced per-account row isolation",
+    "inference": "selected AgentWorkPort backend with PostgreSQL-persisted provenance",
+    "workControl": "Kungfu public CLI with native Assignment, Episode, review, decision, and seal",
+    "web": "non-authoritative command and projection surface"
+  },
+  "business": {
+    "authenticated": true,
+    "multiAccountIsolation": true,
+    "courseCollection": true,
+    "immutableOutlineVersions": true,
+    "approvalPointer": true,
+    "durableOutbox": true,
+    "database": "PostgreSQL 17",
+    "applicationRole": "course_app NOBYPASSRLS"
+  },
+  "inference": {
+    "modes": ["mock", "local", "hosted"],
+    "silentMockFallback": false,
+    "localRuntime": "llama.cpp in the first-party application image",
+    "embeddedModelWeights": false,
+    "modelInstall": "authenticated explicit click, resumable, exact bytes and SHA-256, atomic rename",
+    "minimumPinnedQwenChoices": 3
+  },
+  "workControl": {
+    "stableBinding": "kungfu:course:<course-id>",
+    "unit": "one AgentWork lifecycle per generated course version",
+    "stages": [
+      "Assignment capture and admission",
+      "bounded claim and kickoff",
+      "immutable artifact Evidence Episode",
+      "independent fit review",
+      "typed close decision",
+      "portable state seal"
+    ],
+    "recovery": "resume from public native status without reconstructing private records"
   },
   "sourceBuild": {
     "kungfuSourceSha": "83e75ffc8ff3cc05199e257a180eac6a7380949d",
@@ -26,31 +57,31 @@
   },
   "runtime": {
     "baseImage": "node:24-trixie-slim@sha256:ae91dcc111a68c9d2d81ff2a17bda61be126426176fde6fe7d08ab13b7f50573",
+    "llamaImage": "ghcr.io/ggml-org/llama.cpp:server@sha256:a576442ad3649c0b5ea74e20ad29a17c121117f32607cfe59ff27cc38066f874",
     "platforms": ["linux/amd64", "linux/arm64"],
     "user": "node",
     "readOnlyRoot": true,
-    "writablePaths": ["/state", "/tmp"],
-    "localhostOnly": true,
+    "writablePaths": ["/state", "/models", "/tmp"],
+    "localhostDefault": true,
     "privileged": false,
     "hostNetwork": false,
     "dockerSocket": false,
     "capabilityAdditions": []
   },
   "persistence": {
-    "volume": "one Compose-project-scoped named volume",
-    "instanceIdentity": "mint once on empty volume and preserve on restart",
-    "singleWriter": true,
+    "volumes": ["PostgreSQL business data", "Kungfu native state", "optional model weights"],
     "destructiveCleanupCommand": null
   },
   "substitutionSeam": {
     "environment": "KUNGFU_HUB_IMAGE",
     "policy": "exact digest only",
-    "officialAlpha": "replace only the digest after independent qualification"
+    "officialAlpha": "replace only after independent qualification and lock update"
   },
   "nonClaims": [
     "not production ready",
-    "not authenticated",
-    "not multi-user",
+    "not public-ingress ready",
+    "not a complete LMS",
+    "not billing or account recovery",
     "not highly available",
     "not a native Windows container",
     "not an official Kungfu Alpha or stable release"

@@ -2,6 +2,12 @@
 # SPDX-License-Identifier: Apache-2.0
 
 ARG RUNTIME_IMAGE=node:24-trixie-slim@sha256:ae91dcc111a68c9d2d81ff2a17bda61be126426176fde6fe7d08ab13b7f50573
+ARG LLAMA_IMAGE=ghcr.io/ggml-org/llama.cpp:server@sha256:a576442ad3649c0b5ea74e20ad29a17c121117f32607cfe59ff27cc38066f874
+
+FROM ${RUNTIME_IMAGE} AS dependencies
+WORKDIR /build
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
 
 FROM ${RUNTIME_IMAGE} AS package
 ARG TARGETARCH
@@ -29,10 +35,11 @@ RUN set -eu; \
     node -e 'const p=require(process.argv[1]); if(p.schema!=="kungfu.product.compatibility/v1"||p.source_commit!==process.argv[2]||p.versions?.product!==process.argv[3]) process.exit(1)' /opt/kungfu/runtime/product-compatibility.json "${KUNGFU_SOURCE_SHA}" "${KUNGFU_PACKAGE_VERSION}"; \
     node -e 'const p=require(process.argv[1]); if(p.schema!=="kungfu.product-upgrade.manifest/v1"||p.sourceCommit!==process.argv[2]||p.productVersion!==process.argv[3]||p.platform!=="linux"||p.architecture!==process.argv[4]) process.exit(1)' /opt/kungfu/upgrade/kungfu-release-manifest.json "${KUNGFU_SOURCE_SHA}" "${KUNGFU_PACKAGE_VERSION}" "${package_arch}"; \
     entry=$(node -e 'process.stdout.write(require(process.argv[1]).entries.kungfu)' /opt/kungfu/product.json); \
-    case "${entry}" in /*|../*|*/../*|*/..) exit 66 ;; esac; \
-    test -x "/opt/kungfu/${entry}"; \
     test "${entry}" = kungfu; \
+    test -x "/opt/kungfu/${entry}"; \
     chmod -R a-w /opt/kungfu
+
+FROM ${LLAMA_IMAGE} AS llama
 
 FROM ${RUNTIME_IMAGE} AS runtime
 ARG TARGETPLATFORM
@@ -42,8 +49,8 @@ ARG KUNGFU_PACKAGE_VERSION
 ARG KUNGFU_SOURCE_SHA
 ARG SOURCE_REVISION
 
-LABEL org.opencontainers.image.title="Kungfu Hub Starter" \
-      org.opencontainers.image.description="Pre-Alpha localhost-only development runtime for Kungfu-managed work" \
+LABEL org.opencontainers.image.title="Kungfu Course Hub" \
+      org.opencontainers.image.description="PostgreSQL course builder with selectable inference and Kungfu-managed work" \
       org.opencontainers.image.source="https://github.com/kungfu-systems/runtime-images" \
       org.opencontainers.image.revision="${SOURCE_REVISION}" \
       org.opencontainers.image.licenses="Apache-2.0" \
@@ -52,34 +59,49 @@ LABEL org.opencontainers.image.title="Kungfu Hub Starter" \
       tech.kungfu.product.package.amd64.sha256="${KUNGFU_PACKAGE_SHA256_AMD64}" \
       tech.kungfu.product.package.arm64.sha256="${KUNGFU_PACKAGE_SHA256_ARM64}" \
       tech.kungfu.runtime.platform="${TARGETPLATFORM}" \
-      tech.kungfu.hub-starter.contract="kungfu.hub-starter-runtime/v1" \
-      tech.kungfu.release.channel="development-pre-alpha"
+      tech.kungfu.course-hub.contract="course.agent-work-port/v2" \
+      tech.kungfu.course-hub.model-delivery="optional-user-installed"
 
 ENV NODE_ENV=production \
     PORT=8080 \
-    HUB_STATE_ROOT=/state \
+    STATE_DIR=/state \
     KUNGFU_BIN=/opt/kungfu/kungfu \
     KUNGFU_INSTALL_SOURCE=archive \
     KUNGFU_DIR=/opt/kungfu \
     KUNGFU_UPGRADE_MANIFEST=/opt/kungfu/upgrade/kungfu-release-manifest.json \
     KUNGFU_PACKAGE_SHA256_AMD64=${KUNGFU_PACKAGE_SHA256_AMD64} \
     KUNGFU_PACKAGE_SHA256_ARM64=${KUNGFU_PACKAGE_SHA256_ARM64} \
-    KUNGFU_SOURCE_SHA=${KUNGFU_SOURCE_SHA}
+    KUNGFU_SOURCE_SHA=${KUNGFU_SOURCE_SHA} \
+    COURSE_LOCAL_MODEL_MANAGEMENT=true \
+    COURSE_LOCAL_MODELS_ROOT=/models \
+    COURSE_LLAMA_SERVER_BIN=/opt/llama/llama-server \
+    COURSE_LLAMA_SERVER_PORT=8081 \
+    AGENT_WORK_BACKEND=mock \
+    SESSION_SECURE=false \
+    LD_LIBRARY_PATH=/opt/llama
 
+USER root
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+COPY --from=dependencies --chown=root:root /build/node_modules /opt/course/node_modules
 COPY --from=package --chown=root:root /opt/kungfu /opt/kungfu
-COPY --chown=root:root src /opt/hub/src
-COPY --chown=root:root web /opt/hub/web
-COPY --chown=root:root package.json /opt/hub/package.json
-RUN ln -s /opt/kungfu/kungfu /usr/local/bin/kungfu && \
-    test -x /usr/local/bin/kungfu && \
-    mkdir -p /state /opt/hub && \
-    chown node:node /state && \
-    chmod 0755 /state /opt/hub
+COPY --from=llama --chown=root:root /app /opt/llama
+COPY --chown=root:root course-business-reference/src /opt/course/src
+COPY --chown=root:root course-business-reference/web /opt/course/web
+COPY --chown=root:root course-business-reference/migrations /opt/course/migrations
+RUN ln -s /opt/kungfu/kungfu /usr/local/bin/kungfu \
+    && ln -s /opt/llama/llama-server /usr/local/bin/llama-server \
+    && test -x /usr/local/bin/kungfu \
+    && test -x /usr/local/bin/llama-server \
+    && mkdir -p /state /models \
+    && chown node:node /state /models \
+    && chmod 0755 /state /models /opt/course
 
 USER node
-WORKDIR /opt/hub
-VOLUME ["/state"]
+WORKDIR /opt/course
+VOLUME ["/state", "/models"]
 EXPOSE 8080
 HEALTHCHECK --interval=5s --timeout=4s --start-period=90s --retries=24 \
-  CMD node -e "fetch('http://127.0.0.1:8080/healthz').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"
+  CMD node -e "fetch('http://127.0.0.1:8080/readyz').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"
 ENTRYPOINT ["node", "src/server.mjs"]

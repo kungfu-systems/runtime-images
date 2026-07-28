@@ -10,6 +10,7 @@ import { AgentWorkRouter } from './agent-work-router.mjs';
 import { MockAgentWorkAdapter } from './mock-agent-work-adapter.mjs';
 import { OpenAICompatibleAgentWorkAdapter } from './openai-compatible-agent-work-adapter.mjs';
 import { LocalModelManager } from './local-model-manager.mjs';
+import { KungfuCourseWorkControl } from './kungfu-course-work-control.mjs';
 import { OutboxDispatcher } from './outbox.mjs';
 import { createQualificationFaults } from './qualification-faults.mjs';
 import { createRateLimiter } from './security.mjs';
@@ -17,21 +18,34 @@ import { WorkControlProjection } from './work-control-projection.mjs';
 
 const config = loadConfig();
 const pool = await initializeDatabase(config);
+const localModel = new LocalModelManager(config.localModel);
+await localModel.initialize();
 const adapters = { mock: new MockAgentWorkAdapter(pool) };
-if (config.inferences['openai-compatible']) {
-  adapters['openai-compatible'] = new OpenAICompatibleAgentWorkAdapter(
+for (const kind of ['openai-compatible', 'hosted']) {
+  const inferenceConfig = config.inferences[kind];
+  if (!inferenceConfig) continue;
+  adapters[kind] = new OpenAICompatibleAgentWorkAdapter(
     pool,
-    config.inferences['openai-compatible'],
+    inferenceConfig.dynamicLocalModel
+      ? () => localModel.activeConfig(inferenceConfig)
+      : inferenceConfig,
   );
 }
 const agentWorkPort = new AgentWorkRouter({
   defaultBackend: config.backend,
   adapters,
 });
-const localModel = new LocalModelManager(config.localModel);
-await localModel.initialize();
+const workControlAdapter = new KungfuCourseWorkControl({
+  stateRoot: config.stateDir,
+  kungfuBin: config.kungfuBin,
+});
 const workControl = new WorkControlProjection(config.workControl);
-const dispatcher = new OutboxDispatcher(pool, agentWorkPort, createQualificationFaults(config));
+const dispatcher = new OutboxDispatcher(
+  pool,
+  agentWorkPort,
+  createQualificationFaults(config),
+  workControlAdapter,
+);
 const domain = new CourseDomain(pool, agentWorkPort, dispatcher, config);
 const webRoot = fileURLToPath(new URL('../web/', import.meta.url));
 const authLimit = createRateLimiter({ limit: 10, windowMs: 5 * 60_000 });
@@ -78,6 +92,14 @@ function json(res, status, value, extra = {}) {
 }
 
 function backendDescription(kind = config.backend) {
+  let inference = config.inferences[kind];
+  if (kind === 'openai-compatible' && inference?.dynamicLocalModel) {
+    try {
+      inference = localModel.activeConfig(inference);
+    } catch {
+      // The catalog remains visible before a model is activated.
+    }
+  }
   const {
     kind: backendKind,
     label,
@@ -85,14 +107,14 @@ function backendDescription(kind = config.backend) {
     model,
     simulated,
     delivery,
-  } = config.inferences[kind];
+  } = inference;
   return { kind: backendKind, label, provider, model, simulated, delivery };
 }
 
 async function runtimeDescription() {
-  const model = localModel.publicStatus();
+  const modelCatalog = localModel.publicStatus();
   let localReady = false;
-  if (model.state === 'installed' && agentWorkPort.hasBackend('openai-compatible')) {
+  if (modelCatalog.activeModelId && agentWorkPort.hasBackend('openai-compatible')) {
     localReady = await agentWorkPort.health('openai-compatible').then(
       () => true,
       () => false,
@@ -111,12 +133,28 @@ async function runtimeDescription() {
         ? {
           'openai-compatible': {
             ...backendDescription('openai-compatible'),
-            available: model.state === 'installed',
+            available: modelCatalog.models.some((model) => model.state === 'installed'),
             ready: localReady,
-            modelInstall: model,
+            modelCatalog,
           },
         }
         : {}),
+      hosted: config.inferences.hosted
+        ? {
+          ...backendDescription('hosted'),
+          available: true,
+          ready: await agentWorkPort.health('hosted').then(() => true, () => false),
+        }
+        : {
+          kind: 'hosted',
+          label: 'Hosted OpenAI-compatible provider',
+          provider: 'not configured',
+          model: 'none',
+          simulated: false,
+          delivery: 'hosted',
+          available: false,
+          ready: false,
+        },
     },
   };
 }
@@ -131,6 +169,10 @@ async function requireCourseBackend(input) {
     if (!runtime.backends[kind]?.ready) {
       throw Object.assign(new Error('local model is not ready'), { status: 409 });
     }
+  }
+  if (kind === 'hosted') {
+    const ready = await agentWorkPort.health('hosted').then(() => true, () => false);
+    if (!ready) throw Object.assign(new Error('hosted provider is not ready'), { status: 409 });
   }
   return kind;
 }
@@ -252,13 +294,27 @@ const server = createServer(async (req, res) => {
       await domain.logout(auth);
       return json(res, 200, { authenticated: false }, { 'set-cookie': sessionCookie('', true) });
     }
-    if (req.method === 'POST' && url.pathname === '/api/runtime/local-model/install') {
+    const modelInstallMatch = url.pathname.match(
+      /^\/api\/runtime\/local-models\/([a-z0-9.-]+)\/install$/u,
+    );
+    if (req.method === 'POST' && modelInstallMatch) {
       requireOrigin(req);
       const auth = await requireAuth(req);
       requireCsrf(req, auth);
       await body(req);
-      await localModel.install();
+      await localModel.install(modelInstallMatch[1]);
       return json(res, 202, { runtime: await runtimeDescription() });
+    }
+    const modelActivateMatch = url.pathname.match(
+      /^\/api\/runtime\/local-models\/([a-z0-9.-]+)\/activate$/u,
+    );
+    if (req.method === 'POST' && modelActivateMatch) {
+      requireOrigin(req);
+      const auth = await requireAuth(req);
+      requireCsrf(req, auth);
+      await body(req);
+      await localModel.activate(modelActivateMatch[1]);
+      return json(res, 200, { runtime: await runtimeDescription() });
     }
     if (req.method === 'GET' && url.pathname === '/api/homeworks') {
       const auth = await requireAuth(req);
@@ -371,6 +427,7 @@ for (const signal of ['SIGINT', 'SIGTERM']) {
     ready = false;
     clearInterval(interval);
     server.close();
+    await localModel.stop();
     await pool.end();
     process.exit(0);
   });

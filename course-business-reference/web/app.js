@@ -10,10 +10,9 @@ let runtimeState = {
   defaultBackend: 'mock',
   backends: {},
   workControl: {
-    mode: 'app-only',
-    label: 'App-only coordination',
-    nativeCourseBinding: false,
-    hubStarterDemo: { configured: false, reachable: false, ready: false },
+    mode: 'kungfu-managed',
+    label: 'Kungfu-managed work',
+    nativeCourseBinding: true,
   },
 };
 let selectedBackend = localStorage.getItem('course-agent-backend') || 'mock';
@@ -46,26 +45,26 @@ function formatBytes(value) {
   return `${(value / (1024 * 1024)).toFixed(value >= 1024 * 1024 * 1024 ? 1 : 0)} MB`;
 }
 
-function localStatusCopy(local) {
-  const model = local?.modelInstall;
-  if (!model) return 'This delivery does not include an optional local model.';
+function localStatusCopy(model) {
+  if (!model) return 'Model status is unavailable.';
   if (model.state === 'not-installed') {
-    return `${formatBytes(model.totalBytes)} · downloads only after you click`;
+    return `${formatBytes(model.bytes)} download · about ${formatBytes(model.memoryBytes)} memory`;
   }
   if (model.state === 'downloading') {
-    return `Downloading ${model.progress}% · ${formatBytes(model.bytes)} of ${formatBytes(model.totalBytes)}`;
+    return `Downloading ${model.progress}% · ${formatBytes(model.downloadedBytes)} of ${formatBytes(model.bytes)}`;
   }
   if (model.state === 'verifying') return 'Download complete · verifying SHA-256';
-  if (model.state === 'installed' && !local.ready) return 'Installed and verified · starting local inference';
-  if (model.state === 'installed') return 'Installed, verified, and ready';
+  if (model.state === 'installed' && model.active) return 'Installed, verified, and active';
+  if (model.state === 'installed') return 'Installed and verified · ready to activate';
   if (model.state === 'error') return model.error || 'Installation needs to be retried.';
   return 'Checking local model status…';
 }
 
 function shouldPollRuntime() {
-  const local = runtimeState.backends['openai-compatible'];
-  return ['downloading', 'verifying', 'checking'].includes(local?.modelInstall?.state)
-    || (local?.modelInstall?.state === 'installed' && !local.ready);
+  const models = runtimeState.backends['openai-compatible']?.modelCatalog?.models ?? [];
+  return models.some((model) => ['downloading', 'verifying', 'checking'].includes(model.state))
+    || Boolean(runtimeState.backends['openai-compatible']?.modelCatalog?.activeModelId
+      && !runtimeState.backends['openai-compatible']?.ready);
 }
 
 function scheduleRuntimePoll() {
@@ -90,15 +89,14 @@ function initializeRuntimeMenu() {
         <span><strong>Mock</strong><small>Instant deterministic simulation · no model download</small></span>
         <em data-runtime-mock-action>Use mock</em>
       </button>
-      <div class="runtime-install" data-runtime-install-panel hidden>
-        <div><strong>Local model</strong><small data-runtime-local-install-status></small></div>
-        <button data-runtime-install>Download & install</button>
-        <small data-runtime-auth-note hidden>Log in before installing on this instance.</small>
-        <progress data-runtime-progress max="100" value="0" hidden></progress>
-      </div>
+      <div class="runtime-model-catalog" data-runtime-models></div>
       <button class="runtime-choice" data-runtime-local-choice data-runtime-select="openai-compatible" hidden>
         <span><strong>Local model</strong><small data-runtime-local-choice-status></small></span>
         <em data-runtime-local-action>Use local</em>
+      </button>
+      <button class="runtime-choice" data-runtime-hosted-choice data-runtime-select="hosted">
+        <span><strong>Hosted provider</strong><small data-runtime-hosted-status></small></span>
+        <em data-runtime-hosted-action>Use hosted</em>
       </button>
       <p class="runtime-note">This header sets the default for new courses. Open a course to view or switch its own current model binding.</p>
     </section>`;
@@ -111,52 +109,77 @@ function renderRuntimeMenu() {
   const local = runtimeState.backends['openai-compatible'];
   const selected = runtimeState.backends[selectedBackend] ?? mock;
   updateBackend(selected);
-  const installed = local?.modelInstall?.state === 'installed';
-  const installing = ['downloading', 'verifying', 'checking'].includes(
-    local?.modelInstall?.state,
-  );
-
   const trigger = runtimeMenu.querySelector('[data-runtime-toggle]');
   const triggerDot = runtimeMenu.querySelector('.runtime-dot');
   const triggerLabel = runtimeMenu.querySelector('.runtime-trigger-label');
   const popover = runtimeMenu.querySelector('.runtime-popover');
   const mockChoice = runtimeMenu.querySelector('[data-runtime-select="mock"]');
   const mockAction = runtimeMenu.querySelector('[data-runtime-mock-action]');
-  const installPanel = runtimeMenu.querySelector('[data-runtime-install-panel]');
-  const installStatus = runtimeMenu.querySelector('[data-runtime-local-install-status]');
-  const installButton = runtimeMenu.querySelector('[data-runtime-install]');
-  const authNote = runtimeMenu.querySelector('[data-runtime-auth-note]');
-  const progress = runtimeMenu.querySelector('[data-runtime-progress]');
+  const modelsContainer = runtimeMenu.querySelector('[data-runtime-models]');
   const localChoice = runtimeMenu.querySelector('[data-runtime-local-choice]');
   const localChoiceStatus = runtimeMenu.querySelector('[data-runtime-local-choice-status]');
   const localAction = runtimeMenu.querySelector('[data-runtime-local-action]');
+  const hosted = runtimeState.backends.hosted;
+  const hostedChoice = runtimeMenu.querySelector('[data-runtime-hosted-choice]');
+  const hostedStatus = runtimeMenu.querySelector('[data-runtime-hosted-status]');
+  const hostedAction = runtimeMenu.querySelector('[data-runtime-hosted-action]');
+  const catalog = local?.modelCatalog;
+  const models = catalog?.models ?? [];
+  const activeModel = models.find((model) => model.active);
 
   trigger.classList.toggle('active', runtimeMenuOpen);
   trigger.setAttribute('aria-expanded', String(runtimeMenuOpen));
   triggerDot.classList.toggle('mock', selectedBackend === 'mock');
-  triggerDot.classList.toggle('local', selectedBackend !== 'mock');
-  triggerLabel.textContent = `AI: ${selectedBackend === 'mock' ? 'Mock' : 'Local model'}`;
+  triggerDot.classList.toggle('local', selectedBackend === 'openai-compatible');
+  triggerLabel.textContent = `AI: ${
+    selectedBackend === 'mock'
+      ? 'Mock'
+      : selectedBackend === 'hosted'
+        ? 'Hosted'
+        : activeModel?.label ?? 'Local model'
+  }`;
   popover.classList.toggle('open', runtimeMenuOpen);
   mockChoice.classList.toggle('selected', selectedBackend === 'mock');
   mockAction.textContent = selectedBackend === 'mock' ? 'In use' : 'Use mock';
 
-  installPanel.hidden = !local || installed;
-  localChoice.hidden = !local || !installed;
+  modelsContainer.innerHTML = models.map((model) => {
+    const installing = ['downloading', 'verifying', 'checking'].includes(model.state);
+    const installedModel = model.state === 'installed';
+    const action = model.active
+      ? '<em>Active model</em>'
+      : installedModel
+        ? `<button data-runtime-model-activate="${model.id}">Activate</button>`
+        : `<button data-runtime-model-install="${model.id}" ${installing || !session?.authenticated ? 'disabled' : ''}>${installing ? `${model.progress}%` : model.downloadedBytes ? 'Resume download' : 'Download'}</button>`;
+    return `
+      <article class="runtime-model ${model.active ? 'active' : ''}">
+        <div>
+          <strong>${escapeHtml(model.label)} · ${escapeHtml(model.capability)}</strong>
+          <small>${escapeHtml(model.guidance)}</small>
+          <small>${escapeHtml(localStatusCopy(model))}</small>
+        </div>
+        ${action}
+        ${installing ? `<progress max="100" value="${model.progress}"></progress>` : ''}
+      </article>`;
+  }).join('');
+  localChoice.hidden = !activeModel;
   if (local) {
-    const status = localStatusCopy(local);
-    installStatus.textContent = status;
-    localChoiceStatus.textContent = status;
-    installButton.disabled = installing || !session?.authenticated;
-    installButton.textContent = installing ? `${local.modelInstall.progress}%` : 'Download & install';
-    authNote.hidden = Boolean(session?.authenticated);
-    progress.hidden = !installing;
-    progress.value = local.modelInstall.progress ?? 0;
+    localChoiceStatus.textContent = activeModel
+      ? `${activeModel.label} · installed inside this deployment`
+      : 'Install and activate one model above';
     localChoice.disabled = !local.ready;
     localChoice.classList.toggle('selected', selectedBackend === 'openai-compatible');
     localAction.textContent = local.ready
       ? (selectedBackend === 'openai-compatible' ? 'In use' : 'Use local')
       : 'Starting…';
   }
+  hostedChoice.disabled = !hosted?.ready;
+  hostedChoice.classList.toggle('selected', selectedBackend === 'hosted');
+  hostedStatus.textContent = hosted?.ready
+    ? `${hosted.provider} · ${hosted.model}`
+    : hosted?.available
+      ? 'Configured but currently unreachable'
+      : 'Not configured by this deployment';
+  hostedAction.textContent = selectedBackend === 'hosted' ? 'In use' : 'Use hosted';
   scheduleRuntimePoll();
 }
 
@@ -165,56 +188,29 @@ function initializeWorkControlMenu() {
   workControlMenu.innerHTML = `
     <button class="runtime-trigger work-control-trigger" data-work-control-toggle aria-expanded="false">
       <span class="runtime-dot control"></span>
-      <span>Work control: App-only</span>
+      <span>Work control: Kungfu</span>
       <span aria-hidden="true">⌄</span>
     </button>
     <section class="runtime-popover work-control-popover" aria-label="Work control">
       <p class="step">Work control for this course app</p>
-      <h2>Generation works. Kungfu is not connected yet.</h2>
+      <h2>Every generated version is managed by Kungfu.</h2>
       <div class="control-menu-state">
-        <span class="control-state-mark">NOW</span>
+        <span class="control-state-mark">DB</span>
         <div>
           <strong>PostgreSQL + application outbox</strong>
-          <small>The app delegates, retries, saves versions, and records your approval.</small>
+          <small>Owns accounts, private course briefs, immutable versions, and your approval.</small>
         </div>
       </div>
       <div class="control-menu-state future">
         <span class="control-state-mark">KF</span>
         <div>
-          <strong>Kungfu-managed work</strong>
-          <small>Adds a native Assignment, evidence, independent review, typed decisions, recovery, and a state seal.</small>
+          <strong>Kungfu-managed work · active</strong>
+          <small>Owns Assignment, Evidence, independent review, typed decisions, recovery, and the portable seal.</small>
         </div>
       </div>
-      <div data-hub-demo-status></div>
       <p class="runtime-note">Kungfu does not write the course outline. It makes the delegated work accountable and independently checkable.</p>
     </section>`;
   workControlMenu.dataset.initialized = 'true';
-}
-
-function renderHubDemoStatus(container) {
-  const demo = runtimeState.workControl?.hubStarterDemo ?? {};
-  if (!demo.configured) {
-    container.innerHTML = `
-      <p class="hub-demo-status unavailable">
-        <strong>Real Kungfu walkthrough</strong>
-        <span>No neighboring Hub Starter URL is configured for this deployment.</span>
-      </p>`;
-    return;
-  }
-  const state = demo.ready ? 'ready' : demo.reachable ? 'checking' : 'unavailable';
-  const label = demo.ready
-    ? `Ready · phase ${demo.phase}`
-    : demo.reachable
-      ? `Reachable · phase ${demo.phase}`
-      : 'Currently unavailable';
-  container.innerHTML = `
-    <div class="hub-demo-status ${state}">
-      <div>
-        <strong>Real Kungfu walkthrough</strong>
-        <span>${escapeHtml(label)} · separate from this course</span>
-      </div>
-      <a href="${escapeHtml(demo.browserUrl)}" target="_blank" rel="noopener">Open ↗</a>
-    </div>`;
 }
 
 function renderWorkControlMenu() {
@@ -224,7 +220,6 @@ function renderWorkControlMenu() {
   trigger.classList.toggle('active', workControlMenuOpen);
   trigger.setAttribute('aria-expanded', String(workControlMenuOpen));
   popover.classList.toggle('open', workControlMenuOpen);
-  renderHubDemoStatus(workControlMenu.querySelector('[data-hub-demo-status]'));
 }
 
 workControlMenu.addEventListener('click', (event) => {
@@ -247,7 +242,7 @@ function updateSelectedRuntimePanels() {
     dashboard.querySelector('[data-selected-runtime-name]').textContent = runtime.name;
     dashboard.querySelector('[data-selected-runtime-copy]').textContent = runtime.simulated
       ? 'New courses use a deterministic simulation. Choose Local model in the header to create a course whose drafts come from real local inference.'
-      : 'New courses will generate their outlines with Qwen3 0.6B inside this Docker deployment. Each course can later switch its own model.';
+      : `New courses will use ${runtime.name}. Each course keeps the source of every saved version.`;
   }
   const newCourse = app.querySelector('[data-selected-runtime-panel="new-course"]');
   if (newCourse) {
@@ -257,7 +252,7 @@ function updateSelectedRuntimePanels() {
     newCourse.querySelector('[data-selected-runtime-name]').textContent = runtime.name;
     newCourse.querySelector('[data-selected-runtime-copy]').textContent = runtime.simulated
       ? 'Its outline will be a deterministic reference result, clearly labeled as Mock.'
-      : 'Qwen3 0.6B will generate the outline locally inside this Docker deployment.';
+      : `${runtime.name} will generate the outline with the selected delivery mode.`;
   }
   const courseNotice = app.querySelector('[data-course-runtime-notice]');
   if (courseNotice) {
@@ -277,13 +272,6 @@ async function refreshRuntime({ keepOpen = false } = {}) {
   runtimeState = runtime;
   if (!runtimeState.backends[selectedBackend]) {
     selectedBackend = runtime.defaultBackend;
-    localStorage.setItem('course-agent-backend', selectedBackend);
-  }
-  if (
-    selectedBackend === 'openai-compatible'
-    && runtimeState.backends[selectedBackend]?.modelInstall?.state !== 'installed'
-  ) {
-    selectedBackend = 'mock';
     localStorage.setItem('course-agent-backend', selectedBackend);
   }
   if (!keepOpen) runtimeMenuOpen = false;
@@ -316,13 +304,34 @@ runtimeMenu.addEventListener('click', async (event) => {
     selectRuntime(choice.dataset.runtimeSelect);
     return;
   }
-  const install = event.target.closest('[data-runtime-install]');
+  const install = event.target.closest('[data-runtime-model-install]');
   if (install && !install.disabled) {
     install.disabled = true;
     try {
-      await request('/api/runtime/local-model/install', { method: 'POST', body: {} });
+      await request(`/api/runtime/local-models/${install.dataset.runtimeModelInstall}/install`, {
+        method: 'POST',
+        body: {},
+      });
       runtimeMenuOpen = true;
       await refreshRuntime({ keepOpen: true });
+    } catch {
+      await refreshRuntime({ keepOpen: true });
+    }
+    return;
+  }
+  const activate = event.target.closest('[data-runtime-model-activate]');
+  if (activate && !activate.disabled) {
+    activate.disabled = true;
+    try {
+      await request(`/api/runtime/local-models/${activate.dataset.runtimeModelActivate}/activate`, {
+        method: 'POST',
+        body: {},
+      });
+      selectedBackend = 'openai-compatible';
+      localStorage.setItem('course-agent-backend', selectedBackend);
+      runtimeMenuOpen = true;
+      await refreshRuntime({ keepOpen: true });
+      updateSelectedRuntimePanels();
     } catch {
       await refreshRuntime({ keepOpen: true });
     }
@@ -358,9 +367,23 @@ function backendPresentation(kind) {
       kind: 'openai-compatible',
       short: 'Local AI',
       badge: 'Local AI course',
-      name: backend?.model
+      name: backend?.model && backend.model !== 'Select and activate a model'
         ? `Local Qwen · ${backend.model}`
-        : 'Local Qwen · Qwen3 0.6B',
+        : 'Local Qwen · no active model',
+      tone: 'local',
+      simulated: false,
+      ready: Boolean(backend?.ready),
+    };
+  }
+  if (kind === 'hosted') {
+    const backend = runtimeState.backends.hosted;
+    return {
+      kind: 'hosted',
+      short: 'Hosted AI',
+      badge: 'Hosted AI course',
+      name: backend?.ready
+        ? `${backend.provider} · ${backend.model}`
+        : 'Hosted provider · unavailable',
       tone: 'local',
       simulated: false,
       ready: Boolean(backend?.ready),
@@ -622,7 +645,7 @@ async function showCourses(message = '') {
         <h2 data-selected-runtime-name>${escapeHtml(runtime.name)}</h2>
         <p data-selected-runtime-copy>${runtime.simulated
           ? 'New courses use a deterministic simulation. Choose Local model in the header to create a course whose drafts come from real local inference.'
-          : 'New courses will generate their outlines with Qwen3 0.6B inside this Docker deployment. Each course can later switch its own model.'}</p>
+          : `New courses will use ${escapeHtml(runtime.name)}. Each course can later switch its own inference binding.`}</p>
       </div>
     </section>
     <p class="success">${escapeHtml(message)}</p>
@@ -650,13 +673,13 @@ function showNewCourse(message = '') {
       <p class="lede">These are durable business facts. The Agent will use them to generate a draft, but your application owns the brief and every approved version.</p>
     </section>
     <section class="new-course-runtime ${runtime.tone}" data-selected-runtime-panel="new-course">
-      <span data-selected-runtime-mark>${runtime.simulated ? 'MOCK' : 'LOCAL AI'}</span>
+      <span data-selected-runtime-mark>${runtime.simulated ? 'MOCK' : runtime.kind === 'hosted' ? 'HOSTED AI' : 'LOCAL AI'}</span>
       <div>
         <p class="step">This course will use</p>
         <h2 data-selected-runtime-name>${escapeHtml(runtime.name)}</h2>
         <p data-selected-runtime-copy>${runtime.simulated
           ? 'Its outline will be a deterministic reference result, clearly labeled as Mock.'
-          : 'Qwen3 0.6B will generate the outline locally inside this Docker deployment.'}</p>
+          : `${escapeHtml(runtime.name)} will generate the outline through its explicit ${escapeHtml(runtime.kind === 'hosted' ? 'hosted' : 'local')} binding.`}</p>
       </div>
     </section>
     <form id="course-form" class="brief-form panel">
@@ -725,21 +748,44 @@ function renderSavedBriefSource(course) {
     </section>`;
 }
 
-function generatedBadge(runtime) {
-  return `<span class="generated-section-badge">${runtime.simulated ? 'System template · no AI' : 'Generated by Local Qwen'}</span>`;
+function generatedSource(outline, runtime) {
+  const inference = outline?.inference ?? {};
+  const model = inference.model || (runtime.simulated ? 'none' : runtime.name);
+  const provider = inference.provider || (runtime.simulated ? 'deterministic simulation' : runtime.name);
+  const hosted = inference.delivery === 'hosted' || runtime.kind === 'hosted';
+  return {
+    model,
+    provider,
+    hosted,
+    badge: runtime.simulated
+      ? 'System template · no AI'
+      : `Generated by ${provider} · ${model}`,
+    boundary: runtime.simulated
+      ? 'MOCK TEMPLATE OUTPUT STARTS HERE'
+      : hosted
+        ? 'HOSTED AI OUTPUT STARTS HERE'
+        : 'LOCAL AI OUTPUT STARTS HERE',
+    location: hosted
+      ? `returned through the configured hosted provider ${provider}`
+      : 'running locally inside this deployment',
+  };
+}
+
+function generatedBadge(outline, runtime) {
+  const source = generatedSource(outline, runtime);
+  return `<span class="generated-section-badge">${escapeHtml(source.badge)}</span>`;
 }
 
 function renderOutputBoundary(version, runtime) {
-  const inference = version.outline?.inference ?? {};
-  const modelName = inference.model || (runtime.simulated ? 'none' : 'Qwen3 0.6B');
+  const source = generatedSource(version.outline, runtime);
   return `
-    <div class="output-boundary ${runtime.tone}" role="separator" aria-label="${runtime.simulated ? 'Mock template output starts here' : 'Local AI output starts here'}">
+    <div class="output-boundary ${runtime.tone}" role="separator" aria-label="${escapeHtml(source.boundary)}">
       <span aria-hidden="true">↓</span>
       <div>
-        <p>${runtime.simulated ? 'MOCK TEMPLATE OUTPUT STARTS HERE' : 'LOCAL AI OUTPUT STARTS HERE'}</p>
+        <p>${escapeHtml(source.boundary)}</p>
         <strong>${runtime.simulated
           ? 'Everything below is deterministic system template content—not AI inference.'
-          : `Everything below was returned by ${escapeHtml(modelName)}, running locally in this deployment.`}</strong>
+          : `Everything below was returned by ${escapeHtml(source.model)}, ${escapeHtml(source.location)}.`}</strong>
       </div>
     </div>`;
 }
@@ -748,7 +794,7 @@ function renderOutline(outline, runtime) {
   return `
     <div class="outline">
       <div class="outline-intro">
-        ${generatedBadge(runtime)}
+        ${generatedBadge(outline, runtime)}
         <p class="eyebrow">Agent's proposed course direction</p>
         <h2>${escapeHtml(outline.title)}</h2>
         <p>${escapeHtml(outline.positioning)}</p>
@@ -762,7 +808,7 @@ function renderOutline(outline, runtime) {
           <article class="module">
             <span>${escapeHtml(module.number)}</span>
             <div>
-              ${generatedBadge(runtime)}
+              ${generatedBadge(outline, runtime)}
               <h3>${escapeHtml(module.title)}</h3>
               <p>${escapeHtml(module.outcome)}</p>
               <ul>${(module.lessons ?? []).map((lesson) => `<li>${escapeHtml(lesson)}</li>`).join('')}</ul>
@@ -771,7 +817,7 @@ function renderOutline(outline, runtime) {
           </article>`).join('')}
       </div>
       <div class="questions">
-        ${generatedBadge(runtime)}
+        ${generatedBadge(outline, runtime)}
         <h3>Questions to resolve before publishing</h3>
         <ol>${(outline.openQuestions ?? []).map((question) => `<li>${escapeHtml(question)}</li>`).join('')}</ol>
       </div>
@@ -779,22 +825,21 @@ function renderOutline(outline, runtime) {
 }
 
 function renderAIOutputHero(version, runtime) {
-  const inference = version.outline?.inference ?? {};
-  const modelName = inference.model || (runtime.simulated ? 'none' : 'Qwen3 0.6B');
+  const source = generatedSource(version.outline, runtime);
   return `
     <section class="ai-output-hero ${runtime.tone}">
       <div class="ai-output-symbol" aria-hidden="true">${runtime.simulated ? 'M' : 'AI'}</div>
       <div>
-        <p class="step">${runtime.simulated ? 'Mock reference output' : 'Local AI generated · Qwen3 0.6B'}</p>
+        <p class="step">${runtime.simulated ? 'Mock reference output' : `${source.hosted ? 'Hosted' : 'Local'} AI generated · ${escapeHtml(source.model)}`}</p>
         <h2>${runtime.simulated
-          ? 'This draft came from the deterministic simulation—not the local model.'
-          : 'The complete course draft below was generated by the local model.'}</h2>
+          ? 'This draft came from the deterministic simulation—not an AI model.'
+          : `The complete course draft below was generated by ${escapeHtml(source.model)}.`}</h2>
         <p>${runtime.simulated
           ? 'It demonstrates the workflow and data boundary. Switch this course to Local model above, then generate a new version to compare real inference.'
-          : 'Module names, outcomes, lessons, exercises, and open questions are model output produced from your saved brief inside this Docker deployment.'}</p>
+          : `Module names, outcomes, lessons, exercises, and open questions are model output ${escapeHtml(source.location)}.`}</p>
         <div class="ai-output-facts">
-          <span>${runtime.simulated ? 'Deterministic reference' : 'Runs locally in Docker'}</span>
-          <span>${escapeHtml(modelName)}</span>
+          <span>${runtime.simulated ? 'Deterministic reference' : source.hosted ? 'Hosted provider' : 'Runs locally in Docker'}</span>
+          <span>${escapeHtml(source.provider)} · ${escapeHtml(source.model)}</span>
           <span>Saved as immutable version ${version.versionNumber}</span>
         </div>
       </div>
@@ -872,12 +917,12 @@ function renderAgentChanges(version, runtime) {
     ];
   return `
     <section class="agent-changes ${runtime.tone}">
-      ${generatedBadge(runtime)}
+      ${generatedBadge(version.outline, runtime)}
       <p class="step">What the Agent changed</p>
-      <h2>${runtime.simulated ? 'Template change summary' : 'Local Qwen’s own change summary'}</h2>
+      <h2>${runtime.simulated ? 'Template change summary' : `${escapeHtml(generatedSource(version.outline, runtime).model)} change summary`}</h2>
       <p>${runtime.simulated
         ? 'These bullets are part of the deterministic Mock output.'
-        : 'These bullets were written by the local model; they are not system-prefilled copy.'}</p>
+        : 'These bullets were written by the selected AI model; they are not system-prefilled copy.'}</p>
       <ul>${changes.map((change) => `<li>${escapeHtml(change)}</li>`).join('')}</ul>
     </section>`;
 }
@@ -898,13 +943,14 @@ function versionButton(version, selectedId) {
 
 function renderCourseBinding(course, runtime) {
   const local = backendPresentation('openai-compatible');
+  const hosted = backendPresentation('hosted');
   const switching = course.backendStatus === 'provisioning';
   const failed = course.backendStatus === 'failed';
   const lastSwitch = course.backendSwitches?.[0];
   return `
     <section class="course-binding-panel ${runtime.tone}" aria-label="Current course model">
       <div class="course-binding-identity">
-        <span class="binding-live-mark">${runtime.simulated ? 'MOCK' : 'LOCAL AI'}</span>
+        <span class="binding-live-mark">${runtime.simulated ? 'MOCK' : runtime.kind === 'hosted' ? 'HOSTED AI' : 'LOCAL AI'}</span>
         <div>
           <p class="step">Current course model · controls the next Agent action</p>
           <h2>${escapeHtml(runtime.name)}</h2>
@@ -938,6 +984,18 @@ function renderCourseBinding(course, runtime) {
                 ? 'Use local Qwen'
                 : 'Install or start it from the header'}</small>
           </button>
+          <button
+            class="binding-option local${runtime.kind === 'hosted' ? ' current' : ''}"
+            data-bind-course-backend="hosted"
+            ${runtime.kind === 'hosted' || switching || !hosted.ready ? 'disabled' : ''}
+          >
+            <span>Hosted provider</span>
+            <small>${runtime.kind === 'hosted'
+              ? 'Current binding'
+              : hosted.ready
+                ? `Use ${escapeHtml(hosted.name)}`
+                : 'Not configured or currently unavailable'}</small>
+          </button>
         </div>
         <p class="binding-safety">Only future versions change. Every saved version keeps its original model source and audit trail.</p>
         ${lastSwitch ? `<p class="binding-history">Last switch: ${escapeHtml(backendPresentation(lastSwitch.from).short)} → ${escapeHtml(backendPresentation(lastSwitch.to).short)} · ${lastSwitch.completedAt ? 'ready' : 'provisioning'}</p>` : ''}
@@ -946,70 +1004,58 @@ function renderCourseBinding(course, runtime) {
 }
 
 function renderWorkControlPanel(course, selected, isCurrent) {
-  const demo = runtimeState.workControl?.hubStarterDemo ?? {};
-  const generated = Boolean(selected);
-  const approval = isCurrent
-    ? `Version ${selected.versionNumber} approved in PostgreSQL`
-    : generated
-      ? `Version ${selected.versionNumber} awaits your approval`
-      : 'No course version exists yet';
-  const hubStatus = demo.configured
-    ? demo.ready
-      ? `The neighboring Hub Starter is ready in phase “${demo.phase}”.`
-      : demo.reachable
-        ? `The neighboring Hub Starter is reachable in phase “${demo.phase}”.`
-        : 'The neighboring Hub Starter link is configured but is currently unavailable.'
-    : 'No neighboring Hub Starter walkthrough is configured.';
-  const demoLink = demo.configured
-    ? `<a class="hub-demo-link" href="${escapeHtml(demo.browserUrl)}" target="_blank" rel="noopener">Open the real Kungfu walkthrough on this machine ↗</a>`
-    : '';
+  const work = selected?.workControl ?? null;
+  const sealed = work?.decision?.action === 'close' && Boolean(work?.seal?.stateRoot);
+  const versionLabel = selected ? `Version ${selected.versionNumber}` : 'The next generated version';
   return `
     <details class="work-control-panel" aria-label="Current work control">
       <summary class="control-panel-heading control-panel-summary">
         <span class="control-summary-copy">
           <span class="step">Work control · current truth</span>
-          <span class="control-summary-title">This course is running without Kungfu management.</span>
+          <span class="control-summary-title">${work
+            ? `${versionLabel} is ${sealed ? 'independently reviewed and sealed' : 'waiting for more Evidence'}.`
+            : `${versionLabel} will receive its own Kungfu Assignment.`}</span>
         </span>
         <span class="control-summary-actions">
-          <span class="control-mode-badge">APP-ONLY</span>
+          <span class="control-mode-badge">KUNGFU</span>
           <span class="control-expand-label">
-            See what Kungfu adds
+            See the managed handoff
             <span class="control-chevron" aria-hidden="true">⌄</span>
           </span>
         </span>
       </summary>
       <div class="work-control-body">
-        <p class="control-body-intro">The Agent can generate a useful draft and PostgreSQL can preserve it. What is missing is an independent, native record that proves how delegated work was assigned, evidenced, reviewed, decided, and recovered.</p>
+        <p class="control-body-intro">The selected generator writes course content. Kungfu does not generate text: it gives that delegated work a bounded owner, inspectable Evidence, an independent verdict, a typed decision, and a portable seal.</p>
         <ol class="current-control-flow">
-          <li class="live">
+          <li class="${work ? 'live' : ''}">
             <span>1</span>
-            <div><strong>Delegated</strong><p>Application outbox command</p></div>
-            <em>APP RECORD</em>
+            <div><strong>Assignment</strong><p>${work ? 'Admitted and claimed for this immutable version' : 'Created after the generator returns'}</p></div>
+            <em>${work ? 'NATIVE' : 'PENDING'}</em>
           </li>
-          <li class="${generated ? 'live' : ''}">
+          <li class="${work ? 'live' : ''}">
             <span>2</span>
-            <div><strong>Agent output</strong><p>${generated ? `Version ${selected.versionNumber} returned` : 'Waiting for Generate'}</p></div>
-            <em>${generated ? 'OUTPUT' : 'PENDING'}</em>
+            <div><strong>Persisted Evidence</strong><p>${work ? `Exact PostgreSQL ${versionLabel.toLowerCase()} attached` : 'Waiting for generated output'}</p></div>
+            <em>${work ? 'SEALED EPISODE' : 'PENDING'}</em>
           </li>
-          <li class="missing">
+          <li class="${work ? 'live' : ''}">
             <span>3</span>
-            <div><strong>Evidence</strong><p>No native Kungfu Evidence Episode</p></div>
-            <em>NOT CONNECTED</em>
+            <div><strong>Independent review</strong><p>${work ? `Verdict: ${escapeHtml(work.review?.verdict ?? 'unknown')}` : 'Reviewer is different from the generator'}</p></div>
+            <em>${work ? 'CHECKED' : 'PENDING'}</em>
           </li>
-          <li class="missing">
+          <li class="${work ? 'live' : ''}">
             <span>4</span>
-            <div><strong>Independent review</strong><p>Only the creator reviews this version</p></div>
-            <em>NOT CONNECTED</em>
+            <div><strong>Typed decision</strong><p>${work ? `Action: ${escapeHtml(work.decision?.action ?? 'unknown')}` : 'Only reviewer-allowed actions are accepted'}</p></div>
+            <em>${work ? 'RECORDED' : 'PENDING'}</em>
           </li>
-          <li class="${isCurrent ? 'live' : 'missing'}">
+          <li class="${sealed ? 'live' : ''}">
             <span>5</span>
-            <div><strong>Decision & recovery</strong><p>${escapeHtml(approval)}; no Kungfu decision or seal</p></div>
-            <em>${isCurrent ? 'BUSINESS DECISION' : 'NO SEAL'}</em>
+            <div><strong>Portable seal</strong><p>${sealed ? 'Native state root committed' : 'Requires a fit review and close decision'}</p></div>
+            <em>${sealed ? 'SEALED' : 'PENDING'}</em>
           </li>
         </ol>
         <div class="control-comparison">
           <article>
-            <p class="step">Without Kungfu · what you see now</p>
+            <p class="step">Without Kungfu</p>
             <h3>The app coordinates its own happy path.</h3>
             <ul>
               <li>Its outbox handles delivery and retries.</li>
@@ -1019,7 +1065,7 @@ function renderWorkControlPanel(course, selected, isCurrent) {
             </ul>
           </article>
           <article class="future">
-            <p class="step">With Kungfu · next adapter</p>
+            <p class="step">With Kungfu · active here</p>
             <h3>The work becomes independently governable.</h3>
             <ul>
               <li>A bounded Assignment says who owns the work.</li>
@@ -1029,13 +1075,22 @@ function renderWorkControlPanel(course, selected, isCurrent) {
             </ul>
           </article>
         </div>
-        <div class="hub-demo-callout ${demo.ready ? 'ready' : ''}">
-          <div>
-            <strong>See the difference in a real Kungfu runtime</strong>
-            <p>${escapeHtml(hubStatus)} It demonstrates real Assignment, evidence, review, decision, and seal state, but it does not own this user account or course.</p>
-          </div>
-          ${demoLink}
-        </div>
+        ${work ? `
+          <details class="technical">
+            <summary>Native identities and proof roots</summary>
+            <dl>
+              <dt>Stable course binding</dt><dd>${escapeHtml(course.kungfuBindingId)}</dd>
+              <dt>Assignment</dt><dd>${escapeHtml(work.assignmentId)}</dd>
+              <dt>Evidence Episode</dt><dd>${escapeHtml(work.evidence?.episodeId)}</dd>
+              <dt>Artifact root</dt><dd>${escapeHtml(work.evidence?.artifactRoot)}</dd>
+              <dt>Review</dt><dd>${escapeHtml(work.review?.id)} · ${escapeHtml(work.review?.verdict)}</dd>
+              <dt>Decision</dt><dd>${escapeHtml(work.decision?.id)} · ${escapeHtml(work.decision?.action)}</dd>
+              <dt>State root</dt><dd>${escapeHtml(work.seal?.stateRoot ?? 'not sealed')}</dd>
+            </dl>
+          </details>` : ''}
+        <p class="binding-safety">${isCurrent
+          ? `${versionLabel} is also your current PostgreSQL-approved business result.`
+          : 'Kungfu acceptance and your business approval are separate decisions.'}</p>
       </div>
     </details>`;
 }
@@ -1157,7 +1212,7 @@ async function showCourse(id, message = '', selectedVersionId = null) {
           <div class="draft-toolbar">
             <div>
               <span class="status">${isCurrent ? 'current approved version' : selected.status}</span>
-              <strong class="generated-by">${versionRuntime.simulated ? 'Simulated by' : 'Generated by local AI'} · ${escapeHtml(agentLabel)}</strong>
+              <strong class="generated-by">${versionRuntime.simulated ? 'Simulated by' : 'Generated by selected AI'} · ${escapeHtml(agentLabel)}</strong>
               <p>Version ${selected.versionNumber} · ${escapeHtml(agentVersionLabel(selected))}</p>
             </div>
             ${isCurrent

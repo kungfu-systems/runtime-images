@@ -157,6 +157,8 @@ jobs:
         env:
           KUNGFU_HUB_IMAGE: ${{ needs.publish.outputs.image }}
           COMPOSE_PROJECT_NAME: kungfu-hub-compose-${{ matrix.artifact-id }}-${{ github.run_id }}-${{ github.run_attempt }}
+          COURSE_DB_MIGRATION_PASSWORD: synthetic_migration_password_42
+          COURSE_DB_APP_PASSWORD: synthetic_application_password_42
         run: |
           set -euo pipefail
           cleanup() { docker compose down >/dev/null 2>&1 || true; }
@@ -164,12 +166,12 @@ jobs:
           docker compose up --detach
           deadline=$((SECONDS + 300))
           mkdir -p ".artifacts/${{ matrix.artifact-id }}"
-          health_body=".artifacts/${{ matrix.artifact-id }}/compose-health.json"
+          health_body=".artifacts/${{ matrix.artifact-id }}/compose-readiness.json"
           while true; do
             http_code=$(curl --silent --show-error --output "${health_body}" --write-out '%{http_code}' \
-              --connect-timeout 2 --max-time 10 http://127.0.0.1:8080/healthz || true)
+              --connect-timeout 2 --max-time 10 http://127.0.0.1:8080/readyz || true)
             if [[ "${http_code}" == 200 ]]; then
-              jq -e '.ready == true and (.phase | type == "string")' "${health_body}" >/dev/null
+              jq -e '.ready == true and .database == "ready" and .inference == "ready"' "${health_body}" >/dev/null
               break
             fi
             if (( SECONDS >= deadline )); then
@@ -179,13 +181,15 @@ jobs:
             fi
             sleep 2
           done
+          curl --fail --silent http://127.0.0.1:8080/api/runtime \
+            >".artifacts/${{ matrix.artifact-id }}/runtime.json"
+          jq -e '
+            .runtime.workControl.nativeCourseBinding == true and
+            (.runtime.backends["openai-compatible"].modelCatalog.models | length) == 3 and
+            .runtime.backends.hosted.available == false
+          ' ".artifacts/${{ matrix.artifact-id }}/runtime.json" >/dev/null
           if [[ "${{ matrix.platform }}" == "linux/amd64" ]]; then
             bash scripts/smoke-browser.sh http://127.0.0.1:8080 ".artifacts/${{ matrix.artifact-id }}/browser"
-          else
-            curl --fail --silent --request POST http://127.0.0.1:8080/api/coursework/claim \
-              | jq -e '.coursework.outcome.state == "needs-evidence" and .coursework.independentCheck.verdict == "insufficient" and .settlement == null' >/dev/null
-            curl --fail --silent --request POST http://127.0.0.1:8080/api/coursework/evidence \
-              | jq -e '.coursework.outcome.state == "accepted" and .coursework.independentCheck.verdict == "fit" and .coursework.audit.latestDecision == "close" and (.coursework.audit.evidenceEpisodeIds | length) == 1 and (.settlement.stateRoot | startswith("sha256:"))' >/dev/null
           fi
           docker compose down
           trap - EXIT
