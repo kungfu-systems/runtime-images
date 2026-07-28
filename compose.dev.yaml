@@ -1,0 +1,12 @@
+name: kungfu-course-hub
+
+# Overlay for source exploration. Use together with compose.yaml:
+# docker compose -f compose.yaml -f compose.dev.yaml up --build --detach
+services:
+  hub:
+    image: kungfu-course-hub:developer
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+      args:
+        KUNGFU_HUB_BASE: ${KUNGFU_HUB_BASE:-ghcr.io/kungfu-systems/runtime-images/hub-starter@sha256:d2fb8c300bb61a1dadf605fbfab2b1438c067fd17320e287ff4b1d3f4991ca9b}

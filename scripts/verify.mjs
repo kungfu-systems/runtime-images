@@ -6,15 +6,21 @@ import { validateComposeText, validateImageReference } from '../src/policy.mjs';
 const read = (relative) => readFile(new URL(relative, import.meta.url), 'utf8');
 const compose = await read('../compose.yaml');
 const dockerfile = await read('../Dockerfile');
+const developerCompose = await read('../compose.dev.yaml');
+const developerDockerfile = await read('../Dockerfile.dev');
 const smoke = await read('./smoke-image.sh');
 const contractText = await read('../contracts/hub-starter-runtime.contract.json');
 const lockText = await read('../release/runtime.lock.json');
 const imageWorkflow = await read('../.github/workflows/image.yml');
 const packageStageWorkflow = await read('../.github/workflows/package-stage.yml');
-const browser = await read('../course-business-reference/web/app.js');
-const server = await read('../course-business-reference/src/server.mjs');
-const workControl = await read('../course-business-reference/src/kungfu-course-work-control.mjs');
-const modelCatalog = await read('../course-business-reference/src/model-catalog.mjs');
+const browser = await read('../apps/course-hub/web/app.js');
+const server = await read('../apps/course-hub/src/server.mjs');
+const workControl = await read('../apps/course-hub/src/kungfu-course-work-control.mjs');
+const modelCatalog = await read('../apps/course-hub/src/model-catalog.mjs');
+const readme = await read('../README.md');
+const agentGuide = await read('../AGENTS.md');
+const projectMap = await read('../docs/MAP.md');
+const packageManifest = JSON.parse(await read('../package.json'));
 const contract = JSON.parse(contractText);
 const lock = JSON.parse(lockText);
 
@@ -30,7 +36,7 @@ for (const required of [
   'kungfu-episodes-cli-linux-arm64.tar.gz',
   'sha256sum -c -',
   'COPY --from=llama --chown=root:root /app /opt/llama',
-  'course-business-reference/migrations',
+  'apps/course-hub/migrations',
   'COURSE_LOCAL_MODEL_MANAGEMENT=true',
   'KUNGFU_INSTALL_SOURCE=archive',
   'KUNGFU_UPGRADE_MANIFEST=/opt/kungfu/upgrade/kungfu-release-manifest.json',
@@ -102,6 +108,44 @@ for (const platform of ['linux/amd64', 'linux/arm64']) {
 validateImageReference(lock.image);
 if (!compose.includes(`image: ${'${KUNGFU_HUB_IMAGE:-'}${lock.image}}`)) {
   throw new Error('Compose does not default to the qualified exact image');
+}
+if (packageManifest.scripts.start !== 'node apps/course-hub/src/server.mjs') {
+  throw new Error('npm start must launch the canonical Course Hub application');
+}
+if (!packageManifest.scripts['start:legacy']?.includes('legacy/hub-starter')) {
+  throw new Error('the former Hub Starter entrypoint must remain explicitly available');
+}
+for (const required of [
+  'ARG KUNGFU_HUB_BASE',
+  'FROM ${KUNGFU_HUB_BASE}',
+  'COPY --chown=root:root apps/course-hub/src /opt/course/src',
+  'COPY --chown=root:root apps/course-hub/web /opt/course/web',
+  'COPY --chown=root:root apps/course-hub/migrations /opt/course/migrations',
+  'USER node',
+]) {
+  if (!developerDockerfile.includes(required)) {
+    throw new Error(`developer Dockerfile invariant missing: ${required}`);
+  }
+}
+if (!developerCompose.includes(`KUNGFU_HUB_BASE: ${'${KUNGFU_HUB_BASE:-'}${lock.image}}`)) {
+  throw new Error('developer overlay does not default to the qualified exact image');
+}
+for (const [label, text] of [
+  ['README', readme],
+  ['Agent guide', agentGuide],
+]) {
+  for (const required of [
+    'kungfu agent brief',
+    'kungfu agent verify --json',
+    'docs/ARCHITECTURE.md',
+    'docs/EXTENDING.md',
+    'apps/course-hub/',
+  ]) {
+    if (!text.includes(required)) throw new Error(`${label} onboarding missing: ${required}`);
+  }
+}
+if (projectMap.includes('course-business-reference/src/')) {
+  throw new Error('project map still presents the compatibility directory as canonical source');
 }
 
 for (const required of [

@@ -19,14 +19,14 @@ const [
 ] = await Promise.all([
   read('compose.yaml'),
   read('Dockerfile'),
-  read('course-business-reference/migrations/001_initial.sql'),
-  read('course-business-reference/migrations/007_kungfu_course_work_control.sql'),
-  read('course-business-reference/migrations/008_hosted_inference_backend.sql'),
-  read('course-business-reference/src/server.mjs'),
-  read('course-business-reference/web/app.js'),
-  read('course-business-reference/src/kungfu-course-work-control.mjs'),
-  read('course-business-reference/src/model-catalog.mjs'),
-  read('course-business-reference/src/local-model-manager.mjs'),
+  read('apps/course-hub/migrations/001_initial.sql'),
+  read('apps/course-hub/migrations/007_kungfu_course_work_control.sql'),
+  read('apps/course-hub/migrations/008_hosted_inference_backend.sql'),
+  read('apps/course-hub/src/server.mjs'),
+  read('apps/course-hub/web/app.js'),
+  read('apps/course-hub/src/kungfu-course-work-control.mjs'),
+  read('apps/course-hub/src/model-catalog.mjs'),
+  read('apps/course-hub/src/local-model-manager.mjs'),
   read('course-business-reference/compose.interactive-local.yaml'),
   read('course-business-reference/compose.offline.yaml'),
 ]);
@@ -50,7 +50,7 @@ for (const required of [
   'COPY --from=llama',
   'COPY --from=package',
   'USER node',
-  'course-business-reference/migrations',
+  'apps/course-hub/migrations',
 ]) {
   if (!dockerfile.includes(required)) throw new Error(`Dockerfile invariant missing: ${required}`);
 }

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import assert from 'node:assert/strict';
 import { writeFile } from 'node:fs/promises';
-import { assertAgentWorkView } from '../src/agent-work-port.mjs';
+import { assertAgentWorkView } from '../../apps/course-hub/src/agent-work-port.mjs';
 
 const origin = process.env.COURSE_ORIGIN ?? 'http://127.0.0.1:8090';
 const nonce = Date.now();

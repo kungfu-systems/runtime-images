@@ -9,11 +9,12 @@
     "node": ">=24"
   },
   "exports": {
-    "./client": "./src/client.mjs"
+    "./client": "./legacy/hub-starter/src/client.mjs"
   },
   "scripts": {
-    "check": "node scripts/verify.mjs && node course-business-reference/scripts/verify.mjs && node --test test/*.test.mjs course-business-reference/test/*.test.mjs",
-    "start": "node src/server.mjs",
+    "check": "node scripts/verify.mjs && node course-business-reference/scripts/verify.mjs && node --test test/*.test.mjs apps/course-hub/test/*.test.mjs",
+    "start": "node apps/course-hub/src/server.mjs",
+    "start:legacy": "node legacy/hub-starter/src/server.mjs",
     "test": "node --test"
   },
   "dependencies": {

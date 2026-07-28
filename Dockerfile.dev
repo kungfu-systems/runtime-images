@@ -1,0 +1,19 @@
+# syntax=docker/dockerfile:1.7
+# SPDX-License-Identifier: Apache-2.0
+
+# This developer overlay reuses the exact published runtime so a Builder can
+# change the Course Hub source without downloading model weights or rebuilding
+# Kungfu and llama.cpp.
+ARG KUNGFU_HUB_BASE
+FROM ${KUNGFU_HUB_BASE}
+
+USER root
+RUN rm -rf /opt/course/src /opt/course/web /opt/course/migrations
+COPY --chown=root:root apps/course-hub/src /opt/course/src
+COPY --chown=root:root apps/course-hub/web /opt/course/web
+COPY --chown=root:root apps/course-hub/migrations /opt/course/migrations
+RUN chmod -R a-w /opt/course/src /opt/course/web /opt/course/migrations
+
+USER node
+WORKDIR /opt/course
+ENTRYPOINT ["node", "src/server.mjs"]
