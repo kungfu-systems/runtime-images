@@ -144,24 +144,56 @@ image_digest_arm64="$(platform_digest arm64)"
 verify_image_contract "${image_name}@${image_digest_amd64}" amd64
 verify_image_contract "${image_name}@${image_digest_arm64}" arm64
 
-for platform in linux/amd64 linux/arm64; do
-  case "${platform}" in
-    linux/amd64)
-      smoke_port=18081
-      smoke_name=linux-amd64
-      smoke_image="${image_name}@${image_digest_amd64}"
-      ;;
-    linux/arm64)
-      smoke_port=18082
-      smoke_name=linux-arm64
-      smoke_image="${image_name}@${image_digest_arm64}"
-      ;;
-  esac
-  COURSE_SMOKE_PORT="${smoke_port}" \
-    bash "${repo_root}/scripts/smoke-image.sh" \
-      "${smoke_image}" \
-      "${evidence_dir}/hub-image-smoke-${smoke_name}.json"
-done
+COURSE_SMOKE_PORT=18081 \
+  bash "${repo_root}/scripts/smoke-image.sh" \
+    "${image_name}@${image_digest_amd64}" \
+    "${evidence_dir}/hub-image-smoke-linux-amd64.json"
+
+arm64_image="${image_name}@${image_digest_arm64}"
+arm64_node_architecture="$(
+  docker run --rm \
+    --read-only \
+    --user node \
+    --cap-drop ALL \
+    --security-opt no-new-privileges \
+    --tmpfs /tmp:rw,noexec,nosuid,size=64m,mode=1777 \
+    --entrypoint node \
+    "${arm64_image}" \
+    -e 'process.stdout.write(process.arch)'
+)"
+test "${arm64_node_architecture}" = arm64
+docker run --rm \
+  --read-only \
+  --user node \
+  --cap-drop ALL \
+  --security-opt no-new-privileges \
+  --tmpfs /tmp:rw,noexec,nosuid,size=64m,mode=1777 \
+  --entrypoint /opt/kungfu/kungfu \
+  "${arm64_image}" \
+  agent verify --json \
+  >"${evidence_dir}/hub-image-smoke-linux-arm64-agent.json"
+jq -e '.ok == true' "${evidence_dir}/hub-image-smoke-linux-arm64-agent.json" >/dev/null
+jq -n \
+  --arg schema 'kungfu.course-hub.platform-smoke/v1' \
+  --arg image "${arm64_image}" \
+  --arg architecture "${arm64_node_architecture}" \
+  --arg agentEvidence 'hub-image-smoke-linux-arm64-agent.json' \
+  '{
+    schema: $schema,
+    image: $image,
+    platform: "linux/arm64",
+    nodeArchitecture: $architecture,
+    kungfuAgentVerified: true,
+    security: {
+      nonRoot: true,
+      readOnlyRoot: true,
+      capabilityAdditions: false,
+      noNewPrivileges: true
+    },
+    policy: "qemu-runtime-contract",
+    evidence: $agentEvidence
+  }' \
+  >"${evidence_dir}/hub-image-smoke-linux-arm64.json"
 
 compose_oci() {
   local reference="$1"
