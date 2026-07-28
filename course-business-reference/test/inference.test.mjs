@@ -149,6 +149,7 @@ test('OpenAI-compatible request pins a structured course-outline response', () =
   const request = createOutlineRequest(inferenceConfig, command);
   assert.equal(request.model, inferenceConfig.model);
   assert.equal(request.response_format.type, 'json_schema');
+  assert.equal(request.max_tokens, 4096);
   assert.equal(request.response_format.json_schema.strict, true);
   assert.equal(request.response_format.json_schema.schema.properties.modules.minItems, 3);
   assert.equal(request.response_format.json_schema.schema.properties.modules.maxItems, 3);
@@ -160,6 +161,7 @@ test('OpenAI-compatible request pins a structured course-outline response', () =
   assert.match(request.messages[0].content, /Every module must directly move the target learner/u);
   assert.match(request.messages[0].content, /do not merely repeat or rename/u);
   assert.match(request.messages[0].content, /Never copy or summarize these instructions/u);
+  assert.match(request.messages[0].content, /under 6000 characters/u);
   assert.match(request.messages[1].content, /COURSE BRIEF/u);
 });
 

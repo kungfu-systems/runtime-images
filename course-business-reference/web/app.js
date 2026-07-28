@@ -808,7 +808,8 @@ function versionButton(version, selectedId) {
 
 function renderCourseBinding(course, runtime) {
   const local = backendPresentation('openai-compatible');
-  const switching = course.backendStatus !== 'ready' || !course.agentWork;
+  const switching = course.backendStatus === 'provisioning';
+  const failed = course.backendStatus === 'failed';
   const lastSwitch = course.backendSwitches?.[0];
   return `
     <section class="course-binding-panel ${runtime.tone}" aria-label="Current course model">
@@ -819,6 +820,8 @@ function renderCourseBinding(course, runtime) {
           <h2>${escapeHtml(runtime.name)}</h2>
           <p>${switching
             ? 'The new binding is being prepared. Generate and Improve unlock when it is ready.'
+            : failed
+              ? 'The current binding could not initialize. Your brief and saved versions are safe; switch to the other model to recover.'
             : `The next Generate or Improve action will use ${escapeHtml(runtime.short)}.`}</p>
         </div>
       </div>
@@ -852,6 +855,32 @@ function renderCourseBinding(course, runtime) {
     </section>`;
 }
 
+function friendlyFailureMessage(failure) {
+  const detail = String(failure?.detail ?? '');
+  if (/invalid JSON|Unterminated string|incomplete structured output/iu.test(detail)) {
+    return 'The local model returned an incomplete structured result. Your brief is safe—retry, or switch this course to Mock.';
+  }
+  return 'The last Agent action did not complete. Your brief and every saved version are safe; you can retry or switch models.';
+}
+
+function renderOperationFailure(course) {
+  const failure = course.lastOperationFailure;
+  if (!failure) return '';
+  return `
+    <section class="operation-failure" role="alert">
+      <span aria-hidden="true">!</span>
+      <div>
+        <p class="step">Last Agent action · needs retry</p>
+        <h2>The course is safe and ready to continue.</h2>
+        <p>${escapeHtml(friendlyFailureMessage(failure))}</p>
+        <details>
+          <summary>Technical detail</summary>
+          <p>${escapeHtml(failure.detail ?? 'No provider detail was returned.')}</p>
+        </details>
+      </div>
+    </section>`;
+}
+
 async function showCourse(id, message = '', selectedVersionId = null) {
   const { course } = await request(`/api/courses/${id}`);
   const selected = course.versions.find((version) => version.id === selectedVersionId)
@@ -871,7 +900,9 @@ async function showCourse(id, message = '', selectedVersionId = null) {
   const selectedRuntime = backendPresentation(selectedBackend);
   const runtimeDiffers = selectedBackend !== courseRuntime.kind;
   const simulated = versionRuntime.simulated;
-  const bindingReady = course.backendStatus === 'ready' && Boolean(course.agentWork);
+  const bindingReady = Boolean(course.agentWork)
+    && course.backendStatus !== 'provisioning'
+    && course.backendStatus !== 'failed';
   app.innerHTML = `
     <button id="back" class="back">← My courses</button>
     <section class="course-head">
@@ -896,6 +927,7 @@ async function showCourse(id, message = '', selectedVersionId = null) {
       <span>This course currently uses ${escapeHtml(courseRuntime.short)}. Switch it below; saved versions keep their original source.</span>
     </section>
     ${renderCourseBinding(course, courseRuntime)}
+    ${renderOperationFailure(course)}
     <section class="course-workspace">
       <aside>
         <div class="brief-card">

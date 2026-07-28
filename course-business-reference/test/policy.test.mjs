@@ -157,3 +157,24 @@ test('course backend switches preserve command routing and historical provenance
   assert.match(browser, /Selected version backend/u);
   assert.match(browser, /saved version keeps its original model source/u);
 });
+
+test('failed inference remains recoverable without weakening provision failures', async () => {
+  const [outbox, recoveryLogic, recovery, domain, browser, styles] = await Promise.all([
+    read('../src/outbox.mjs'),
+    read('../src/outbox-recovery.mjs'),
+    read('../migrations/006_recover_failed_inference_actions.sql'),
+    read('../src/domain.mjs'),
+    read('../web/app.js'),
+    read('../web/style.css'),
+  ]);
+  assert.match(outbox, /projectedStatusAfterDeliveryFailure/u);
+  assert.match(recoveryLogic, /commandType === 'provision'/u);
+  assert.match(recoveryLogic, /\['generate_outline', 'revise_outline'\]/u);
+  assert.match(recovery, /latest command failed during generation\/revision/u);
+  assert.match(recovery, /backend_binding_id IS NOT NULL/u);
+  assert.match(recovery, /command_type IN \('generate_outline', 'revise_outline'\)/u);
+  assert.match(domain, /lastOperationFailure/u);
+  assert.match(browser, /The course is safe and ready to continue/u);
+  assert.match(browser, /retry or switch models/u);
+  assert.match(styles, /\.operation-failure/u);
+});

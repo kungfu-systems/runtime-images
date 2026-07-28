@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { AGENT_WORK_CONTRACT } from './agent-work-port.mjs';
 import { transaction } from './db.mjs';
+import { projectedStatusAfterDeliveryFailure } from './outbox-recovery.mjs';
 
 export class OutboxDispatcher {
   constructor(pool, agentWorkPort, hooks = {}) {
@@ -146,6 +147,12 @@ export class OutboxDispatcher {
           );
         });
       } catch (error) {
+        const attempts = message.attempts + 1;
+        const projectedStatus = projectedStatusAfterDeliveryFailure({
+          commandType: message.command_type,
+          attempts,
+          backendBindingId: message.backend_binding_id,
+        });
         await transaction(this.pool, { userId }, async (client) => {
           await client.query(
             `UPDATE course.command_outbox
@@ -157,10 +164,14 @@ export class OutboxDispatcher {
           );
           await client.query(
             `UPDATE course.learner_homeworks
-             SET projected_status = CASE WHEN $2 >= 5 THEN 'failed' ELSE projected_status END,
+             SET projected_status = COALESCE($3::text, projected_status),
                  updated_at = now()
-             WHERE id = $1 AND backend_kind = $3`,
-            [message.learner_homework_id, message.attempts + 1, message.backend_kind],
+             WHERE id = $1 AND backend_kind = $2`,
+            [
+              message.learner_homework_id,
+              message.backend_kind,
+              projectedStatus,
+            ],
           );
         });
         return;

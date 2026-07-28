@@ -234,10 +234,19 @@ export class CourseDomain {
          ORDER BY created_at DESC`,
         [courseId, userId],
       );
+      const latestCommand = await client.query(
+        `SELECT command_type, state, attempts, last_error, created_at
+         FROM course.command_outbox
+         WHERE learner_homework_id = $1
+         ORDER BY created_at DESC
+         LIMIT 1`,
+        [result.rows[0].homework_id],
+      );
       return {
         ...result.rows[0],
         versions: versions.rows,
         backend_switches: backendSwitches.rows,
+        latest_command: latestCommand.rows[0] ?? null,
       };
     });
     if (!project) return null;
@@ -264,6 +273,14 @@ export class CourseDomain {
         createdAt: entry.created_at,
         completedAt: entry.completed_at,
       })),
+      lastOperationFailure: project.latest_command?.state === 'failed'
+        ? {
+          commandType: project.latest_command.command_type,
+          attempts: project.latest_command.attempts,
+          detail: project.latest_command.last_error,
+          createdAt: project.latest_command.created_at,
+        }
+        : null,
       currentOutlineVersionId: project.current_outline_version_id,
       versions: project.versions.map((version) => ({
         id: version.id,
