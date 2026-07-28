@@ -1,0 +1,28 @@
+schema = 1
+
+[project]
+type = "package"
+name = "runtime-images"
+
+[version]
+required = true
+
+[[version.files]]
+type = "json"
+path = "package.json"
+key = "version"
+
+[[version.files]]
+type = "json"
+path = ".buildchain/release-impact.json"
+key = "release.version"
+
+[lifecycle.verify]
+commands = [
+  "npm run check",
+]
+
+[lifecycle.publish]
+commands = [
+  "bash scripts/publish-runtime-release.sh",
+]

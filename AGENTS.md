@@ -57,8 +57,14 @@ not replace this application's business API or grant permission to mutate work.
 - `apps/course-hub/web/` — non-authoritative browser projection.
 - `apps/course-hub/test/` — application and boundary tests.
 - `Dockerfile` and `compose.yaml` — canonical publication and installation.
-- `.github/workflows/application.yml` — trusted publication and fresh-install
-  smoke of the OCI Compose application used by non-source users.
+- `buildchain.toml` — the verify and publish lifecycle consumed by Buildchain.
+- `scripts/publish-runtime-release.sh` — repository-owned registry adapter,
+  multi-platform smoke, exact Compose smoke, and evidence writer invoked only
+  inside the Buildchain transaction.
+- `.github/workflows/buildchain-ref-promotion.yml` — protected channel entry
+  into Buildchain alpha or stable promotion.
+- `.github/workflows/application.yml`, `image.yml`, and `package-stage.yml` —
+  bounded manual qualification surfaces with no release authority.
 - `Dockerfile.dev` and `compose.dev.yaml` — fast source exploration over the
   exact published runtime.
 - `course-business-reference/` — compatibility Compose entry, not a second
@@ -97,7 +103,11 @@ vertical reference with explicit seams.
 - Database credentials are generated once, passed through mounted files, and
   never published in the Compose artifact or exposed as host ports.
 - A floating Compose channel moves only after the exact immutable application
-  artifact passes its fresh-install smoke, and promotion preserves its digest.
+  artifact passes its fresh-install smoke, complete Buildchain publish evidence
+  exists, and promotion preserves its digest.
+- Exact image and Compose publication, version selection, durable transaction
+  state, release refs, GitHub Release, and Release Passport remain under
+  Buildchain control; manual workflows are never publication back doors.
 - The published container remains localhost-only by default, non-root,
   read-only, capability-free, and without Docker socket, host network, host
   paths, credentials, or model weights.

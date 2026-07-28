@@ -1,208 +1,30 @@
-name: Image candidate
+name: Image candidate qualification
 
 on:
   workflow_dispatch:
-    inputs:
-      package-release-tag:
-        description: Immutable runtime-images prerelease containing both exact Linux CLI packages
-        required: true
-      package-sha256-amd64:
-        description: Exact lowercase SHA-256 of kungfu-episodes-cli-linux-x64.tar.gz
-        required: true
-      package-sha256-arm64:
-        description: Exact lowercase SHA-256 of kungfu-episodes-cli-linux-arm64.tar.gz
-        required: true
-      package-version:
-        description: Exact product version recorded inside both packages
-        required: true
-      kungfu-source-sha:
-        description: Exact Kungfu source commit used to build both packages
-        required: true
 
 permissions:
   contents: read
-  packages: write
 
 jobs:
-  publish:
-    name: Publish exact multi-platform candidate
+  qualify:
+    name: Dry-run image contract
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
-    outputs:
-      image: ghcr.io/${{ github.repository }}/hub-starter@${{ steps.build.outputs.digest }}
     steps:
-      - name: Check out exact runtime source
+      - name: Check out exact source
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
-      - name: Validate trusted inputs
-        env:
-          PACKAGE_SHA256_AMD64: ${{ inputs.package-sha256-amd64 }}
-          PACKAGE_SHA256_ARM64: ${{ inputs.package-sha256-arm64 }}
-          KUNGFU_SOURCE_SHA: ${{ inputs.kungfu-source-sha }}
-        run: |
-          set -euo pipefail
-          [[ "${PACKAGE_SHA256_AMD64}" =~ ^[0-9a-f]{64}$ ]]
-          [[ "${PACKAGE_SHA256_ARM64}" =~ ^[0-9a-f]{64}$ ]]
-          [[ "${KUNGFU_SOURCE_SHA}" =~ ^[0-9a-f]{40}$ ]]
-      - name: Download exact source-built Kungfu packages
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ inputs.package-release-tag }}
-        run: |
-          gh release download "${RELEASE_TAG}" --repo "${GITHUB_REPOSITORY}" \
-            --pattern kungfu-episodes-cli-linux-x64.tar.gz \
-            --pattern kungfu-episodes-cli-linux-arm64.tar.gz
-      - name: Verify package checksums
-        env:
-          PACKAGE_SHA256_AMD64: ${{ inputs.package-sha256-amd64 }}
-          PACKAGE_SHA256_ARM64: ${{ inputs.package-sha256-arm64 }}
-        run: |
-          echo "${PACKAGE_SHA256_AMD64}  kungfu-episodes-cli-linux-x64.tar.gz" | sha256sum -c -
-          echo "${PACKAGE_SHA256_ARM64}  kungfu-episodes-cli-linux-arm64.tar.gz" | sha256sum -c -
-      - name: Set up Buildx
-        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3
-      - name: Sign in to GHCR
-        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3
+      - name: Use Node.js 24
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ github.token }}
-      - name: Resolve candidate identity
-        id: identity
-        shell: bash
-        run: echo "tag=ghcr.io/${GITHUB_REPOSITORY}/hub-starter:dev-${GITHUB_SHA::12}" >>"${GITHUB_OUTPUT}"
-      - name: Build and publish development candidate
-        id: build
-        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6
-        with:
-          context: .
-          file: Dockerfile
-          platforms: linux/amd64,linux/arm64
-          push: true
-          provenance: mode=max
-          sbom: true
-          tags: ${{ steps.identity.outputs.tag }}
-          build-args: |
-            KUNGFU_PACKAGE_SHA256_AMD64=${{ inputs.package-sha256-amd64 }}
-            KUNGFU_PACKAGE_SHA256_ARM64=${{ inputs.package-sha256-arm64 }}
-            KUNGFU_PACKAGE_VERSION=${{ inputs.package-version }}
-            KUNGFU_SOURCE_SHA=${{ inputs.kungfu-source-sha }}
-            SOURCE_REVISION=${{ github.sha }}
-      - name: Retain image identity
-        env:
-          IMAGE_REF: ghcr.io/${{ github.repository }}/hub-starter@${{ steps.build.outputs.digest }}
-          PACKAGE_SHA256_AMD64: ${{ inputs.package-sha256-amd64 }}
-          PACKAGE_SHA256_ARM64: ${{ inputs.package-sha256-arm64 }}
-          KUNGFU_SOURCE_SHA: ${{ inputs.kungfu-source-sha }}
+          node-version: "24"
+          cache: npm
+      - name: Verify the multi-platform source contract
         run: |
-          mkdir -p .artifacts
-          jq -n \
-            --arg schema 'kungfu.hub-starter.image-identity/v1' \
-            --arg image "${IMAGE_REF}" \
-            --arg runtimeSource "${GITHUB_SHA}" \
-            --arg kungfuSource "${KUNGFU_SOURCE_SHA}" \
-            --arg packageAmd64 "${PACKAGE_SHA256_AMD64}" \
-            --arg packageArm64 "${PACKAGE_SHA256_ARM64}" \
-            --arg runtimeBase 'node:24-trixie-slim@sha256:ae91dcc111a68c9d2d81ff2a17bda61be126426176fde6fe7d08ab13b7f50573' \
-            --arg runUrl "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" \
-            '{schema:$schema,image:$image,platforms:["linux/amd64","linux/arm64"],runtimeSourceRevision:$runtimeSource,kungfuSourceSha:$kungfuSource,kungfuPackages:{"linux/amd64":{name:"kungfu-episodes-cli-linux-x64.tar.gz",sha256:$packageAmd64},"linux/arm64":{name:"kungfu-episodes-cli-linux-arm64.tar.gz",sha256:$packageArm64}},runtimeBaseImage:$runtimeBase,qualificationRun:$runUrl}' \
-            >.artifacts/image-identity.json
-          cat .artifacts/image-identity.json >>"${GITHUB_STEP_SUMMARY}"
-      - name: Upload retained image identity
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: hub-starter-image-identity-${{ github.run_id }}
-          path: .artifacts/image-identity.json
-          if-no-files-found: error
-          retention-days: 30
-
-  smoke:
-    name: Native smoke ${{ matrix.platform }}
-    needs: publish
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - platform: linux/amd64
-            runner: ubuntu-24.04
-            docker-architecture: amd64
-            artifact-id: linux-amd64
-          - platform: linux/arm64
-            runner: ubuntu-24.04-arm
-            docker-architecture: arm64
-            artifact-id: linux-arm64
-    runs-on: ${{ matrix.runner }}
-    timeout-minutes: 30
-    steps:
-      - name: Check out exact runtime source
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-        with:
-          persist-credentials: false
-      - name: Sign in to GHCR
-        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ github.token }}
-      - name: Require native image architecture
-        env:
-          IMAGE_REF: ${{ needs.publish.outputs.image }}
-          EXPECTED_ARCHITECTURE: ${{ matrix.docker-architecture }}
-        run: |
-          set -euo pipefail
-          docker pull "${IMAGE_REF}"
-          test "$(docker image inspect --format '{{.Architecture}}' "${IMAGE_REF}")" = "${EXPECTED_ARCHITECTURE}"
-      - name: Smoke documented Compose coursework path
-        env:
-          KUNGFU_HUB_IMAGE: ${{ needs.publish.outputs.image }}
-          COMPOSE_PROJECT_NAME: kungfu-hub-compose-${{ matrix.artifact-id }}-${{ github.run_id }}-${{ github.run_attempt }}
-          COURSE_DB_MIGRATION_PASSWORD: synthetic_migration_password_42
-          COURSE_DB_APP_PASSWORD: synthetic_application_password_42
-        run: |
-          set -euo pipefail
-          cleanup() { docker compose down >/dev/null 2>&1 || true; }
-          trap cleanup EXIT
-          docker compose up --detach
-          deadline=$((SECONDS + 300))
-          mkdir -p ".artifacts/${{ matrix.artifact-id }}"
-          health_body=".artifacts/${{ matrix.artifact-id }}/compose-readiness.json"
-          while true; do
-            http_code=$(curl --silent --show-error --output "${health_body}" --write-out '%{http_code}' \
-              --connect-timeout 2 --max-time 10 http://127.0.0.1:8080/readyz || true)
-            if [[ "${http_code}" == 200 ]]; then
-              jq -e '.ready == true and .database == "ready" and .inference == "ready"' "${health_body}" >/dev/null
-              break
-            fi
-            if (( SECONDS >= deadline )); then
-              docker compose ps
-              docker compose logs hub
-              exit 1
-            fi
-            sleep 2
-          done
-          curl --fail --silent http://127.0.0.1:8080/api/runtime \
-            >".artifacts/${{ matrix.artifact-id }}/runtime.json"
-          jq -e '
-            .runtime.workControl.nativeCourseBinding == true and
-            (.runtime.backends["openai-compatible"].modelCatalog.models | length) == 3 and
-            .runtime.backends.hosted.available == false
-          ' ".artifacts/${{ matrix.artifact-id }}/runtime.json" >/dev/null
-          if [[ "${{ matrix.platform }}" == "linux/amd64" ]]; then
-            bash scripts/smoke-browser.sh http://127.0.0.1:8080 ".artifacts/${{ matrix.artifact-id }}/browser"
-          fi
-          docker compose down
-          trap - EXIT
-      - name: Smoke isolated instances and restart
-        env:
-          IMAGE_REF: ${{ needs.publish.outputs.image }}
-        run: bash scripts/smoke-image.sh "${IMAGE_REF}" ".artifacts/${{ matrix.artifact-id }}/image-smoke.json"
-      - name: Upload native smoke evidence
-        if: ${{ always() }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: hub-starter-smoke-${{ matrix.artifact-id }}-${{ github.run_id }}
-          path: .artifacts/${{ matrix.artifact-id }}
-          if-no-files-found: error
-          include-hidden-files: true
-          retention-days: 30
+          npm ci --ignore-scripts --registry=https://registry.npmjs.org/
+          npm run check
+          grep -F 'ARG TARGETARCH' Dockerfile
+          grep -F 'linux/amd64,linux/arm64' scripts/publish-runtime-release.sh
+      - name: Confirm dry-run boundary
+        run: echo "Exact image publication is available only inside the Buildchain release transaction."

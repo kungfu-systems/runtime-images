@@ -1,9 +1,12 @@
-name: Source
+name: Verify
 
 on:
   pull_request:
   push:
     branches:
+      - "feature/**"
+      - "fix/**"
+      - "chore/**"
       - dev/v*/v*
       - alpha/v*/v*
       - release/v*/v*
@@ -14,7 +17,7 @@ permissions:
 
 jobs:
   check:
-    name: Source contract
+    name: check
     runs-on: ubuntu-24.04
     steps:
       - name: Check out exact source
@@ -26,16 +29,14 @@ jobs:
         with:
           node-version: "24"
           cache: npm
+      - name: Validate Buildchain config
+        uses: kungfu-systems/buildchain/actions/validate-config@v3
+        with:
+          require-version-state: "true"
+          require-lifecycle-stages: "verify,publish"
       - name: Install exact dependency graph
         run: npm ci --ignore-scripts --registry=https://registry.npmjs.org/
-      - name: Verify source and negative cases
+      - name: Run Buildchain verify lifecycle
         run: npm run check
       - name: Validate shell entrypoints
-        run: bash -n scripts/smoke-image.sh
-
-  buildchain:
-    name: Buildchain contract
-    uses: kungfu-systems/buildchain/.github/workflows/check.yml@9e904de2c85dbea7c799780ee166510b3336d812
-    with:
-      require-version-state: true
-      upload-artifacts: true
+        run: bash -n scripts/smoke-image.sh scripts/smoke-browser.sh scripts/publish-runtime-release.sh
