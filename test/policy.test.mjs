@@ -12,11 +12,35 @@ const compose = await readFile(new URL('../compose.yaml', import.meta.url), 'utf
 
 test('compose preserves the localhost, non-root, read-only boundary', () => {
   assert.equal(validateComposeText(compose), true);
+  assert.match(compose, /condition: service_completed_successfully/u);
+  assert.match(compose, /POSTGRES_PASSWORD_FILE/u);
+  assert.match(compose, /COURSE_DB_APP_PASSWORD_FILE/u);
+  assert.doesNotMatch(
+    compose.match(/^  database:\n([\s\S]*?)(?=^  hub:)/mu)?.[0] ?? '',
+    /^    ports:/mu,
+  );
 });
 
 test('policy rejects a host-disconnected network for the localhost Web service', () => {
   const candidate = compose.replace('driver: bridge', 'internal: true');
   assert.throws(() => validateComposeText(candidate), /host-disconnected/u);
+});
+
+test('policy rejects PostgreSQL host ports and inline database passwords', () => {
+  assert.throws(
+    () => validateComposeText(compose.replace(
+      '    volumes:\n      - course-postgres:',
+      '    ports:\n      - "5432:5432"\n    volumes:\n      - course-postgres:',
+    )),
+    /PostgreSQL host-port/u,
+  );
+  assert.throws(
+    () => validateComposeText(compose.replace(
+      '      POSTGRES_PASSWORD_FILE:',
+      '      POSTGRES_PASSWORD: unsafe\n      POSTGRES_PASSWORD_FILE:',
+    )),
+    /inline database passwords/u,
+  );
 });
 
 for (const [name, mutation, expected] of [

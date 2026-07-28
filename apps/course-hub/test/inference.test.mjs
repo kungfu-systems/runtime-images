@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import assert from 'node:assert/strict';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import test from 'node:test';
 import { AgentWorkRouter } from '../src/agent-work-router.mjs';
 import { loadConfig } from '../src/config.mjs';
@@ -63,6 +66,14 @@ function configuredEnvironment(overrides, fn) {
     'AGENT_WORK_TIMEOUT_MS',
     'APP_DATABASE_URL',
     'COURSE_DB_APP_PASSWORD',
+    'COURSE_DB_APP_PASSWORD_FILE',
+    'COURSE_DB_APP_USER',
+    'COURSE_DB_HOST',
+    'COURSE_DB_MIGRATION_PASSWORD',
+    'COURSE_DB_MIGRATION_PASSWORD_FILE',
+    'COURSE_DB_MIGRATION_USER',
+    'COURSE_DB_NAME',
+    'COURSE_DB_PORT',
     'COURSE_LOCAL_MODEL_MANAGEMENT',
     'COURSE_LOCAL_MODELS_ROOT',
     'COURSE_LLAMA_SERVER_BIN',
@@ -71,12 +82,16 @@ function configuredEnvironment(overrides, fn) {
   ];
   const prior = Object.fromEntries(names.map((name) => [name, process.env[name]]));
   for (const name of names) delete process.env[name];
-  Object.assign(process.env, {
+  const values = {
     COURSE_DB_APP_PASSWORD: 'synthetic_runtime_42',
     DATABASE_URL: 'postgresql://migration.invalid/course',
     APP_DATABASE_URL: 'postgresql://application.invalid/course',
     ...overrides,
-  });
+  };
+  for (const [name, value] of Object.entries(values)) {
+    if (value === undefined) delete process.env[name];
+    else process.env[name] = value;
+  }
   try {
     return fn();
   } finally {
@@ -86,6 +101,52 @@ function configuredEnvironment(overrides, fn) {
     }
   }
 }
+
+test('database URLs are derived from mounted password files without exposing a host port', () => {
+  const root = mkdtempSync(join(tmpdir(), 'course-hub-config-'));
+  try {
+    const migrationFile = join(root, 'migration');
+    const appFile = join(root, 'application');
+    writeFileSync(migrationFile, '0123456789abcdef'.repeat(4));
+    writeFileSync(appFile, 'fedcba9876543210'.repeat(4));
+    configuredEnvironment({
+      DATABASE_URL: undefined,
+      APP_DATABASE_URL: undefined,
+      COURSE_DB_APP_PASSWORD: undefined,
+      COURSE_DB_MIGRATION_PASSWORD_FILE: migrationFile,
+      COURSE_DB_APP_PASSWORD_FILE: appFile,
+    }, () => {
+      const config = loadConfig();
+      assert.equal(
+        config.databaseUrl,
+        `postgresql://course_migrator:${'0123456789abcdef'.repeat(4)}@database:5432/course_reference`,
+      );
+      assert.equal(
+        config.appDatabaseUrl,
+        `postgresql://course_app:${'fedcba9876543210'.repeat(4)}@database:5432/course_reference`,
+      );
+      assert.equal(config.appPassword, 'fedcba9876543210'.repeat(4));
+    });
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('database secret configuration rejects ambiguous inline and file values', () => {
+  const root = mkdtempSync(join(tmpdir(), 'course-hub-config-conflict-'));
+  try {
+    const appFile = join(root, 'application');
+    writeFileSync(appFile, 'fedcba9876543210'.repeat(4));
+    configuredEnvironment({
+      COURSE_DB_APP_PASSWORD_FILE: appFile,
+    }, () => assert.throws(
+      loadConfig,
+      /COURSE_DB_APP_PASSWORD and COURSE_DB_APP_PASSWORD_FILE cannot both be set/u,
+    ));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
 
 test('configuration defaults to an explicit simulation without inference secrets', () => {
   configuredEnvironment({}, () => {

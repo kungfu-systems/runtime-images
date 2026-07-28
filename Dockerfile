@@ -94,13 +94,14 @@ RUN ln -s /opt/kungfu/kungfu /usr/local/bin/kungfu \
     && ln -s /opt/llama/llama-server /usr/local/bin/llama-server \
     && test -x /usr/local/bin/kungfu \
     && test -x /usr/local/bin/llama-server \
-    && mkdir -p /state /models \
-    && chown node:node /state /models \
-    && chmod 0755 /state /models /opt/course
+    && mkdir -p /state /models /install-config \
+    && chown node:node /state /models /install-config \
+    && chmod 0755 /state /models /opt/course \
+    && chmod 0755 /install-config
 
 USER node
 WORKDIR /opt/course
-VOLUME ["/state", "/models"]
+VOLUME ["/state", "/models", "/install-config"]
 EXPOSE 8080
 HEALTHCHECK --interval=5s --timeout=4s --start-period=90s --retries=24 \
   CMD node -e "fetch('http://127.0.0.1:8080/readyz').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"

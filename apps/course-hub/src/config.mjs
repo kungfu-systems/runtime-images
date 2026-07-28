@@ -34,6 +34,40 @@ const optionalSecret = (name, fileName) => {
   return value;
 };
 
+const requiredSecret = (name, fileName) => {
+  const value = optionalSecret(name, fileName);
+  if (!value) throw new Error(`${name} or ${fileName} is required`);
+  return value;
+};
+
+const databaseIdentifier = (name, fallback) => {
+  const value = process.env[name]?.trim() || fallback;
+  if (!/^[a-z_][a-z0-9_]{0,62}$/u.test(value)) {
+    throw new Error(`${name} must be a safe PostgreSQL identifier`);
+  }
+  return value;
+};
+
+const databasePort = () => integer('COURSE_DB_PORT', 5432, 1, 65_535);
+
+const databaseHost = () => {
+  const value = process.env.COURSE_DB_HOST?.trim() || 'database';
+  if (!/^[A-Za-z0-9.-]{1,253}$/u.test(value)) {
+    throw new Error('COURSE_DB_HOST must be a safe hostname');
+  }
+  return value;
+};
+
+function databaseUrl(user, password, database) {
+  const url = new URL('postgresql://localhost');
+  url.hostname = databaseHost();
+  url.port = String(databasePort());
+  url.username = user;
+  url.password = password;
+  url.pathname = `/${database}`;
+  return url.toString();
+}
+
 const optionalHttpUrl = (name) => {
   const raw = process.env[name]?.trim() ?? '';
   if (!raw) return '';
@@ -157,10 +191,23 @@ export function loadConfig() {
   if (!['mock', 'openai-compatible', 'hosted'].includes(backend)) {
     throw new Error(`unsupported AGENT_WORK_BACKEND: ${backend}`);
   }
-  const appPassword = required('COURSE_DB_APP_PASSWORD');
+  const suppliedDatabaseUrl = process.env.DATABASE_URL?.trim() || '';
+  const migrationPassword = suppliedDatabaseUrl
+    ? optionalSecret('COURSE_DB_MIGRATION_PASSWORD', 'COURSE_DB_MIGRATION_PASSWORD_FILE')
+    : requiredSecret('COURSE_DB_MIGRATION_PASSWORD', 'COURSE_DB_MIGRATION_PASSWORD_FILE');
+  const appPassword = requiredSecret(
+    'COURSE_DB_APP_PASSWORD',
+    'COURSE_DB_APP_PASSWORD_FILE',
+  );
   if (!/^[A-Za-z0-9._-]{16,128}$/u.test(appPassword)) {
     throw new Error('COURSE_DB_APP_PASSWORD must be 16-128 safe ASCII characters');
   }
+  const databaseName = databaseIdentifier('COURSE_DB_NAME', 'course_reference');
+  const migrationUser = databaseIdentifier(
+    'COURSE_DB_MIGRATION_USER',
+    'course_migrator',
+  );
+  const appUser = databaseIdentifier('COURSE_DB_APP_USER', 'course_app');
   const origin = process.env.PUBLIC_ORIGIN ?? 'http://127.0.0.1:8090';
   const localModelManagement = boolean('COURSE_LOCAL_MODEL_MANAGEMENT', true);
   const inferences = {
@@ -225,8 +272,10 @@ export function loadConfig() {
   return Object.freeze({
     port: Number(process.env.PORT ?? 8090),
     publicOrigin: new URL(origin).origin,
-    databaseUrl: required('DATABASE_URL'),
-    appDatabaseUrl: required('APP_DATABASE_URL'),
+    databaseUrl: suppliedDatabaseUrl
+      || databaseUrl(migrationUser, migrationPassword, databaseName),
+    appDatabaseUrl: process.env.APP_DATABASE_URL?.trim()
+      || databaseUrl(appUser, appPassword, databaseName),
     appPassword,
     backend,
     inference,

@@ -12,7 +12,10 @@ RUN rm -rf /opt/course/src /opt/course/web /opt/course/migrations
 COPY --chown=root:root apps/course-hub/src /opt/course/src
 COPY --chown=root:root apps/course-hub/web /opt/course/web
 COPY --chown=root:root apps/course-hub/migrations /opt/course/migrations
-RUN chmod -R a-w /opt/course/src /opt/course/web /opt/course/migrations
+RUN mkdir -p /install-config \
+    && chown node:node /install-config \
+    && chmod 0755 /install-config \
+    && chmod -R a-w /opt/course/src /opt/course/web /opt/course/migrations
 
 USER node
 WORKDIR /opt/course

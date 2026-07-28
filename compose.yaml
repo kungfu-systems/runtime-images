@@ -1,6 +1,20 @@
 name: kungfu-course-hub
 
 services:
+  bootstrap:
+    image: ${KUNGFU_HUB_IMAGE:-ghcr.io/kungfu-systems/runtime-images/hub-starter@sha256:d2fb8c300bb61a1dadf605fbfab2b1438c067fd17320e287ff4b1d3f4991ca9b}
+    restart: "no"
+    read_only: true
+    user: node
+    network_mode: none
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    entrypoint: ["node", "src/bootstrap-secrets.mjs"]
+    volumes:
+      - install-config:/install-config
+
   database:
     image: postgres:17.6-bookworm@sha256:f3bd19c606e442c3d7bdfa8002e03fe260a1023351e0ea4598032022b68dd6e3
     restart: unless-stopped
@@ -12,11 +26,15 @@ services:
     environment:
       POSTGRES_DB: course_reference
       POSTGRES_USER: course_migrator
-      POSTGRES_PASSWORD: ${COURSE_DB_MIGRATION_PASSWORD:?set COURSE_DB_MIGRATION_PASSWORD}
+      POSTGRES_PASSWORD_FILE: /install-config/database-migration-password
     volumes:
       - course-postgres:/var/lib/postgresql/data
+      - install-config:/install-config:ro
     networks:
       - hub-private
+    depends_on:
+      bootstrap:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U course_migrator -d course_reference"]
       interval: 3s
@@ -36,10 +54,14 @@ services:
       - /tmp:size=64m,mode=1777
     environment:
       PORT: "8080"
-      PUBLIC_ORIGIN: ${HUB_PUBLIC_ORIGIN:-http://127.0.0.1:8080}
-      DATABASE_URL: postgresql://course_migrator:${COURSE_DB_MIGRATION_PASSWORD}@database:5432/course_reference
-      APP_DATABASE_URL: postgresql://course_app:${COURSE_DB_APP_PASSWORD:?set COURSE_DB_APP_PASSWORD}@database:5432/course_reference
-      COURSE_DB_APP_PASSWORD: ${COURSE_DB_APP_PASSWORD}
+      PUBLIC_ORIGIN: "${HUB_PUBLIC_ORIGIN:-http://127.0.0.1:${HUB_PORT:-8080}}"
+      COURSE_DB_HOST: database
+      COURSE_DB_PORT: "5432"
+      COURSE_DB_NAME: course_reference
+      COURSE_DB_MIGRATION_USER: course_migrator
+      COURSE_DB_APP_USER: course_app
+      COURSE_DB_MIGRATION_PASSWORD_FILE: /install-config/database-migration-password
+      COURSE_DB_APP_PASSWORD_FILE: /install-config/database-app-password
       AGENT_WORK_BACKEND: ${COURSE_AGENT_BACKEND:-mock}
       AGENT_WORK_TIMEOUT_MS: ${COURSE_AGENT_TIMEOUT_MS:-180000}
       COURSE_LOCAL_MODEL_MANAGEMENT: "true"
@@ -63,6 +85,7 @@ services:
     volumes:
       - hub-state:/state
       - course-models:/models
+      - install-config:/install-config:ro
     networks:
       - hub-private
     healthcheck:
@@ -83,3 +106,5 @@ volumes:
     name: ${COMPOSE_PROJECT_NAME:-kungfu-course-hub}-state
   course-models:
     name: ${COMPOSE_PROJECT_NAME:-kungfu-course-hub}-models
+  install-config:
+    name: ${COMPOSE_PROJECT_NAME:-kungfu-course-hub}-config

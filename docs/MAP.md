@@ -22,8 +22,8 @@ ai_provenance:
   multi-platform runtime assembly.
 - `Dockerfile.dev` and `compose.dev.yaml` — source-only developer rebuild over
   the exact published runtime.
-- `compose.yaml` — PostgreSQL plus one localhost-only, non-root, read-only Hub
-  application service.
+- `compose.yaml` — network-free credential bootstrap, private PostgreSQL, and
+  one localhost-only, non-root, read-only Hub application service.
 - `contracts/hub-starter-runtime.contract.json` — machine-readable claim and
   safety boundary.
 - `release/runtime.lock.json` — exact package, source, image, and qualification
@@ -36,6 +36,8 @@ ai_provenance:
 - `apps/course-hub/src/local-model-manager.mjs` and
   `model-catalog.mjs` — pinned click-to-install Qwen choices, resumable
   streaming verification, activation, and private llama.cpp process control.
+- `apps/course-hub/src/bootstrap-secrets.mjs` — atomic, reusable installation
+  credentials without user-authored passwords.
 - `apps/course-hub/src/kungfu-course-work-control.mjs` — public-CLI
   per-course/per-version Assignment, Evidence, review, decision, recovery, and
   seal adapter.
@@ -53,6 +55,8 @@ ai_provenance:
 - `scripts/smoke-browser.sh` — real-browser authenticated product-entry smoke.
 - `.github/workflows/image.yml` — trusted dual-package consumption,
   multi-platform development publication, and native amd64/arm64 evidence.
+- `.github/workflows/application.yml` — immutable plus preview OCI Compose
+  publication and fresh one-command installation smoke.
 - `.github/workflows/package-stage.yml` — source/run/hash-bound transfer of the
   exact public Kungfu Actions outputs into an immutable runtime prerelease,
   without routing the large package bytes through a developer workstation.
