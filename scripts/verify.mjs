@@ -107,7 +107,8 @@ for (const applicationInvariant of [
   'docker compose publish -y "${immutable}"',
   'docker compose publish -y "${preview}"',
   'compose-preview',
-  '-f "oci://${APPLICATION_REF}" up --wait',
+  'docker compose -f "oci://${APPLICATION_REF}" "$@"',
+  'compose_oci up --wait',
   'NetworkSettings.Ports["5432/tcp"] == null',
 ]) {
   if (!applicationWorkflow.includes(applicationInvariant)) {
