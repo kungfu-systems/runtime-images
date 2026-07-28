@@ -205,6 +205,19 @@ compose_oci() {
   return "${status}"
 }
 
+compose_config_has_exact_image() {
+  local config_path="$1"
+  local digest
+
+  for digest in "${image_digest}" "${image_digest_amd64}" "${image_digest_arm64}"; do
+    if grep -Fq "image: ${image_name}@${digest}" "${config_path}"; then
+      return 0
+    fi
+  done
+
+  return 1
+}
+
 compose_config_with_retry() {
   local reference="$1"
   local output_path="$2"
@@ -214,7 +227,7 @@ compose_config_with_retry() {
 
   while [ "${attempt}" -le "${max_attempts}" ]; do
     if compose_oci "${reference}" config >"${output_path}" \
-      && grep -Fq "image: ${image_name}@${image_digest}" "${output_path}" \
+      && compose_config_has_exact_image "${output_path}" \
       && grep -Fq 'host_ip: 127.0.0.1' "${output_path}"; then
       return 0
     else
@@ -240,7 +253,7 @@ else
   compose_config_with_retry "${application_ref}" "${application_config_path}"
 fi
 
-grep -F "image: ${image_name}@${image_digest}" "${application_config_path}"
+compose_config_has_exact_image "${application_config_path}"
 grep -F 'host_ip: 127.0.0.1' "${application_config_path}"
 if sed -n '/^  database:/,/^  hub:/p' "${application_config_path}" | grep -q '^    ports:'; then
   echo "published Compose application exposes PostgreSQL" >&2
