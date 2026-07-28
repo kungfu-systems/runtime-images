@@ -73,8 +73,9 @@ Course data, Kungfu state, optional model files, and generated database
 credentials persist in isolated named volumes.
 
 The initial backend is an explicitly labelled deterministic Mock, so the first
-start remains small. The single Hub image already contains llama.cpp; Qwen
-weights are downloaded only after the user chooses a model in the product.
+start adds no model-weight download. The single Hub image already contains
+llama.cpp; Qwen weights are downloaded only after the user chooses a model in
+the product.
 
 Stop without deleting data:
 
