@@ -39,7 +39,7 @@ preview_ref="${image_name}:compose-preview"
 release_material_sha="${BUILDCHAIN_RELEASE_MATERIAL_SHA:-${BUILDCHAIN_RELEASE_SHA}}"
 evidence_dir="${BUILDCHAIN_EVIDENCE_DIR:-$(dirname "${BUILDCHAIN_PUBLISH_EVIDENCE}")}"
 input_dir="${evidence_dir}/runtime-inputs"
-image_manifest_path="${evidence_dir}/hub-image-manifest.txt"
+image_manifest_path="${evidence_dir}/hub-image-manifest.json"
 application_config_path="${evidence_dir}/hub-application-config.yaml"
 application_smoke_path="${evidence_dir}/hub-application-readiness.json"
 
@@ -92,16 +92,16 @@ manifest_digest() {
 }
 
 verify_image_contract() {
-  local platform="$1"
+  local image_coordinate="$1"
   local expected_architecture="$2"
   local observed_architecture
   local observed_revision
   local observed_kungfu_source
 
-  docker pull --platform "${platform}" "${image_ref}" >/dev/null
-  observed_architecture="$(docker image inspect --format '{{.Architecture}}' "${image_ref}")"
-  observed_revision="$(docker image inspect --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' "${image_ref}")"
-  observed_kungfu_source="$(docker image inspect --format '{{index .Config.Labels "tech.kungfu.product.source"}}' "${image_ref}")"
+  docker pull "${image_coordinate}" >/dev/null
+  observed_architecture="$(docker image inspect --format '{{.Architecture}}' "${image_coordinate}")"
+  observed_revision="$(docker image inspect --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' "${image_coordinate}")"
+  observed_kungfu_source="$(docker image inspect --format '{{index .Config.Labels "tech.kungfu.product.source"}}' "${image_coordinate}")"
   test "${observed_architecture}" = "${expected_architecture}"
   test "${observed_revision}" = "${release_material_sha}"
   test "${observed_kungfu_source}" = "${kungfu_source_sha}"
@@ -127,27 +127,39 @@ fi
 
 image_digest="$(manifest_digest "${image_ref}")"
 [[ "${image_digest}" =~ ^sha256:[0-9a-f]{64}$ ]]
-docker buildx imagetools inspect "${image_ref}" >"${image_manifest_path}"
-grep -Eq 'Platform:[[:space:]]+linux/amd64' "${image_manifest_path}"
-grep -Eq 'Platform:[[:space:]]+linux/arm64' "${image_manifest_path}"
-verify_image_contract linux/amd64 amd64
-verify_image_contract linux/arm64 arm64
+docker buildx imagetools inspect "${image_ref}" --format '{{json .Manifest}}' \
+  >"${image_manifest_path}"
+platform_digest() {
+  local architecture="$1"
+  jq -er \
+    --arg architecture "${architecture}" \
+    '[.manifests[]
+      | select(.platform.os == "linux" and .platform.architecture == $architecture)
+      | .digest]
+     | if length == 1 then .[0] else error("expected one platform manifest") end' \
+    "${image_manifest_path}"
+}
+image_digest_amd64="$(platform_digest amd64)"
+image_digest_arm64="$(platform_digest arm64)"
+verify_image_contract "${image_name}@${image_digest_amd64}" amd64
+verify_image_contract "${image_name}@${image_digest_arm64}" arm64
 
 for platform in linux/amd64 linux/arm64; do
   case "${platform}" in
     linux/amd64)
       smoke_port=18081
       smoke_name=linux-amd64
+      smoke_image="${image_name}@${image_digest_amd64}"
       ;;
     linux/arm64)
       smoke_port=18082
       smoke_name=linux-arm64
+      smoke_image="${image_name}@${image_digest_arm64}"
       ;;
   esac
-  DOCKER_DEFAULT_PLATFORM="${platform}" \
   COURSE_SMOKE_PORT="${smoke_port}" \
     bash "${repo_root}/scripts/smoke-image.sh" \
-      "${image_name}@${image_digest}" \
+      "${smoke_image}" \
       "${evidence_dir}/hub-image-smoke-${smoke_name}.json"
 done
 

@@ -168,6 +168,8 @@ for (const invariant of [
   'linux/amd64,linux/arm64',
   '--provenance mode=max',
   '--sbom=true',
+  'platform_digest()',
+  '"${image_name}@${image_digest_arm64}"',
   'scripts/smoke-image.sh',
   'compose-v${BUILDCHAIN_VERSION}',
   'docker compose -f "${repo_root}/compose.yaml" publish -y "${application_ref}"',
