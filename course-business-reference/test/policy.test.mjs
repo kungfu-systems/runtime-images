@@ -90,6 +90,7 @@ test('course UI accepts placeholder examples with Tab and explains staged action
   assert.match(browser, /Improving your course outline/u);
   assert.match(browser, /newest\.id === previousNewestId/u);
   assert.match(browser, /did not return a new outline/u);
+  assert.match(browser, /task: async \(\) => \{[\s\S]*?const newest = result\.course\?\.versions\?\.\[0\]/u);
   assert.match(styles, /workflowStageIn/u);
   assert.match(styles, /workflowStageOut/u);
   assert.match(styles, /prefers-reduced-motion/u);
@@ -177,4 +178,22 @@ test('failed inference remains recoverable without weakening provision failures'
   assert.match(browser, /The course is safe and ready to continue/u);
   assert.match(browser, /retry or switch models/u);
   assert.match(styles, /\.operation-failure/u);
+});
+
+test('long inference delivery is bounded and single-flight', async () => {
+  const [adapter, outlineSchema, outbox, config, compose] = await Promise.all([
+    read('../src/openai-compatible-agent-work-adapter.mjs'),
+    read('../src/course-outline-schema.mjs'),
+    read('../src/outbox.mjs'),
+    read('../src/config.mjs'),
+    read('../compose.yaml'),
+  ]);
+  assert.match(outlineSchema, /maxLength/u);
+  assert.match(adapter, /deliveryStaleSeconds/u);
+  assert.match(adapter, /RETURNING state, result/u);
+  assert.match(adapter, /course inference delivery is already in progress/u);
+  assert.match(outbox, /this\.userDrains = new Map\(\)/u);
+  assert.match(outbox, /this\.drainUserOnce\(userId\)/u);
+  assert.match(config, /'OUTBOX_PROCESSING_STALE_SECONDS',\s*240/u);
+  assert.match(compose, /COURSE_OUTBOX_PROCESSING_STALE_SECONDS:-240/u);
 });

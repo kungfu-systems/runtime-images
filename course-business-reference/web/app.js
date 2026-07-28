@@ -1124,16 +1124,20 @@ async function runAgentAction(
           'Preparing a new immutable outline version',
         ],
       success: 'New outline version saved to your course collection',
-      task: () => request(`/api/courses/${id}/actions/${action}`, {
-        method: 'POST',
-        headers: { 'idempotency-key': idempotencyKey(action) },
-        body,
-      }),
+      task: async () => {
+        const result = await request(`/api/courses/${id}/actions/${action}`, {
+          method: 'POST',
+          headers: { 'idempotency-key': idempotencyKey(action) },
+          body,
+        });
+        const newest = result.course?.versions?.[0];
+        if (!newest || newest.id === previousNewestId) {
+          throw new Error(`${agentLabel} did not return a new outline. Please try again.`);
+        }
+        return result;
+      },
     });
     const newest = course?.versions?.[0];
-    if (!newest || newest.id === previousNewestId) {
-      throw new Error(`${agentLabel} did not return a new outline. Please try again.`);
-    }
     await showCourse(
       id,
       action === 'generate'

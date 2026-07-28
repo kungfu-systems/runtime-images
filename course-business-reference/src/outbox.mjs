@@ -10,6 +10,7 @@ export class OutboxDispatcher {
     this.hooks = hooks;
     this.processingStaleSeconds = hooks.processingStaleSeconds ?? 30;
     this.running = false;
+    this.userDrains = new Map();
   }
 
   async drainAll() {
@@ -24,6 +25,16 @@ export class OutboxDispatcher {
   }
 
   async drainUser(userId) {
+    const existing = this.userDrains.get(userId);
+    if (existing) return existing;
+    const draining = this.drainUserOnce(userId).finally(() => {
+      if (this.userDrains.get(userId) === draining) this.userDrains.delete(userId);
+    });
+    this.userDrains.set(userId, draining);
+    return draining;
+  }
+
+  async drainUserOnce(userId) {
     for (let count = 0; count < 20; count += 1) {
       const message = await transaction(this.pool, { userId }, async (client) => {
         await client.query(

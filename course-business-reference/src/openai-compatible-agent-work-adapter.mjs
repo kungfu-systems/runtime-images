@@ -54,7 +54,7 @@ export function createOutlineRequest(config, command) {
   return {
     model: config.model,
     temperature: 0.35,
-    max_tokens: 4096,
+    max_tokens: 2048,
     seed: seedFor(command.idempotencyKey),
     messages: [
       {
@@ -68,7 +68,7 @@ export function createOutlineRequest(config, command) {
           'Do not begin every module title by repeating words from the working title.',
           'Transform the brief into specific decisions, practice, and evidence; do not merely repeat or rename input fields.',
           'The summary and changes fields must describe concrete course content you produced, such as module sequencing or exercises. Never copy or summarize these instructions.',
-          'Keep every field concise and keep the complete JSON response under 6000 characters.',
+          'Keep every field concise and keep the complete JSON response under 5000 characters.',
           'Do not reveal hidden reasoning. Return only the requested structured result.',
         ].join(' '),
       },
@@ -95,6 +95,9 @@ function messageContent(value) {
 }
 
 export function parseOutlineResponse(value, config, command) {
+  if (value?.choices?.[0]?.finish_reason === 'length') {
+    throw new Error('inference provider returned incomplete structured output');
+  }
   let parsed;
   try {
     parsed = JSON.parse(messageContent(value));
@@ -246,16 +249,28 @@ export class OpenAICompatibleAgentWorkAdapter extends AgentWorkPort {
       );
       return result;
     }
-    await this.pool.query(
+    const deliveryStaleSeconds = Math.ceil(this.config.timeoutMs / 1_000) + 30;
+    const claimed = await this.pool.query(
       `INSERT INTO agent_work.deliveries
         (idempotency_key, binding_id, command_type, state, started_at)
        VALUES ($1, $2, $3, 'processing', now())
        ON CONFLICT (idempotency_key) DO UPDATE
          SET state = 'processing', started_at = now(), last_error = NULL
        WHERE agent_work.deliveries.state = 'failed'
-          OR agent_work.deliveries.started_at < now() - interval '5 minutes'`,
-      [command.idempotencyKey, bindingId, command.type],
+          OR agent_work.deliveries.started_at
+             < now() - ($4 * interval '1 second')
+       RETURNING state, result`,
+      [command.idempotencyKey, bindingId, command.type, deliveryStaleSeconds],
     );
+    if (!claimed.rowCount) {
+      const current = await this.pool.query(
+        `SELECT state, result FROM agent_work.deliveries
+         WHERE idempotency_key = $1`,
+        [command.idempotencyKey],
+      );
+      if (current.rows[0]?.state === 'completed') return current.rows[0].result;
+      throw new Error('course inference delivery is already in progress');
+    }
     try {
       const output = await this.infer(command);
       const client = await this.pool.connect();
