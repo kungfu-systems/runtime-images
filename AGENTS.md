@@ -96,6 +96,8 @@ vertical reference with explicit seams.
 - Runtime image references, packages, and model files remain exact and pinned.
 - Database credentials are generated once, passed through mounted files, and
   never published in the Compose artifact or exposed as host ports.
+- A floating Compose channel moves only after the exact immutable application
+  artifact passes its fresh-install smoke, and promotion preserves its digest.
 - The published container remains localhost-only by default, non-root,
   read-only, capability-free, and without Docker socket, host network, host
   paths, credentials, or model weights.
