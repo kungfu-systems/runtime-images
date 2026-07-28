@@ -16,14 +16,36 @@
   "state_ref": "buildchain/release-state/1-0-0-alpha-7",
   "state_path": "/home/runner/work/runtime-images/runtime-images/.buildchain/release-state/v1.0.0-alpha.7.json",
   "evidence_path": "/home/runner/work/runtime-images/runtime-images/.buildchain/release-evidence/v1.0.0-alpha.7/evidence.json",
-  "state": "publishing",
-  "previous_state": "prepared",
+  "state": "published",
+  "previous_state": "publishing",
   "actor": "kungfu-origin",
   "run_id": "30383294615",
   "superseded_by": "",
   "failure": "",
-  "artifacts": [],
-  "evidence": [],
+  "artifacts": [
+    {
+      "group": "image",
+      "kind": "oci",
+      "name": "ghcr.io/kungfu-systems/runtime-images/hub-starter",
+      "ref": "v1.0.0-alpha.7",
+      "digest": "sha256:9eba39523ba7dd1ec783782ead6e83dbb8a829f66d73370d63317479a4d23c25",
+      "role": "",
+      "required": true
+    },
+    {
+      "group": "application",
+      "kind": "oci",
+      "name": "ghcr.io/kungfu-systems/runtime-images/hub-starter",
+      "ref": "compose-v1.0.0-alpha.7",
+      "digest": "sha256:097db4d2efd8b93dc84e2df106b16597bc1bb9800d98877d2996a153f3f9a1e3",
+      "role": "",
+      "required": true
+    }
+  ],
+  "evidence": [
+    ".buildchain/release-evidence/v1.0.0-alpha.7/evidence.json",
+    ".buildchain/release-evidence/v1.0.0-alpha.7/dist-tag-evidence.json"
+  ],
   "created_at": "2026-07-28T17:36:10.521Z",
-  "updated_at": "2026-07-28T17:36:12.313Z"
+  "updated_at": "2026-07-28T17:41:10.731Z"
 }
