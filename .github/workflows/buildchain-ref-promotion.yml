@@ -16,7 +16,7 @@ on:
       target-ref:
         description: "Buildchain channel branch to plan"
         required: true
-        default: "alpha/v0/v0.2"
+        default: "alpha/v1/v1.0"
       dry-run:
         description: "Only print the governed publication plan"
         required: true

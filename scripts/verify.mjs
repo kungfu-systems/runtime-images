@@ -218,11 +218,11 @@ for (const field of [
   }
 }
 if (
-  releaseImpact.release.line !== 'v0.2'
-  || releaseImpact.versionImpact.final !== 'minor'
+  releaseImpact.release.line !== 'v1.0'
+  || releaseImpact.versionImpact.final !== 'major'
   || releaseImpact.surfaceImpacts.length < 3
 ) {
-  throw new Error('release impact ledger does not describe the governed v0.2 alpha surface');
+  throw new Error('release impact ledger does not describe the governed v1.0 alpha surface');
 }
 
 if (contract.sourceBuild.kungfuSourceSha !== lock.kungfuSourceSha) {
