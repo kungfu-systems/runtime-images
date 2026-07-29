@@ -1,6 +1,6 @@
 {
   "name": "@kungfu-tech/hub-starter-runtime",
-  "version": "1.0.0-alpha.8",
+  "version": "1.0.0-alpha.9",
   "description": "Unified PostgreSQL Course Hub with selectable inference and Kungfu-managed work.",
   "license": "Apache-2.0",
   "private": true,
