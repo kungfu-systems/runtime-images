@@ -179,6 +179,7 @@ for (const invariant of [
   'scripts/smoke-image.sh',
   'compose-v${BUILDCHAIN_VERSION}',
   'compose_config_with_retry',
+  'compose_up_with_retry',
   'compose_config_has_exact_image',
   'max_attempts=12',
   'for digest in "${image_digest}" "${image_digest_amd64}" "${image_digest_arm64}"',
@@ -189,6 +190,10 @@ for (const invariant of [
   'docker compose -f "${application_source_path}" config',
   'docker compose -f "${application_source_path}" publish',
   'NetworkSettings.Ports["5432/tcp"] == null',
+  'hub-application-upgrade.json',
+  'scripts/smoke-course-api.mjs',
+  'test "${upgrade_database_id_after}" = "${upgrade_database_id_before}"',
+  "jq -e '.restartPersistence == true'",
   'scripts/write-runtime-publish-evidence.mjs',
   '--prefer-index=false',
   'compose-preview',
@@ -202,20 +207,27 @@ if (/down\s+-v/u.test(publishRuntime)) {
   throw new Error('Buildchain publish lifecycle must not delete named volumes');
 }
 const exactApplicationSmoke = publishRuntime.indexOf(
-  'compose_oci "${application_ref}" up --wait --wait-timeout 300',
+  'compose_up_with_retry "${application_ref}" "${smoke_project}" 18083',
 );
 const evidenceWrite = publishRuntime.indexOf(
   'node "${repo_root}/scripts/write-runtime-publish-evidence.mjs"',
+);
+const upgradeSmoke = publishRuntime.indexOf(
+  'test "${upgrade_database_id_after}" = "${upgrade_database_id_before}"',
 );
 const previewPromotion = publishRuntime.indexOf(
   'docker buildx imagetools create',
 );
 if (
   exactApplicationSmoke < 0
-  || evidenceWrite <= exactApplicationSmoke
+  || upgradeSmoke <= exactApplicationSmoke
+  || evidenceWrite <= upgradeSmoke
   || previewPromotion <= evidenceWrite
 ) {
-  throw new Error('exact application smoke and evidence validation must precede preview promotion');
+  throw new Error(
+    'exact application smoke, preserved-database upgrade smoke, and evidence validation '
+    + 'must precede preview promotion',
+  );
 }
 
 for (const refTemplate of ['v{version}', 'compose-v{version}']) {
