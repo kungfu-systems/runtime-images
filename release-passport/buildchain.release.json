@@ -1,0 +1,205 @@
+{
+  "schemaVersion": 1,
+  "contract": "kungfu-buildchain-release-passport",
+  "generatedAt": "2026-07-29T14:15:41.313Z",
+  "surfaceTimestampPolicy": {
+    "generatedAt": "2026-07-29T14:15:41.313Z",
+    "publishedAt": "2026-07-29T14:15:41.313Z",
+    "reproducible": true,
+    "timestampPolicy": "ci-injected",
+    "deterministicInputs": [
+      "release.sourceSha",
+      "release.releaseSha",
+      "release.releaseMaterialSha",
+      "artifact-evidence.json",
+      "publish evidence",
+      "release-state transaction",
+      "controller receipt references",
+      "sourceRevision",
+      "sourceDateEpoch",
+      "package content",
+      "declared Buildchain surface manifest contract"
+    ],
+    "sourceDateEpoch": "0",
+    "sourceRevision": "8ea4291a78eda9a6185ebce22e544823506d60b3",
+    "timestampPolicyDetails": {
+      "contract": "kungfu-buildchain-surface-timestamp-policy",
+      "timestampFields": [
+        "generatedAt",
+        "publishedAt",
+        "surfaceTimestampPolicy.generatedAt",
+        "surfaceTimestampPolicy.publishedAt"
+      ],
+      "timestampFieldsParticipateInArtifactDigest": true,
+      "artifactDigestScope": "release passport JSON and release evidence bundle",
+      "note": "Human-readable timestamps are separate from reproducibility inputs; do not infer reproducibility from epoch timestamps."
+    }
+  },
+  "product": {
+    "name": "Kungfu Course Hub",
+    "repository": "kungfu-systems/runtime-images",
+    "mechanism": "product-mechanism.json"
+  },
+  "release": {
+    "tag": "v1.0.0-alpha.10",
+    "publicTag": "v1.0.0-alpha.10",
+    "internalTag": "v1.0.0-alpha.10",
+    "internalVersion": "1.0.0-alpha.10",
+    "publishedVersion": "1.0.0-alpha.10",
+    "versionLabel": "1.0.0-alpha.10",
+    "line": "v1.0",
+    "sourceSha": "8ea4291a78eda9a6185ebce22e544823506d60b3",
+    "channel": "alpha",
+    "targetRef": "alpha/v1/v1.0",
+    "releaseSha": "a1cf574f3338c5ef522d49ae8575d4f88ed9bb00",
+    "releaseMaterialSha": "a1cf574f3338c5ef522d49ae8575d4f88ed9bb00",
+    "builtSourceSha": "",
+    "builtSourceTreeSha": "",
+    "promotionChannelSha": "",
+    "promotionChannelTreeSha": "",
+    "publishToolingSha": "a1cf574f3338c5ef522d49ae8575d4f88ed9bb00",
+    "releaseStateRef": "refs/heads/buildchain/release-state/1-0-0-alpha-10",
+    "releaseStateSha": "",
+    "package": {
+      "name": "@kungfu-tech/buildchain",
+      "version": "1.0.0-alpha.10"
+    },
+    "exactRef": "refs/tags/v1.0.0-alpha.10"
+  },
+  "workflow": {
+    "name": "Buildchain Ref Promotion",
+    "runId": "30459601672",
+    "runAttempt": "1",
+    "url": "https://github.com/kungfu-systems/runtime-images/actions/runs/30459601672"
+  },
+  "runnerPolicy": {
+    "productionDefault": "github-hosted",
+    "compatibilityFixture": "self-hosted",
+    "note": "Runner facts are recorded in artifact evidence; the protocol does not require self-hosted runners."
+  },
+  "trustedPublishing": {
+    "provider": "npm",
+    "enabled": true,
+    "auth": "trusted-publishing",
+    "workflowRunId": "30459601672",
+    "workflowRunAttempt": "1",
+    "evidence": ""
+  },
+  "transaction": {
+    "id": "ab3ea67ea0086cbf5d4143f97c5fb3eccb38a051a64b33943aa4b30bea479c58",
+    "version": "1.0.0-alpha.10",
+    "state": "complete",
+    "previousState": "finalizing",
+    "exactTag": "v1.0.0-alpha.10",
+    "releaseSha": "a1cf574f3338c5ef522d49ae8575d4f88ed9bb00",
+    "releaseMaterialSha": "a1cf574f3338c5ef522d49ae8575d4f88ed9bb00",
+    "stateRef": "buildchain/release-state/1-0-0-alpha-10",
+    "statePath": "/home/runner/work/runtime-images/runtime-images/.buildchain/release-state/v1.0.0-alpha.10.json",
+    "stateSha": "",
+    "evidencePath": "/home/runner/work/runtime-images/runtime-images/.buildchain/release-evidence/v1.0.0-alpha.10/evidence.json",
+    "updatedAt": "2026-07-29T14:15:38.611Z",
+    "result": {
+      "command": "finalize",
+      "validation": {
+        "valid": true,
+        "errors": []
+      }
+    }
+  },
+  "distTagPromotion": {
+    "path": "../release-evidence/v1.0.0-alpha.10/dist-tag-evidence.json",
+    "sha256": "c0c833ff0b7d3e9af69c4862698be4a90b5d5b8db2318e8b890ef066fc6a9f92",
+    "fields": {
+      "schema": 1,
+      "contract": "kungfu-buildchain-dist-tag-promotion-evidence",
+      "mode": "publish-final-version",
+      "auth": "trusted-publishing",
+      "distTag": "alpha",
+      "source": "existing-evidence",
+      "packages": [
+        {
+          "name": "ghcr.io/kungfu-systems/runtime-images/hub-starter",
+          "version": "v1.0.0-alpha.10",
+          "distTag": "alpha",
+          "role": "",
+          "digest": "sha256:688f9c8bc9e23824deecd1b29566dbd1f991dda0dfa5ae0b01759697e1e583aa"
+        },
+        {
+          "name": "ghcr.io/kungfu-systems/runtime-images/hub-starter",
+          "version": "compose-v1.0.0-alpha.10",
+          "distTag": "alpha",
+          "role": "",
+          "digest": "sha256:92b9e8dfc7d7656d7b0c4aec7832723078e671e7862cb19ee1c52b4a04e99bfa"
+        }
+      ]
+    }
+  },
+  "versionImpact": {
+    "final": "major",
+    "source": "runtime-images-buildchain-migration",
+    "rationale": "The first Buildchain-governed product line establishes the v1.0 alpha namespace for the existing Course Hub image and OCI Compose application without removing the pre-Alpha preview route."
+  },
+  "surfaceImpacts": [
+    {
+      "id": "hub-starter-buildchain-release",
+      "impact": "major",
+      "class": "release-governance",
+      "rationale": "Buildchain now establishes the first governed v1.0 alpha line and owns version selection, exact publication, durable evidence, release finalization, and the Release Passport.",
+      "source": ".github/workflows/buildchain-ref-promotion.yml"
+    },
+    {
+      "id": "hub-starter-multi-platform-image",
+      "impact": "minor",
+      "class": "container-runtime",
+      "rationale": "The existing linux/amd64 and linux/arm64 Course Hub image becomes an exact versioned release artifact with retained SBOM, provenance, and native-contract smoke evidence.",
+      "source": "scripts/publish-runtime-release.sh"
+    },
+    {
+      "id": "hub-starter-oci-compose",
+      "impact": "minor",
+      "class": "installation",
+      "rationale": "The one-command OCI Compose application becomes an exact versioned release artifact while the verified compose-preview convenience channel remains compatible.",
+      "source": "compose.yaml"
+    }
+  ],
+  "artifacts": [
+    {
+      "group": "image",
+      "kind": "oci",
+      "name": "ghcr.io/kungfu-systems/runtime-images/hub-starter",
+      "ref": "v1.0.0-alpha.10",
+      "digest": "sha256:688f9c8bc9e23824deecd1b29566dbd1f991dda0dfa5ae0b01759697e1e583aa",
+      "evidence": "../release-evidence/v1.0.0-alpha.10/evidence.json"
+    },
+    {
+      "group": "application",
+      "kind": "oci",
+      "name": "ghcr.io/kungfu-systems/runtime-images/hub-starter",
+      "ref": "compose-v1.0.0-alpha.10",
+      "digest": "sha256:92b9e8dfc7d7656d7b0c4aec7832723078e671e7862cb19ee1c52b4a04e99bfa",
+      "evidence": "../release-evidence/v1.0.0-alpha.10/evidence.json"
+    }
+  ],
+  "evidence": {
+    "artifactEvidence": "artifact-evidence.json",
+    "publishEvidence": "evidence.json",
+    "transactionState": "",
+    "buildSummary": "",
+    "buildFacts": [],
+    "platformArtifactManifests": [],
+    "distTagPromotionEvidence": "../release-evidence/v1.0.0-alpha.10/dist-tag-evidence.json",
+    "kfd1": "",
+    "kfd2": "",
+    "kfd3": "",
+    "kfdSupport": "",
+    "kfdAgentHub": "",
+    "invariantPassports": "",
+    "impact": "impact.json",
+    "checkReport": "check-report.json",
+    "agentIndex": "agent-index.json"
+  },
+  "recovery": {
+    "rollback": "Use the previous exact release tag or previous floating channel ref.",
+    "verify": "buildchain verify release-passport buildchain.release.json"
+  }
+}
