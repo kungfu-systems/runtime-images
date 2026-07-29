@@ -409,10 +409,10 @@ const server = createServer(async (req, res) => {
     json(res, 404, { error: 'Not found.' });
   } catch (error) {
     const status = error.status ?? (error.code === 'NOT_FOUND' ? 404 : 400);
-    const message = status === 401 ? 'Authentication required.'
+    const message = error.publicMessage ?? (status === 401 ? 'Authentication required.'
       : status === 404 ? 'Not found.'
         : status >= 500 ? 'Internal error.'
-          : 'Request could not be completed.';
+          : 'Request could not be completed.');
     if (status >= 500) console.error('[request] failed:', error.message);
     json(res, status, { error: message });
   }
