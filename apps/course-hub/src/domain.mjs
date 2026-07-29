@@ -17,6 +17,14 @@ function publicUser(row) {
   return { id: row.id, email: row.email_normalized, displayName: row.display_name };
 }
 
+export function mapRegistrationError(error) {
+  if (error?.code !== '23505') return error;
+  return Object.assign(new Error('email is already registered'), {
+    status: 409,
+    publicMessage: 'A workspace already exists for this email. Log in instead.',
+  });
+}
+
 function bounded(value, name, minimum, maximum) {
   const normalized = String(value ?? '').trim();
   if (normalized.length < minimum || normalized.length > maximum) {
@@ -61,23 +69,28 @@ export class CourseDomain {
     const displayName = String(input.displayName ?? '').trim();
     if (displayName.length < 1 || displayName.length > 80) throw new Error('invalid registration');
     const credential = await hashPassword(password);
-    const created = await transaction(this.pool, {}, async (client) => {
-      const userResult = await client.query(
-        `INSERT INTO course.users
-          (email_normalized, display_name, password_salt, password_hash, password_parameters)
-         VALUES ($1, $2, $3, $4, $5::jsonb) RETURNING *`,
-        [email, displayName, credential.salt, credential.hash, JSON.stringify(credential.parameters)],
-      );
-      const user = userResult.rows[0];
-      await client.query("SELECT set_config('app.user_id', $1, true)", [user.id]);
-      const enrollment = await client.query(
-        `INSERT INTO course.enrollments(user_id, course_id)
-         VALUES ($1, $2) RETURNING id`,
-        [user.id, COURSE_ID],
-      );
-      if (!enrollment.rowCount) throw new Error('enrollment could not be created');
-      return { user, session: await createSession(client, user.id, this.config.sessionHours) };
-    });
+    let created;
+    try {
+      created = await transaction(this.pool, {}, async (client) => {
+        const userResult = await client.query(
+          `INSERT INTO course.users
+            (email_normalized, display_name, password_salt, password_hash, password_parameters)
+           VALUES ($1, $2, $3, $4, $5::jsonb) RETURNING *`,
+          [email, displayName, credential.salt, credential.hash, JSON.stringify(credential.parameters)],
+        );
+        const user = userResult.rows[0];
+        await client.query("SELECT set_config('app.user_id', $1, true)", [user.id]);
+        const enrollment = await client.query(
+          `INSERT INTO course.enrollments(user_id, course_id)
+           VALUES ($1, $2) RETURNING id`,
+          [user.id, COURSE_ID],
+        );
+        if (!enrollment.rowCount) throw new Error('enrollment could not be created');
+        return { user, session: await createSession(client, user.id, this.config.sessionHours) };
+      });
+    } catch (error) {
+      throw mapRegistrationError(error);
+    }
     return { user: publicUser(created.user), ...created.session };
   }
 
