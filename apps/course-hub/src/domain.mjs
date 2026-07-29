@@ -18,11 +18,37 @@ function publicUser(row) {
 }
 
 export function mapRegistrationError(error) {
-  if (error?.code !== '23505') return error;
-  return Object.assign(new Error('email is already registered'), {
-    status: 409,
-    publicMessage: 'A workspace already exists for this email. Log in instead.',
+  if (error?.code === '23505') {
+    return Object.assign(new Error('email is already registered'), {
+      status: 409,
+      publicCode: 'email_exists',
+      publicMessage: 'A workspace already exists for this email. Log in instead.',
+    });
+  }
+  const inputErrors = {
+    'invalid email': ['email_invalid', 'Enter a valid email address.'],
+    'password must be 12-128 UTF-8 bytes': [
+      'password_invalid',
+      'Use a password between 12 and 128 UTF-8 bytes.',
+    ],
+    'invalid registration': [
+      'display_name_invalid',
+      'Enter a name between 1 and 80 characters.',
+    ],
+  };
+  const publicError = inputErrors[error?.message];
+  if (!publicError) return error;
+  return Object.assign(new Error(error.message), {
+    status: 400,
+    publicCode: publicError[0],
+    publicMessage: publicError[1],
   });
+}
+
+export function registrationLogReason(error) {
+  return /^[a-z][a-z0-9_]{0,63}$/u.test(String(error?.publicCode ?? ''))
+    ? error.publicCode
+    : 'unclassified';
 }
 
 function bounded(value, name, minimum, maximum) {
@@ -64,14 +90,15 @@ export class CourseDomain {
   }
 
   async register(input) {
-    const email = normalizeEmail(input.email);
-    const password = validatePassword(input.password);
-    const displayName = String(input.displayName ?? '').trim();
-    if (displayName.length < 1 || displayName.length > 80) throw new Error('invalid registration');
-    const credential = await hashPassword(password);
-    let created;
     try {
-      created = await transaction(this.pool, {}, async (client) => {
+      const email = normalizeEmail(input.email);
+      const password = validatePassword(input.password);
+      const displayName = String(input.displayName ?? '').trim();
+      if (displayName.length < 1 || displayName.length > 80) {
+        throw new Error('invalid registration');
+      }
+      const credential = await hashPassword(password);
+      const created = await transaction(this.pool, {}, async (client) => {
         const userResult = await client.query(
           `INSERT INTO course.users
             (email_normalized, display_name, password_salt, password_hash, password_parameters)
@@ -88,10 +115,10 @@ export class CourseDomain {
         if (!enrollment.rowCount) throw new Error('enrollment could not be created');
         return { user, session: await createSession(client, user.id, this.config.sessionHours) };
       });
+      return { user: publicUser(created.user), ...created.session };
     } catch (error) {
       throw mapRegistrationError(error);
     }
-    return { user: publicUser(created.user), ...created.session };
   }
 
   async login(input) {
