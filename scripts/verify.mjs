@@ -28,6 +28,7 @@ const modelCatalog = await read('../apps/course-hub/src/model-catalog.mjs');
 const readme = await read('../README.md');
 const agentGuide = await read('../AGENTS.md');
 const projectMap = await read('../docs/MAP.md');
+const upgradeGuide = await read('../docs/UPGRADING.md');
 const packageManifest = JSON.parse(await read('../package.json'));
 const contract = JSON.parse(contractText);
 const lock = JSON.parse(lockText);
@@ -295,6 +296,19 @@ for (const [label, text] of [
 }
 if (projectMap.includes('course-business-reference/src/')) {
   throw new Error('project map still presents the compatibility directory as canonical source');
+}
+for (const required of [
+  'up --pull always --wait',
+  'compose-${VERSION}',
+  'COMPOSE_PROJECT_NAME',
+  'docker compose down -v',
+]) {
+  if (!upgradeGuide.includes(required)) {
+    throw new Error(`upgrade guide invariant missing: ${required}`);
+  }
+}
+if (!readme.includes('[Upgrade and rollback](docs/UPGRADING.md)')) {
+  throw new Error('README onboarding must link the upgrade and rollback guide');
 }
 
 for (const required of [

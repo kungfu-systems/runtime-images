@@ -60,8 +60,9 @@ ai_provenance:
 - `.github/workflows/package-stage.yml` — source/run/hash-bound transfer of the
   exact public Kungfu Actions outputs into an immutable runtime prerelease,
   without routing the large package bytes through a developer workstation.
-- `docs/ARCHITECTURE.md`, `docs/EXTENDING.md`, and `docs/API.md` — authority,
-  extension, and transport guides.
+- `docs/ARCHITECTURE.md`, `docs/EXTENDING.md`, `docs/API.md`, and
+  `docs/UPGRADING.md` — authority, extension, transport, and installation
+  lifecycle guides.
 - `course-business-reference/` — compatibility launch and qualification path
   for the same unified first-party image, not a source tree or second product.
 - `legacy/hub-starter/` — retained former demonstration implementation,
