@@ -85,6 +85,19 @@ docker compose -f oci://ghcr.io/kungfu-systems/runtime-images/hub-starter:compos
 
 The project never automates `docker compose down -v`.
 
+Upgrade the running application while preserving its named volumes:
+
+```sh
+docker compose -f oci://ghcr.io/kungfu-systems/runtime-images/hub-starter:compose-preview up --pull always --wait
+```
+
+Reuse the same `HUB_PORT`, `HUB_PUBLIC_ORIGIN`, and `COMPOSE_PROJECT_NAME`
+values from the original installation. Compose pulls the current qualified
+Alpha image and recreates changed services without deleting PostgreSQL,
+Kungfu, model, or generated-configuration volumes. See
+[Upgrade and rollback](docs/UPGRADING.md) for verification, exact-version
+pinning, and recovery guidance.
+
 > `compose-preview` is the pre-Alpha convenience channel. Qualified releases
 > also retain immutable application coordinates for reproducible evaluation.
 > The channel moves only after that exact immutable artifact passes a fresh
@@ -164,6 +177,7 @@ remain isolated. The developer overlay is for source exploration; the root
 | Build a different business workflow | [Create another domain workflow](docs/EXTENDING.md#create-another-domain-workflow) |
 | Understand the HTTP surface | [API guide](docs/API.md) |
 | Understand the authority and recovery model | [Architecture](docs/ARCHITECTURE.md) |
+| Upgrade or pin a running installation | [Upgrade and rollback](docs/UPGRADING.md) |
 | Understand every directory | [Project map](docs/MAP.md) |
 
 The narrowest extension is configuration: a hosted OpenAI-compatible provider
