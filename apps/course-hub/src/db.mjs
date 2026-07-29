@@ -6,10 +6,64 @@ import pg from 'pg';
 const { Pool } = pg;
 const migrationsDir = fileURLToPath(new URL('../migrations/', import.meta.url));
 
-export async function initializeDatabase(config) {
-  const migrationPool = new Pool({ connectionString: config.databaseUrl, max: 2 });
-  const client = await migrationPool.connect();
+const transientStartupErrorCodes = new Set([
+  'EAI_AGAIN',
+  'ECONNREFUSED',
+  'ECONNRESET',
+  'EHOSTUNREACH',
+  'ENETUNREACH',
+  'ETIMEDOUT',
+  '57P03',
+]);
+
+const defaultSleep = (milliseconds) => new Promise((resolve) => {
+  setTimeout(resolve, milliseconds);
+});
+
+export function isTransientDatabaseStartupError(error) {
+  return transientStartupErrorCodes.has(error?.code);
+}
+
+export async function retryDatabaseStartup(
+  operation,
+  {
+    maxAttempts = 18,
+    initialDelayMs = 250,
+    maxDelayMs = 5_000,
+    sleep = defaultSleep,
+    log = console.warn,
+    label = 'database',
+  } = {},
+) {
+  let delayMs = initialDelayMs;
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      return await operation();
+    } catch (error) {
+      if (!isTransientDatabaseStartupError(error) || attempt === maxAttempts) {
+        throw error;
+      }
+      log(
+        `Waiting for ${label} after transient startup error ${error.code} `
+        + `(${attempt}/${maxAttempts}); retrying in ${delayMs}ms`,
+      );
+      await sleep(delayMs);
+      delayMs = Math.min(delayMs * 2, maxDelayMs);
+    }
+  }
+  throw new Error(`unreachable database startup retry state for ${label}`);
+}
+
+export async function initializeDatabase(config, options = {}) {
+  const PoolClass = options.Pool ?? Pool;
+  const retryOptions = options.retry ?? {};
+  const migrationPool = new PoolClass({ connectionString: config.databaseUrl, max: 2 });
+  let client;
   try {
+    client = await retryDatabaseStartup(
+      () => migrationPool.connect(),
+      { ...retryOptions, label: 'migration database' },
+    );
     const role = await client.query("SELECT 1 FROM pg_roles WHERE rolname = 'course_app'");
     const password = config.appPassword.replaceAll("'", "''");
     if (role.rowCount === 0) {
@@ -48,17 +102,25 @@ export async function initializeDatabase(config) {
     await client.query('ALTER DEFAULT PRIVILEGES IN SCHEMA mock_agent_work GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO course_app');
     await client.query('ALTER DEFAULT PRIVILEGES IN SCHEMA agent_work GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO course_app');
   } finally {
-    client.release();
+    client?.release();
     await migrationPool.end();
   }
-  const pool = new Pool({
+  const pool = new PoolClass({
     connectionString: config.appDatabaseUrl,
     max: 12,
     idleTimeoutMillis: 30_000,
     statement_timeout: 10_000,
   });
-  await pool.query('SELECT 1');
-  return pool;
+  try {
+    await retryDatabaseStartup(
+      () => pool.query('SELECT 1'),
+      { ...retryOptions, label: 'application database' },
+    );
+    return pool;
+  } catch (error) {
+    await pool.end();
+    throw error;
+  }
 }
 
 export async function transaction(pool, context, fn) {

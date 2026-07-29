@@ -44,6 +44,8 @@ application_config_path="${evidence_dir}/hub-application-config.yaml"
 application_source_path="${evidence_dir}/hub-application-source.yaml"
 application_source_config_path="${evidence_dir}/hub-application-source-config.yaml"
 application_smoke_path="${evidence_dir}/hub-application-readiness.json"
+application_upgrade_state_path="${evidence_dir}/hub-application-upgrade-state.json"
+application_upgrade_path="${evidence_dir}/hub-application-upgrade.json"
 
 mkdir -p "${input_dir}"
 
@@ -246,6 +248,32 @@ compose_config_with_retry() {
   return "${status}"
 }
 
+compose_up_with_retry() {
+  local reference="$1"
+  local project="$2"
+  local port="$3"
+  local attempt=1
+  local max_attempts=3
+  local status=1
+
+  while [ "${attempt}" -le "${max_attempts}" ]; do
+    if COMPOSE_PROJECT_NAME="${project}" HUB_PORT="${port}" \
+      compose_oci "${reference}" up --pull always --wait --wait-timeout 300; then
+      return 0
+    else
+      status=$?
+    fi
+    if [ "${attempt}" -eq "${max_attempts}" ]; then
+      break
+    fi
+    echo "Compose application ${reference} did not become ready; retrying (${attempt}/${max_attempts})" >&2
+    sleep 10
+    attempt=$((attempt + 1))
+  done
+
+  return "${status}"
+}
+
 if docker buildx imagetools inspect "${application_ref}" >/dev/null 2>&1; then
   echo "Reusing existing exact Compose application ${application_ref}"
   compose_config_with_retry "${application_ref}" "${application_config_path}"
@@ -275,14 +303,27 @@ fi
 application_digest="$(manifest_digest "${application_ref}")"
 [[ "${application_digest}" =~ ^sha256:[0-9a-f]{64}$ ]]
 
+previous_preview_digest=none
+if observed="$(manifest_digest "${preview_ref}" 2>/dev/null)"; then
+  previous_preview_digest="${observed}"
+fi
+
 smoke_project="kungfu-course-hub-release-${GITHUB_RUN_ID:-local}-${GITHUB_RUN_ATTEMPT:-1}"
 cleanup_application() {
   COMPOSE_PROJECT_NAME="${smoke_project}" HUB_PORT=18083 \
     compose_oci "${application_ref}" down >/dev/null 2>&1 || true
 }
-trap 'cleanup_application; cleanup_inputs' EXIT
-COMPOSE_PROJECT_NAME="${smoke_project}" HUB_PORT=18083 \
-  compose_oci "${application_ref}" up --wait --wait-timeout 300
+upgrade_project="${smoke_project}-upgrade"
+cleanup_upgrade_application() {
+  COMPOSE_PROJECT_NAME="${upgrade_project}" HUB_PORT=18084 \
+    compose_oci "${application_ref}" down >/dev/null 2>&1 || true
+  if [ "${previous_preview_digest}" != none ]; then
+    COMPOSE_PROJECT_NAME="${upgrade_project}" HUB_PORT=18084 \
+      compose_oci "${preview_ref}@${previous_preview_digest}" down >/dev/null 2>&1 || true
+  fi
+}
+trap 'cleanup_upgrade_application; cleanup_application; cleanup_inputs' EXIT
+compose_up_with_retry "${application_ref}" "${smoke_project}" 18083
 curl --fail --silent http://127.0.0.1:18083/readyz >"${application_smoke_path}"
 jq -e '.ready == true and .database == "ready" and .inference == "ready"' \
   "${application_smoke_path}" >/dev/null
@@ -295,14 +336,41 @@ docker inspect "${database_id}" \
   | jq -e '.[0].NetworkSettings.Ports["5432/tcp"] == null' >/dev/null
 cleanup_application
 
+if [ "${previous_preview_digest}" != none ]; then
+  previous_preview_exact="${preview_ref}@${previous_preview_digest}"
+  compose_up_with_retry "${previous_preview_exact}" "${upgrade_project}" 18084
+  upgrade_database_id_before="$(
+    COMPOSE_PROJECT_NAME="${upgrade_project}" compose_oci "${previous_preview_exact}" ps -q database
+  )"
+  test -n "${upgrade_database_id_before}"
+  COURSE_ORIGIN=http://127.0.0.1:18084 \
+  COURSE_SMOKE_RUN_KEY="upgrade-${GITHUB_RUN_ID:-local}-${GITHUB_RUN_ATTEMPT:-1}" \
+  IMAGE_REF="${previous_preview_exact}" \
+    node "${repo_root}/scripts/smoke-course-api.mjs" \
+      initial "${application_upgrade_state_path}" "${application_upgrade_path}"
+
+  compose_up_with_retry "${application_ref}" "${upgrade_project}" 18084
+  upgrade_database_id_after="$(
+    COMPOSE_PROJECT_NAME="${upgrade_project}" compose_oci "${application_ref}" ps -q database
+  )"
+  test "${upgrade_database_id_after}" = "${upgrade_database_id_before}"
+  COURSE_ORIGIN=http://127.0.0.1:18084 \
+    node "${repo_root}/scripts/smoke-course-api.mjs" \
+      verify "${application_upgrade_state_path}" "${application_upgrade_path}"
+  jq -e '.restartPersistence == true' "${application_upgrade_path}" >/dev/null
+  cleanup_upgrade_application
+else
+  jq -n \
+    --arg schema 'kungfu.course-hub.application-upgrade/v1' \
+    --arg reason 'compose-preview does not exist yet' \
+    '{schema: $schema, skipped: true, reason: $reason}' \
+    >"${application_upgrade_path}"
+fi
+
 HUB_IMAGE_DIGEST="${image_digest}" \
 HUB_APPLICATION_DIGEST="${application_digest}" \
   node "${repo_root}/scripts/write-runtime-publish-evidence.mjs"
 
-previous_preview_digest=none
-if observed="$(manifest_digest "${preview_ref}" 2>/dev/null)"; then
-  previous_preview_digest="${observed}"
-fi
 docker buildx imagetools create \
   --prefer-index=false \
   --tag "${preview_ref}" \
