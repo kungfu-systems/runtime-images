@@ -5,7 +5,7 @@ import { extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadConfig } from './config.mjs';
 import { initializeDatabase } from './db.mjs';
-import { CourseDomain } from './domain.mjs';
+import { CourseDomain, registrationLogReason } from './domain.mjs';
 import { AgentWorkRouter } from './agent-work-router.mjs';
 import { MockAgentWorkAdapter } from './mock-agent-work-adapter.mjs';
 import { OpenAICompatibleAgentWorkAdapter } from './openai-compatible-agent-work-adapter.mjs';
@@ -191,7 +191,11 @@ function sessionCookie(token, clear = false) {
 
 function requireOrigin(req) {
   if (req.headers.origin !== config.publicOrigin) {
-    throw Object.assign(new Error('origin rejected'), { status: 403 });
+    throw Object.assign(new Error('origin rejected'), {
+      status: 403,
+      publicCode: 'origin_rejected',
+      publicMessage: `Open ${config.publicOrigin} and try again.`,
+    });
   }
 }
 
@@ -409,10 +413,15 @@ const server = createServer(async (req, res) => {
     json(res, 404, { error: 'Not found.' });
   } catch (error) {
     const status = error.status ?? (error.code === 'NOT_FOUND' ? 404 : 400);
-    const message = status === 401 ? 'Authentication required.'
+    const message = error.publicMessage ?? (status === 401 ? 'Authentication required.'
       : status === 404 ? 'Not found.'
         : status >= 500 ? 'Internal error.'
-          : 'Request could not be completed.';
+          : 'Request could not be completed.');
+    if (url.pathname === '/api/register') {
+      console.warn(
+        `[registration] rejected status=${status} reason=${registrationLogReason(error)}`,
+      );
+    }
     if (status >= 500) console.error('[request] failed:', error.message);
     json(res, status, { error: message });
   }
