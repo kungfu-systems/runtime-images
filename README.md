@@ -291,9 +291,12 @@ the repository has written complete transaction evidence. The GitHub Release
 retains that evidence and the Buildchain Release Passport.
 
 The manual Image candidate, Compose application, and Kungfu package input
-workflows are qualification-only. They cannot authenticate to GHCR, publish a
-release artifact, or move `compose-preview`. A non-dry-run release starts only
-after a protected alpha or release merge succeeds in `Verify`.
+workflows are qualification-only. Package intake consumes the x64 archive,
+arm64 archive, and product admission capsule from one exact Kungfu `Build` run
+and emits a fail-closed runtime lock/contract proposal. These workflows cannot
+authenticate to GHCR, publish a release artifact, or move `compose-preview`. A
+non-dry-run release starts only after a protected alpha or release merge
+succeeds in `Verify`.
 
 To test another qualified image from a source checkout, set
 `KUNGFU_HUB_IMAGE` to an exact `registry/path@sha256:<digest>` reference.

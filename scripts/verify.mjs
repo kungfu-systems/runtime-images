@@ -9,6 +9,8 @@ const dockerfile = await read('../Dockerfile');
 const developerCompose = await read('../compose.dev.yaml');
 const developerDockerfile = await read('../Dockerfile.dev');
 const smoke = await read('./smoke-image.sh');
+const smokeCourseApi = await read('./smoke-course-api.mjs');
+const prepareBuildCandidate = await read('./prepare-kungfu-build-candidate.mjs');
 const contractText = await read('../contracts/hub-starter-runtime.contract.json');
 const lockText = await read('../release/runtime.lock.json');
 const imageWorkflow = await read('../.github/workflows/image.yml');
@@ -88,15 +90,48 @@ if (/^    ports:/mu.test(databaseService)) {
 }
 
 for (const stagingInvariant of [
-  'kungfu-run-id-amd64',
-  'kungfu-run-id-arm64',
-  'validate_run "${KUNGFU_RUN_ID_AMD64}" Build',
-  "validate_run \"${KUNGFU_RUN_ID_ARM64}\" 'Linux ARM64 Alpha Qualification'",
+  'kungfu-build-run-id',
+  'KUNGFU_BUILD_RUN_ID',
+  '--jq \'[.status, .conclusion, .head_sha, .name] | @tsv\'',
+  '| grep -Fx',
+  "$'\\tBuild'",
+  'pattern: kungfu-linux-x64-*',
+  'pattern: kungfu-linux-arm64-*',
+  'pattern: kungfu-product-upgrade-publication-admission-*',
+  'node scripts/prepare-kungfu-build-candidate.mjs',
   'actions/upload-artifact@',
-  'authority:"qualification-only"',
 ]) {
   if (!packageStageWorkflow.includes(stagingInvariant)) {
     throw new Error(`package qualification workflow invariant missing: ${stagingInvariant}`);
+  }
+}
+for (const forbidden of [
+  'kungfu-run-id-amd64',
+  'kungfu-run-id-arm64',
+  'Linux ARM64 Alpha Qualification',
+]) {
+  if (packageStageWorkflow.includes(forbidden)) {
+    throw new Error(`package qualification workflow retains split-run input: ${forbidden}`);
+  }
+}
+if ((packageStageWorkflow.match(/run-id: \$\{\{ inputs\.kungfu-build-run-id \}\}/gu) ?? []).length !== 3) {
+  throw new Error('all three package candidate artifacts must come from one exact Build run');
+}
+for (const invariant of [
+  'kungfu.hub-starter.package-input-qualification/v2',
+  'kungfu.hub-starter.runtime-input-proposal/v1',
+  'kungfu.product-upgrade.publication-admission/v1',
+  'kungfu.product-upgrade.publication-candidate-capsule/v1',
+  "'linux/amd64'",
+  "'linux/arm64'",
+  'contractSourceBuild',
+  'kungfuBuildRun',
+  'remainingRequiredFields',
+  "'runtimeLock.packageRelease'",
+  "'runtimeLock.imageSourceRevision'",
+]) {
+  if (!prepareBuildCandidate.includes(invariant)) {
+    throw new Error(`unified Build candidate verifier invariant missing: ${invariant}`);
   }
 }
 
@@ -174,7 +209,8 @@ for (const invariant of [
   '--sbom=true',
   'platform_digest()',
   '"${image_name}@${image_digest_arm64}"',
-  'qemu-runtime-contract',
+  'COURSE_SMOKE_PORT=18082',
+  'qemu-full-course-contract',
   'agent verify --json',
   'scripts/smoke-image.sh',
   'compose-v${BUILDCHAIN_VERSION}',
@@ -190,10 +226,15 @@ for (const invariant of [
   'docker compose -f "${application_source_path}" config',
   'docker compose -f "${application_source_path}" publish',
   'NetworkSettings.Ports["5432/tcp"] == null',
+  'hub-application-fresh-install.json',
+  ".freshInstall == true",
   'hub-application-upgrade.json',
   'scripts/smoke-course-api.mjs',
   'test "${upgrade_database_id_after}" = "${upgrade_database_id_before}"',
-  "jq -e '.restartPersistence == true'",
+  'test "${rollback_database_id}" = "${upgrade_database_id_before}"',
+  'COURSE_SMOKE_PHASE=upgrade',
+  'COURSE_SMOKE_PHASE=rollback',
+  ".upgradePersistence == true and .rollbackPersistence == true",
   'scripts/write-runtime-publish-evidence.mjs',
   '--prefer-index=false',
   'compose-preview',
@@ -206,8 +247,14 @@ for (const invariant of [
 if (/down\s+-v/u.test(publishRuntime)) {
   throw new Error('Buildchain publish lifecycle must not delete named volumes');
 }
+if ((publishRuntime.match(/scripts\/smoke-image\.sh/gu) ?? []).length !== 2) {
+  throw new Error('both amd64 and arm64 images require the full Course Hub smoke');
+}
 const exactApplicationSmoke = publishRuntime.indexOf(
   'compose_up_with_retry "${application_ref}" "${smoke_project}" 18083',
+);
+const freshApplicationCourse = publishRuntime.indexOf(
+  'initial "${application_fresh_state_path}" "${application_fresh_path}"',
 );
 const evidenceWrite = publishRuntime.indexOf(
   'node "${repo_root}/scripts/write-runtime-publish-evidence.mjs"',
@@ -215,19 +262,35 @@ const evidenceWrite = publishRuntime.indexOf(
 const upgradeSmoke = publishRuntime.indexOf(
   'test "${upgrade_database_id_after}" = "${upgrade_database_id_before}"',
 );
+const rollbackSmoke = publishRuntime.indexOf(
+  'test "${rollback_database_id}" = "${upgrade_database_id_before}"',
+);
 const previewPromotion = publishRuntime.indexOf(
   'docker buildx imagetools create',
 );
 if (
   exactApplicationSmoke < 0
-  || upgradeSmoke <= exactApplicationSmoke
-  || evidenceWrite <= upgradeSmoke
+  || freshApplicationCourse <= exactApplicationSmoke
+  || upgradeSmoke <= freshApplicationCourse
+  || rollbackSmoke <= upgradeSmoke
+  || evidenceWrite <= rollbackSmoke
   || previewPromotion <= evidenceWrite
 ) {
   throw new Error(
-    'exact application smoke, preserved-database upgrade smoke, and evidence validation '
+    'exact application smoke, preserved-database upgrade and rollback smoke, and evidence validation '
     + 'must precede preview promotion',
   );
+}
+
+for (const invariant of [
+  "const phase = process.env.COURSE_SMOKE_PHASE ?? 'restart'",
+  '/^(restart|upgrade|rollback)$/u',
+  'evidence[`${phase}Persistence`] = true',
+  'evidence[`${phase}Image`] = process.env.IMAGE_REF',
+]) {
+  if (!smokeCourseApi.includes(invariant)) {
+    throw new Error(`course persistence evidence invariant missing: ${invariant}`);
+  }
 }
 
 for (const refTemplate of ['v{version}', 'compose-v{version}']) {

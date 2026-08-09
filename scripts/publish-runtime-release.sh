@@ -44,6 +44,8 @@ application_config_path="${evidence_dir}/hub-application-config.yaml"
 application_source_path="${evidence_dir}/hub-application-source.yaml"
 application_source_config_path="${evidence_dir}/hub-application-source-config.yaml"
 application_smoke_path="${evidence_dir}/hub-application-readiness.json"
+application_fresh_state_path="${evidence_dir}/hub-application-fresh-install-state.json"
+application_fresh_path="${evidence_dir}/hub-application-fresh-install.json"
 application_upgrade_state_path="${evidence_dir}/hub-application-upgrade-state.json"
 application_upgrade_path="${evidence_dir}/hub-application-upgrade.json"
 
@@ -177,27 +179,25 @@ docker run --rm \
   agent verify --json \
   >"${evidence_dir}/hub-image-smoke-linux-arm64-agent.json"
 jq -e '.ok == true' "${evidence_dir}/hub-image-smoke-linux-arm64-agent.json" >/dev/null
-jq -n \
-  --arg schema 'kungfu.course-hub.platform-smoke/v1' \
-  --arg image "${arm64_image}" \
+COURSE_SMOKE_PORT=18082 \
+  bash "${repo_root}/scripts/smoke-image.sh" \
+    "${arm64_image}" \
+    "${evidence_dir}/hub-image-smoke-linux-arm64.json"
+jq \
   --arg architecture "${arm64_node_architecture}" \
   --arg agentEvidence 'hub-image-smoke-linux-arm64-agent.json' \
-  '{
-    schema: $schema,
-    image: $image,
-    platform: "linux/arm64",
-    nodeArchitecture: $architecture,
-    kungfuAgentVerified: true,
-    security: {
-      nonRoot: true,
-      readOnlyRoot: true,
-      capabilityAdditions: false,
-      noNewPrivileges: true
-    },
-    policy: "qemu-runtime-contract",
-    evidence: $agentEvidence
-  }' \
-  >"${evidence_dir}/hub-image-smoke-linux-arm64.json"
+  '.platform = "linux/arm64"
+    | .nodeArchitecture = $architecture
+    | .kungfuAgentVerified = true
+    | .policy = "qemu-full-course-contract"
+    | .agentEvidence = $agentEvidence' \
+  "${evidence_dir}/hub-image-smoke-linux-arm64.json" \
+  >"${evidence_dir}/hub-image-smoke-linux-arm64.json.tmp"
+mv \
+  "${evidence_dir}/hub-image-smoke-linux-arm64.json.tmp" \
+  "${evidence_dir}/hub-image-smoke-linux-arm64.json"
+jq -e '.freshInstall == true and .restartPersistence == true' \
+  "${evidence_dir}/hub-image-smoke-linux-arm64.json" >/dev/null
 
 compose_oci() {
   local reference="$1"
@@ -330,6 +330,12 @@ jq -e '.ready == true and .database == "ready" and .inference == "ready"' \
 COMPOSE_PROJECT_NAME="${smoke_project}" \
   compose_oci "${application_ref}" exec -T hub kungfu agent verify --json \
   | jq -e '.ok == true' >/dev/null
+COURSE_ORIGIN=http://127.0.0.1:18083 \
+COURSE_SMOKE_RUN_KEY="fresh-${GITHUB_RUN_ID:-local}-${GITHUB_RUN_ATTEMPT:-1}" \
+IMAGE_REF="${application_ref}@${application_digest}" \
+  node "${repo_root}/scripts/smoke-course-api.mjs" \
+    initial "${application_fresh_state_path}" "${application_fresh_path}"
+jq -e '.freshInstall == true' "${application_fresh_path}" >/dev/null
 database_id="$(COMPOSE_PROJECT_NAME="${smoke_project}" compose_oci "${application_ref}" ps -q database)"
 test -n "${database_id}"
 docker inspect "${database_id}" \
@@ -355,9 +361,24 @@ if [ "${previous_preview_digest}" != none ]; then
   )"
   test "${upgrade_database_id_after}" = "${upgrade_database_id_before}"
   COURSE_ORIGIN=http://127.0.0.1:18084 \
+  COURSE_SMOKE_PHASE=upgrade \
+  IMAGE_REF="${application_ref}@${application_digest}" \
     node "${repo_root}/scripts/smoke-course-api.mjs" \
       verify "${application_upgrade_state_path}" "${application_upgrade_path}"
-  jq -e '.restartPersistence == true' "${application_upgrade_path}" >/dev/null
+  jq -e '.upgradePersistence == true' "${application_upgrade_path}" >/dev/null
+
+  compose_up_with_retry "${previous_preview_exact}" "${upgrade_project}" 18084
+  rollback_database_id="$(
+    COMPOSE_PROJECT_NAME="${upgrade_project}" compose_oci "${previous_preview_exact}" ps -q database
+  )"
+  test "${rollback_database_id}" = "${upgrade_database_id_before}"
+  COURSE_ORIGIN=http://127.0.0.1:18084 \
+  COURSE_SMOKE_PHASE=rollback \
+  IMAGE_REF="${previous_preview_exact}" \
+    node "${repo_root}/scripts/smoke-course-api.mjs" \
+      verify "${application_upgrade_state_path}" "${application_upgrade_path}"
+  jq -e '.upgradePersistence == true and .rollbackPersistence == true' \
+    "${application_upgrade_path}" >/dev/null
   cleanup_upgrade_application
 else
   jq -n \
