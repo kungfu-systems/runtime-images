@@ -39,4 +39,9 @@ jobs:
       - name: Run Buildchain verify lifecycle
         run: npm run check
       - name: Validate shell entrypoints
-        run: bash -n scripts/smoke-image.sh scripts/smoke-browser.sh scripts/publish-runtime-release.sh
+        run: >-
+          bash -n
+          scripts/smoke-image.sh
+          scripts/smoke-browser.sh
+          scripts/stage-kungfu-package-release.sh
+          scripts/publish-runtime-release.sh

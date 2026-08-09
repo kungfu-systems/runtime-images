@@ -11,6 +11,7 @@ const developerDockerfile = await read('../Dockerfile.dev');
 const smoke = await read('./smoke-image.sh');
 const smokeCourseApi = await read('./smoke-course-api.mjs');
 const prepareBuildCandidate = await read('./prepare-kungfu-build-candidate.mjs');
+const stagePackageRelease = await read('./stage-kungfu-package-release.sh');
 const contractText = await read('../contracts/hub-starter-runtime.contract.json');
 const lockText = await read('../release/runtime.lock.json');
 const imageWorkflow = await read('../.github/workflows/image.yml');
@@ -125,6 +126,7 @@ for (const invariant of [
   "'linux/amd64'",
   "'linux/arm64'",
   'contractSourceBuild',
+  'kungfuBuildHeadSha',
   'kungfuBuildRun',
   'qualificationRoot',
   'kungfuAdmission',
@@ -184,11 +186,29 @@ for (const invariant of [
   'release-passport: "true"',
   'release-passport-impact-json: ".buildchain/release-impact.json"',
   'github-release: "true"',
+  'actions: read',
+  'bash scripts/stage-kungfu-package-release.sh',
   'docker/setup-qemu-action@v3',
   'version: v5.1.2',
 ]) {
   if (!promotionWorkflow.includes(invariant)) {
     throw new Error(`Buildchain promotion workflow invariant missing: ${invariant}`);
+  }
+}
+
+for (const invariant of [
+  'packageQualificationRun',
+  'packageQualificationArtifact',
+  'kungfuBuildHeadSha',
+  'kungfuBuildRun',
+  'qualificationRoot',
+  'kungfuAdmission',
+  'gh run download',
+  'gh release create',
+  'sha256sum -c -',
+]) {
+  if (!stagePackageRelease.includes(invariant)) {
+    throw new Error(`protected package release staging invariant missing: ${invariant}`);
   }
 }
 

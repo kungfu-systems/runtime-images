@@ -6,8 +6,11 @@ on:
       kungfu-build-run-id:
         description: Exact successful kungfu-systems/kungfu Build run containing both Linux CLI packages and the product admission capsule
         required: true
+      kungfu-build-head-sha:
+        description: Exact GitHub head SHA recorded by the Build run
+        required: true
       kungfu-source-sha:
-        description: Exact Kungfu source commit built by the candidate run
+        description: Exact qualified source SHA built by the candidate run; for pull requests this can be the synthetic merge SHA
         required: true
       package-version:
         description: Exact product version sealed by the candidate admission receipt
@@ -34,14 +37,14 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.KUNGFU_GITHUB_TOKEN }}
           KUNGFU_BUILD_RUN_ID: ${{ inputs.kungfu-build-run-id }}
-          KUNGFU_SOURCE_SHA: ${{ inputs.kungfu-source-sha }}
+          KUNGFU_BUILD_HEAD_SHA: ${{ inputs.kungfu-build-head-sha }}
         run: |
           set -euo pipefail
           [[ "${KUNGFU_BUILD_RUN_ID}" =~ ^[1-9][0-9]*$ ]]
-          [[ "${KUNGFU_SOURCE_SHA}" =~ ^[0-9a-f]{40}$ ]]
+          [[ "${KUNGFU_BUILD_HEAD_SHA}" =~ ^[0-9a-f]{40}$ ]]
           gh api "repos/kungfu-systems/kungfu/actions/runs/${KUNGFU_BUILD_RUN_ID}" \
             --jq '[.status, .conclusion, .head_sha, .name] | @tsv' \
-            | grep -Fx $'completed\tsuccess\t'"${KUNGFU_SOURCE_SHA}"$'\tBuild'
+            | grep -Fx $'completed\tsuccess\t'"${KUNGFU_BUILD_HEAD_SHA}"$'\tBuild'
       - name: Download exact Linux amd64 package artifact
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         with:
@@ -80,6 +83,7 @@ jobs:
             --admission-root upstream/admission \
             --amd64-root upstream/linux-amd64 \
             --arm64-root upstream/linux-arm64 \
+            --head-sha "${{ inputs.kungfu-build-head-sha }}" \
             --output-dir stage \
             --package-version "${PACKAGE_VERSION}" \
             --run-id "${KUNGFU_BUILD_RUN_ID}" \
