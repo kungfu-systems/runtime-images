@@ -8,7 +8,7 @@ confidence: high
 sensitivity: public
 evidence_grade: A
 review_state: unreviewed
-last_reviewed: 2026-07-28
+last_reviewed: 2026-08-09
 ai_provenance:
   model_family: GPT-5
   product: Codex
@@ -57,3 +57,24 @@ authority rewrite is implied by that substitution.
 PostgreSQL migrations are forward-only. Kungfu and model state migration is not
 automatic. Unknown contract/state combinations fail closed and require a
 separately reviewed migration or a fresh development volume.
+
+## Unified Kungfu Build candidate handoff
+
+The package-input qualification workflow consumes both Linux CLI packages and
+the product-upgrade admission capsule from one exact successful Kungfu `Build`
+run. It verifies archive bytes, installed-product qualification semantic roots,
+source and version identity, and the admission receipt/capsule binding before it
+emits `runtime-input-proposal.json`.
+
+The proposal is a machine-readable precursor to updates of
+`release/runtime.lock.json` and
+`contracts/hub-starter-runtime.contract.json`; it is not itself a runtime lock
+or release authority. It deliberately lists the publication and downstream
+qualification coordinates that are still missing. The checked-in lock and
+contract must not move until the exact package release, image digest, image
+source revision, and Hub qualification run exist and agree with that proposal.
+
+The release transaction then proves the exact amd64 and arm64 images, a fresh
+OCI Compose installation, and a preserved-volume previous-preview to candidate
+to previous-preview upgrade and rollback sequence before `compose-preview` may
+move.

@@ -8,7 +8,7 @@ confidence: high
 sensitivity: public
 evidence_grade: A
 review_state: unreviewed
-last_reviewed: 2026-07-28
+last_reviewed: 2026-08-09
 ai_provenance:
   model_family: GPT-5
   product: Codex
@@ -57,9 +57,11 @@ ai_provenance:
   multi-platform development publication, and native amd64/arm64 evidence.
 - `.github/workflows/application.yml` — immutable plus preview OCI Compose
   publication and fresh one-command installation smoke.
-- `.github/workflows/package-stage.yml` — source/run/hash-bound transfer of the
-  exact public Kungfu Actions outputs into an immutable runtime prerelease,
-  without routing the large package bytes through a developer workstation.
+- `.github/workflows/package-stage.yml` and
+  `scripts/prepare-kungfu-build-candidate.mjs` — one-run intake of the Linux
+  x64 package, Linux arm64 package, and product admission capsule from the same
+  exact Kungfu `Build` candidate. The retained qualification artifact contains
+  a fail-closed runtime lock/contract proposal but has no publication authority.
 - `docs/ARCHITECTURE.md`, `docs/EXTENDING.md`, `docs/API.md`, and
   `docs/UPGRADING.md` — authority, extension, transport, and installation
   lifecycle guides.

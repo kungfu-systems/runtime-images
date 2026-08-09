@@ -1,3 +1,16 @@
+---
+status: draft
+period: 2026-08-09
+theme: kungfu-hub-starter
+doc_type: analysis
+source_level: local-files
+confidence: high
+sensitivity: public
+evidence_grade: A
+review_state: unreviewed
+last_reviewed: 2026-08-09
+---
+
 # Upgrade and rollback
 
 Hub Starter has one supported installation surface: its published OCI Compose
@@ -63,6 +76,13 @@ Use the same exact-version command to pin an installation or return to a
 previous application version. Read the selected release notes before rolling
 back across a database migration; older application code may not understand a
 newer schema.
+
+Before `compose-preview` moves, the release transaction exercises the same
+project name and named volumes through the previous exact preview, the new
+exact candidate, and the previous exact preview again. It requires the same
+PostgreSQL container identity and retained Course Hub/Kungfu state after both
+the upgrade and rollback. This bounded release test does not override the
+forward-only migration warning for arbitrary older versions.
 
 If a distributor supplied an offline Hub image, load it and override only the
 image while retaining the published Compose application:
