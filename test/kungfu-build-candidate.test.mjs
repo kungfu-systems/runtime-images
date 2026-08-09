@@ -113,6 +113,24 @@ test('one Build candidate produces exact multi-platform lock and contract inputs
   assert.equal(result.proposal.status, 'qualified-input');
   assert.equal(result.proposal.contractSourceBuild.kungfuBuildRun, result.qualification.buildRun.url);
   assert.equal(result.proposal.runtimeLock.kungfuBuildRun, result.qualification.buildRun.url);
+  assert.deepEqual(
+    result.proposal.contractSourceBuild.admission,
+    result.qualification.admission,
+  );
+  assert.deepEqual(
+    result.proposal.runtimeLock.kungfuAdmission,
+    result.qualification.admission,
+  );
+  for (const platform of ['linux/amd64', 'linux/arm64']) {
+    assert.equal(
+      result.proposal.contractSourceBuild.packages[platform].qualificationRoot,
+      result.qualification.packages[platform].qualificationRoot,
+    );
+    assert.equal(
+      result.proposal.runtimeLock.kungfuPackages[platform].qualificationRoot,
+      result.qualification.packages[platform].qualificationRoot,
+    );
+  }
   assert.deepEqual(result.proposal.remainingRequiredFields, [
     'runtimeLock.packageRelease',
     'runtimeLock.image',
