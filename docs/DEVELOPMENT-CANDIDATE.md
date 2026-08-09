@@ -62,9 +62,12 @@ separately reviewed migration or a fresh development volume.
 
 The package-input qualification workflow consumes both Linux CLI packages and
 the product-upgrade admission capsule from one exact successful Kungfu `Build`
-run. It verifies archive bytes, installed-product qualification semantic roots,
-source and version identity, and the admission receipt/capsule binding before it
-emits `runtime-input-proposal.json`.
+run. It separately binds the run's GitHub head SHA and the exact qualified
+source SHA used by Build; for pull requests, that source can be the protected
+synthetic merge SHA and therefore intentionally differs from the head SHA. It
+verifies archive bytes, installed-product qualification semantic roots, source
+and version identity, and the admission receipt/capsule binding before it emits
+`runtime-input-proposal.json`.
 
 The proposal is a machine-readable precursor to updates of
 `release/runtime.lock.json` and
@@ -73,6 +76,13 @@ or release authority. It deliberately lists the publication and downstream
 qualification coordinates that are still missing. The checked-in lock and
 contract must not move until the exact package release, image digest, image
 source revision, and Hub qualification run exist and agree with that proposal.
+
+The package qualification artifact remains non-publishing. After its exact run,
+artifact name, package digests, qualification roots, and admission roots enter
+the lock, the existing protected Buildchain promotion transaction stages or
+reuses the immutable package prerelease and reads its asset bytes back before
+the image lifecycle begins. Manual package publication and mutable release
+assets are not fallback paths.
 
 The release transaction then proves the exact amd64 and arm64 images, a fresh
 OCI Compose installation, and a preserved-volume previous-preview to candidate

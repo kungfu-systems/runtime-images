@@ -23,6 +23,7 @@ on:
         default: "true"
 
 permissions:
+  actions: read
   contents: write
   checks: write
   packages: write
@@ -94,6 +95,12 @@ jobs:
       - name: Resolve exact required artifacts
         id: required_artifacts
         run: node scripts/required-publish-artifacts.mjs --github-output "${GITHUB_OUTPUT}"
+
+      - name: Stage exact Kungfu package release inside the protected transaction
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs['dry-run'] != 'true' }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: bash scripts/stage-kungfu-package-release.sh
 
       - name: Set up QEMU
         if: ${{ github.event_name != 'workflow_dispatch' || inputs['dry-run'] != 'true' }}

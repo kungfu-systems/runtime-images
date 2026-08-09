@@ -213,12 +213,14 @@ export async function prepareKungfuBuildCandidate({
   admissionRoot,
   amd64Root,
   arm64Root,
+  headSha,
   outputDir,
   packageVersion,
   runId,
   sourceSha,
 }) {
   if (!RUN_ID_PATTERN.test(runId || '')) throw new Error('Build run id is invalid');
+  if (!SOURCE_PATTERN.test(headSha || '')) throw new Error('Build head SHA is invalid');
   if (!SOURCE_PATTERN.test(sourceSha || '')) throw new Error('Kungfu source SHA is invalid');
   if (!packageVersion) throw new Error('package version is required');
   const resolvedOutput = path.resolve(outputDir);
@@ -272,7 +274,7 @@ export async function prepareKungfuBuildCandidate({
     schema: OUTPUT_SCHEMA,
     authority: 'qualification-only',
     repository: 'kungfu-systems/kungfu',
-    buildRun: { id: runId, url: runUrl, workflow: 'Build', sourceSha },
+    buildRun: { id: runId, url: runUrl, workflow: 'Build', headSha, sourceSha },
     packageVersion,
     packages,
     admission: {
@@ -286,6 +288,7 @@ export async function prepareKungfuBuildCandidate({
     status: 'qualified-input',
     contractSourceBuild: {
       kungfuSourceSha: sourceSha,
+      kungfuBuildHeadSha: headSha,
       kungfuBuildRun: runUrl,
       packages: Object.fromEntries(
         Object.entries(packages).map(([key, value]) => [key, {
@@ -298,6 +301,7 @@ export async function prepareKungfuBuildCandidate({
     },
     runtimeLock: {
       kungfuSourceSha: sourceSha,
+      kungfuBuildHeadSha: headSha,
       kungfuBuildRun: runUrl,
       kungfuPackages: Object.fromEntries(
         Object.entries(packages).map(([key, value]) => [key, {

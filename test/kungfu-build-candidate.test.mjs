@@ -13,6 +13,7 @@ import {
 } from '../scripts/prepare-kungfu-build-candidate.mjs';
 
 const sourceSha = 'a'.repeat(40);
+const headSha = 'b'.repeat(40);
 const version = '4.0.0-alpha.1';
 const runId = '31320000000';
 
@@ -107,12 +108,15 @@ async function fixture() {
 
 test('one Build candidate produces exact multi-platform lock and contract inputs', async () => {
   const { roots } = await fixture();
-  const result = await prepareKungfuBuildCandidate({ ...roots, packageVersion: version, runId, sourceSha });
+  const result = await prepareKungfuBuildCandidate({ ...roots, headSha, packageVersion: version, runId, sourceSha });
   assert.equal(result.qualification.buildRun.id, runId);
+  assert.equal(result.qualification.buildRun.headSha, headSha);
   assert.deepEqual(Object.keys(result.qualification.packages), ['linux/amd64', 'linux/arm64']);
   assert.equal(result.proposal.status, 'qualified-input');
   assert.equal(result.proposal.contractSourceBuild.kungfuBuildRun, result.qualification.buildRun.url);
+  assert.equal(result.proposal.contractSourceBuild.kungfuBuildHeadSha, headSha);
   assert.equal(result.proposal.runtimeLock.kungfuBuildRun, result.qualification.buildRun.url);
+  assert.equal(result.proposal.runtimeLock.kungfuBuildHeadSha, headSha);
   assert.deepEqual(
     result.proposal.contractSourceBuild.admission,
     result.qualification.admission,
@@ -149,7 +153,7 @@ test('candidate preparation fails closed on a tampered ARM64 archive', async () 
     'tampered',
   );
   await assert.rejects(
-    prepareKungfuBuildCandidate({ ...roots, packageVersion: version, runId, sourceSha }),
+    prepareKungfuBuildCandidate({ ...roots, headSha, packageVersion: version, runId, sourceSha }),
     /qualification identity does not match/u,
   );
 });
@@ -159,11 +163,26 @@ test('candidate preparation rejects a split or stale source identity', async () 
   await assert.rejects(
     prepareKungfuBuildCandidate({
       ...roots,
+      headSha,
       packageVersion: version,
       runId,
       sourceSha: 'b'.repeat(40),
     }),
     /qualification identity does not match|admission identity does not match/u,
+  );
+});
+
+test('candidate preparation requires an exact Build head SHA distinct from built source identity', async () => {
+  const { roots } = await fixture();
+  await assert.rejects(
+    prepareKungfuBuildCandidate({
+      ...roots,
+      headSha: 'not-a-git-sha',
+      packageVersion: version,
+      runId,
+      sourceSha,
+    }),
+    /Build head SHA is invalid/u,
   );
 });
 
@@ -177,7 +196,7 @@ test('candidate preparation rejects an admission receipt with root drift', async
   receipt.roots.candidate = fileRoot('different-candidate');
   await writeFile(receiptPath, `${JSON.stringify(receipt, null, 2)}\n`);
   await assert.rejects(
-    prepareKungfuBuildCandidate({ ...roots, packageVersion: version, runId, sourceSha }),
+    prepareKungfuBuildCandidate({ ...roots, headSha, packageVersion: version, runId, sourceSha }),
     /receipt root drift/u,
   );
 });
@@ -194,7 +213,7 @@ test('candidate preparation rejects a capsule bound to another candidate', async
   capsule.capsuleRoot = contentRoot(capsule);
   await writeFile(capsulePath, `${JSON.stringify(capsule, null, 2)}\n`);
   await assert.rejects(
-    prepareKungfuBuildCandidate({ ...roots, packageVersion: version, runId, sourceSha }),
+    prepareKungfuBuildCandidate({ ...roots, headSha, packageVersion: version, runId, sourceSha }),
     /capsule does not seal its receipt/u,
   );
 });
@@ -209,7 +228,7 @@ test('candidate preparation rejects duplicate package identities', async () => {
     await readFile(path.join(roots.amd64Root, archive)),
   );
   await assert.rejects(
-    prepareKungfuBuildCandidate({ ...roots, packageVersion: version, runId, sourceSha }),
+    prepareKungfuBuildCandidate({ ...roots, headSha, packageVersion: version, runId, sourceSha }),
     /must occur exactly once; found 2/u,
   );
 });
@@ -219,6 +238,7 @@ test('candidate preparation requires both Linux architectures', async () => {
   await assert.rejects(
     prepareKungfuBuildCandidate({
       ...roots,
+      headSha,
       arm64Root: path.join(roots.arm64Root, 'missing'),
       packageVersion: version,
       runId,

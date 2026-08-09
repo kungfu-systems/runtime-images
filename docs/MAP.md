@@ -62,6 +62,9 @@ ai_provenance:
   x64 package, Linux arm64 package, and product admission capsule from the same
   exact Kungfu `Build` candidate. The retained qualification artifact contains
   a fail-closed runtime lock/contract proposal but has no publication authority.
+- `scripts/stage-kungfu-package-release.sh` — stages or reuses the exact package
+  prerelease inside the protected Buildchain transaction and verifies its asset
+  bytes against the committed lock.
 - `docs/ARCHITECTURE.md`, `docs/EXTENDING.md`, `docs/API.md`, and
   `docs/UPGRADING.md` — authority, extension, transport, and installation
   lifecycle guides.
