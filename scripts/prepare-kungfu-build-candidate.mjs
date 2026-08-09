@@ -288,16 +288,26 @@ export async function prepareKungfuBuildCandidate({
       kungfuSourceSha: sourceSha,
       kungfuBuildRun: runUrl,
       packages: Object.fromEntries(
-        Object.entries(packages).map(([key, value]) => [key, { name: value.name, sha256: value.sha256 }]),
+        Object.entries(packages).map(([key, value]) => [key, {
+          name: value.name,
+          qualificationRoot: value.qualificationRoot,
+          sha256: value.sha256,
+        }]),
       ),
+      admission: qualification.admission,
     },
     runtimeLock: {
       kungfuSourceSha: sourceSha,
       kungfuBuildRun: runUrl,
       kungfuPackages: Object.fromEntries(
-        Object.entries(packages).map(([key, value]) => [key, { name: value.name, sha256: value.sha256 }]),
+        Object.entries(packages).map(([key, value]) => [key, {
+          name: value.name,
+          qualificationRoot: value.qualificationRoot,
+          sha256: value.sha256,
+        }]),
       ),
       kungfuPackageVersion: packageVersion,
+      kungfuAdmission: qualification.admission,
     },
     admission: qualification.admission,
     remainingRequiredFields: [

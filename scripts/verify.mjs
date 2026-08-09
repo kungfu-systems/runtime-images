@@ -126,6 +126,8 @@ for (const invariant of [
   "'linux/arm64'",
   'contractSourceBuild',
   'kungfuBuildRun',
+  'qualificationRoot',
+  'kungfuAdmission',
   'remainingRequiredFields',
   "'runtimeLock.packageRelease'",
   "'runtimeLock.imageSourceRevision'",
@@ -320,13 +322,23 @@ if (
 if (contract.sourceBuild.kungfuSourceSha !== lock.kungfuSourceSha) {
   throw new Error('contract and runtime lock disagree on Kungfu source');
 }
+if (contract.sourceBuild.kungfuBuildRun !== lock.kungfuBuildRun) {
+  throw new Error('contract and runtime lock disagree on the exact Kungfu Build run');
+}
+if (JSON.stringify(contract.sourceBuild.admission) !== JSON.stringify(lock.kungfuAdmission)) {
+  throw new Error('contract and runtime lock disagree on Kungfu publication admission roots');
+}
 if (contract.runtime.baseImage !== lock.runtimeBaseImage) {
   throw new Error('contract and runtime lock disagree on the multi-platform runtime base');
 }
 for (const platform of ['linux/amd64', 'linux/arm64']) {
   const contractPackage = contract.sourceBuild.packages[platform];
   const lockedPackage = lock.kungfuPackages[platform];
-  if (contractPackage.name !== lockedPackage.name || contractPackage.sha256 !== lockedPackage.sha256) {
+  if (
+    contractPackage.name !== lockedPackage.name
+    || contractPackage.sha256 !== lockedPackage.sha256
+    || contractPackage.qualificationRoot !== lockedPackage.qualificationRoot
+  ) {
     throw new Error(`contract and runtime lock disagree on ${platform} Kungfu package`);
   }
 }
