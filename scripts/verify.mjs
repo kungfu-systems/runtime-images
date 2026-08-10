@@ -36,6 +36,21 @@ const packageManifest = JSON.parse(await read('../package.json'));
 const contract = JSON.parse(contractText);
 const lock = JSON.parse(lockText);
 const releaseImpact = JSON.parse(releaseImpactText);
+const sourceShaPattern = /^[0-9a-f]{40}$/u;
+const rootPattern = /^sha256:[0-9a-f]{64}$/u;
+const kungfuBuildRunPattern = new RegExp(
+  '^https://github\\.com/kungfu-systems/kungfu/actions/runs/[1-9][0-9]*$',
+  'u',
+);
+const packageQualificationRunPattern = new RegExp(
+  '^https://github\\.com/kungfu-systems/runtime-images/actions/runs/[1-9][0-9]*$',
+  'u',
+);
+const packageReleasePattern = new RegExp(
+  '^https://github\\.com/kungfu-systems/runtime-images/releases/tag/'
+  + 'hub-runtime-[0-9a-f]{12}-build-[1-9][0-9]*$',
+  'u',
+);
 
 validateComposeText(compose);
 JSON.parse(await read('../package.json'));
@@ -100,6 +115,8 @@ for (const stagingInvariant of [
   'pattern: kungfu-linux-arm64-*',
   'pattern: kungfu-product-upgrade-publication-admission-*',
   'node scripts/prepare-kungfu-build-candidate.mjs',
+  'name: hub-package-input-metadata-${{ github.run_id }}',
+  'stage/runtime-input-proposal.json',
   'actions/upload-artifact@',
 ]) {
   if (!packageStageWorkflow.includes(stagingInvariant)) {
@@ -339,11 +356,53 @@ if (
   throw new Error('release impact ledger does not describe the governed v1.0 alpha surface');
 }
 
+const acceptedStatePairs = new Set([
+  'qualified-input-candidate:runtime-input-qualified',
+  'qualified-development-candidate:development-candidate',
+]);
+if (!acceptedStatePairs.has(`${lock.status}:${contract.status}`)) {
+  throw new Error('runtime lock and contract do not identify the same qualified lifecycle state');
+}
+if ('kungfuQualificationRuns' in lock || 'qualificationRuns' in contract.sourceBuild) {
+  throw new Error('legacy split-workflow Kungfu qualification coordinates are forbidden');
+}
+for (const [label, value, pattern] of [
+  ['Kungfu Build head', lock.kungfuBuildHeadSha, sourceShaPattern],
+  ['Kungfu source', lock.kungfuSourceSha, sourceShaPattern],
+  ['Kungfu Build run', lock.kungfuBuildRun, kungfuBuildRunPattern],
+  ['package qualification run', lock.packageQualificationRun, packageQualificationRunPattern],
+  ['package release', lock.packageRelease, packageReleasePattern],
+]) {
+  if (typeof value !== 'string' || !pattern.test(value)) {
+    throw new Error(`${label} is not pinned to an exact immutable coordinate`);
+  }
+}
+const packageQualificationRunId = lock.packageQualificationRun.split('/').at(-1);
+if (lock.packageQualificationArtifact !== `hub-package-input-qualification-${packageQualificationRunId}`) {
+  throw new Error('package qualification artifact is not bound to its exact workflow run');
+}
+for (const [label, value] of Object.entries(lock.kungfuAdmission ?? {})) {
+  if (!rootPattern.test(value)) throw new Error(`Kungfu admission ${label} is not an exact root`);
+}
+if (Object.keys(lock.kungfuAdmission ?? {}).sort().join(',') !== 'candidateRoot,capsuleRoot,receiptRoot') {
+  throw new Error('Kungfu admission roots are incomplete');
+}
 if (contract.sourceBuild.kungfuSourceSha !== lock.kungfuSourceSha) {
   throw new Error('contract and runtime lock disagree on Kungfu source');
 }
+if (contract.sourceBuild.kungfuBuildHeadSha !== lock.kungfuBuildHeadSha) {
+  throw new Error('contract and runtime lock disagree on the exact Kungfu Build head');
+}
 if (contract.sourceBuild.kungfuBuildRun !== lock.kungfuBuildRun) {
   throw new Error('contract and runtime lock disagree on the exact Kungfu Build run');
+}
+if (
+  contract.sourceBuild.packageQualificationRun !== lock.packageQualificationRun
+  || contract.sourceBuild.packageQualificationArtifact !== lock.packageQualificationArtifact
+  || contract.sourceBuild.packageRelease !== lock.packageRelease
+  || contract.sourceBuild.packageVersion !== lock.kungfuPackageVersion
+) {
+  throw new Error('contract and runtime lock disagree on qualified package intake');
 }
 if (JSON.stringify(contract.sourceBuild.admission) !== JSON.stringify(lock.kungfuAdmission)) {
   throw new Error('contract and runtime lock disagree on Kungfu publication admission roots');
