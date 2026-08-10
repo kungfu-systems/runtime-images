@@ -88,6 +88,16 @@ jobs:
             --package-version "${PACKAGE_VERSION}" \
             --run-id "${KUNGFU_BUILD_RUN_ID}" \
             --source-sha "${KUNGFU_SOURCE_SHA}"
+      - name: Upload immutable candidate metadata
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: hub-package-input-metadata-${{ github.run_id }}
+          path: |
+            stage/qualification.json
+            stage/runtime-input-proposal.json
+            stage/SHA256SUMS
+          if-no-files-found: error
+          retention-days: 7
       - name: Upload bounded qualification evidence
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
