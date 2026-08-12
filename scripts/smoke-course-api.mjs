@@ -7,6 +7,13 @@ const statePath = process.argv[3];
 const evidencePath = process.argv[4];
 const origin = process.env.COURSE_ORIGIN ?? 'http://127.0.0.1:18081';
 const runKey = process.env.COURSE_SMOKE_RUN_KEY ?? 'local';
+const settleTimeoutSeconds = Number.parseInt(
+  process.env.COURSE_SMOKE_SETTLE_TIMEOUT_SECONDS ?? '180',
+  10,
+);
+if (!Number.isSafeInteger(settleTimeoutSeconds) || settleTimeoutSeconds <= 0) {
+  throw new Error('COURSE_SMOKE_SETTLE_TIMEOUT_SECONDS must be a positive integer');
+}
 const password = 'synthetic-course-smoke-password-42';
 const sleep = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 
@@ -62,14 +69,16 @@ async function login(browser, email) {
 }
 
 async function waitForVersion(browser, courseId) {
-  const deadline = Date.now() + 180_000;
+  const deadline = Date.now() + (settleTimeoutSeconds * 1_000);
   while (Date.now() < deadline) {
     const response = await browser.call(`/api/courses/${courseId}`);
     const version = response.value.course?.versions?.[0];
     if (response.status === 200 && version?.workControl) return response.value.course;
     await sleep(500);
   }
-  throw new Error('generated version did not settle through Kungfu within three minutes');
+  throw new Error(
+    `generated version did not settle through Kungfu within ${settleTimeoutSeconds} seconds`,
+  );
 }
 
 if (mode === 'initial') {
