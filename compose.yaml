@@ -2,7 +2,7 @@ name: kungfu-course-hub
 
 services:
   bootstrap:
-    image: ${KUNGFU_HUB_IMAGE:-ghcr.io/kungfu-systems/runtime-images/hub-starter@sha256:5614cf1d9feaf4d085a94cf76389933d3d90b9b628ac7bffb64e3b53a176ee92}
+    image: ${KUNGFU_HUB_IMAGE:-ghcr.io/kungfu-systems/runtime-images/hub-starter@sha256:a0a94c04188210beaa779a094661d99bd232795fa26b17881b53ec83a50a486e}
     restart: "no"
     read_only: true
     user: node
@@ -42,7 +42,7 @@ services:
       retries: 30
 
   hub:
-    image: ${KUNGFU_HUB_IMAGE:-ghcr.io/kungfu-systems/runtime-images/hub-starter@sha256:5614cf1d9feaf4d085a94cf76389933d3d90b9b628ac7bffb64e3b53a176ee92}
+    image: ${KUNGFU_HUB_IMAGE:-ghcr.io/kungfu-systems/runtime-images/hub-starter@sha256:a0a94c04188210beaa779a094661d99bd232795fa26b17881b53ec83a50a486e}
     restart: unless-stopped
     read_only: true
     user: node
