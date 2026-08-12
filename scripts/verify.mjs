@@ -249,6 +249,7 @@ for (const invariant of [
   'platform_digest()',
   '"${image_name}@${image_digest_arm64}"',
   'COURSE_SMOKE_PORT=18082',
+  'COURSE_SMOKE_SETTLE_TIMEOUT_SECONDS=900',
   'qemu-full-course-contract',
   'agent verify --json',
   'scripts/smoke-image.sh',
@@ -322,6 +323,8 @@ if (
 }
 
 for (const invariant of [
+  "process.env.COURSE_SMOKE_SETTLE_TIMEOUT_SECONDS ?? '180'",
+  'Number.isSafeInteger(settleTimeoutSeconds)',
   "const phase = process.env.COURSE_SMOKE_PHASE ?? 'restart'",
   '/^(restart|upgrade|rollback)$/u',
   'evidence[`${phase}Persistence`] = true',

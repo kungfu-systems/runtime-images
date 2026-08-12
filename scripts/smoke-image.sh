@@ -19,8 +19,15 @@ state_path="${evidence_path%.json}-state.json"
 script_dir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 
 cleanup() {
+  local exit_status=$?
+  if [ "${exit_status}" -ne 0 ]; then
+    echo "Course Hub smoke failed; capturing container logs before cleanup" >&2
+    docker logs "${hub}" >&2 || true
+    docker logs "${database}" >&2 || true
+  fi
   docker rm -f "${hub}" "${database}" >/dev/null 2>&1 || true
   docker network rm "${network}" >/dev/null 2>&1 || true
+  return "${exit_status}"
 }
 trap cleanup EXIT
 

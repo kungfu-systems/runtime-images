@@ -180,6 +180,7 @@ docker run --rm \
   >"${evidence_dir}/hub-image-smoke-linux-arm64-agent.json"
 jq -e '.ok == true' "${evidence_dir}/hub-image-smoke-linux-arm64-agent.json" >/dev/null
 COURSE_SMOKE_PORT=18082 \
+COURSE_SMOKE_SETTLE_TIMEOUT_SECONDS=900 \
   bash "${repo_root}/scripts/smoke-image.sh" \
     "${arm64_image}" \
     "${evidence_dir}/hub-image-smoke-linux-arm64.json"
