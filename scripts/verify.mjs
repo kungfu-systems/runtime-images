@@ -365,6 +365,7 @@ if (
 const acceptedStatePairs = new Set([
   'qualified-input-candidate:runtime-input-qualified',
   'qualified-development-candidate:development-candidate',
+  'qualified-alpha-release:alpha-release',
 ]);
 if (!acceptedStatePairs.has(`${lock.status}:${contract.status}`)) {
   throw new Error('runtime lock and contract do not identify the same qualified lifecycle state');
@@ -428,6 +429,35 @@ for (const platform of ['linux/amd64', 'linux/arm64']) {
   }
 }
 validateImageReference(lock.image);
+if (lock.status === 'qualified-alpha-release') {
+  const release = lock.release;
+  const contractRelease = contract.release;
+  if (
+    release?.version !== '1.0.0-alpha.13'
+    || release.tag !== `v${release.version}`
+    || release.releaseRevision !== contractRelease?.releaseRevision
+    || lock.imageSourceRevision !== contractRelease?.sourceRevision
+    || lock.qualificationRun !== contractRelease?.qualificationRun
+    || release.promotionRun !== contractRelease?.promotionRun
+    || release.transactionStateRef !== contractRelease?.transactionStateRef
+    || lock.image !== contractRelease?.image
+    || release.composeApplication !== contractRelease?.composeApplication
+    || contract.substitutionSeam.officialAlpha !== release.tag
+  ) {
+    throw new Error('runtime lock and contract do not bind the same promoted Alpha');
+  }
+  validateImageReference(lock.image);
+  if (!/^ghcr\.io\/kungfu-systems\/runtime-images\/hub-starter:compose-v[0-9]+\.[0-9]+\.[0-9]+-alpha\.[1-9][0-9]*@sha256:[0-9a-f]{64}$/u.test(
+    release.composeApplication,
+  )) {
+    throw new Error('promoted Alpha Compose application is not pinned by version and digest');
+  }
+  if (!/^refs\/heads\/buildchain\/release-state\/1-0-0-alpha-[1-9][0-9]*$/u.test(
+    release.transactionStateRef,
+  )) {
+    throw new Error('promoted Alpha transaction state ref is not exact');
+  }
+}
 if (!compose.includes(`image: ${'${KUNGFU_HUB_IMAGE:-'}${lock.image}}`)) {
   throw new Error('Compose does not default to the qualified exact image');
 }

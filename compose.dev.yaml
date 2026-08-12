@@ -9,11 +9,11 @@ services:
       context: .
       dockerfile: Dockerfile.dev
       args:
-        KUNGFU_HUB_BASE: ${KUNGFU_HUB_BASE:-ghcr.io/kungfu-systems/runtime-images/hub-starter@sha256:5614cf1d9feaf4d085a94cf76389933d3d90b9b628ac7bffb64e3b53a176ee92}
+        KUNGFU_HUB_BASE: ${KUNGFU_HUB_BASE:-ghcr.io/kungfu-systems/runtime-images/hub-starter@sha256:a0a94c04188210beaa779a094661d99bd232795fa26b17881b53ec83a50a486e}
   hub:
     image: kungfu-course-hub:developer
     build:
       context: .
       dockerfile: Dockerfile.dev
       args:
-        KUNGFU_HUB_BASE: ${KUNGFU_HUB_BASE:-ghcr.io/kungfu-systems/runtime-images/hub-starter@sha256:5614cf1d9feaf4d085a94cf76389933d3d90b9b628ac7bffb64e3b53a176ee92}
+        KUNGFU_HUB_BASE: ${KUNGFU_HUB_BASE:-ghcr.io/kungfu-systems/runtime-images/hub-starter@sha256:a0a94c04188210beaa779a094661d99bd232795fa26b17881b53ec83a50a486e}
