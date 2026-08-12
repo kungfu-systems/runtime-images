@@ -180,7 +180,7 @@ docker run --rm \
   >"${evidence_dir}/hub-image-smoke-linux-arm64-agent.json"
 jq -e '.ok == true' "${evidence_dir}/hub-image-smoke-linux-arm64-agent.json" >/dev/null
 COURSE_SMOKE_PORT=18082 \
-COURSE_SMOKE_SETTLE_TIMEOUT_SECONDS=900 \
+COURSE_SMOKE_MODE=platform \
   bash "${repo_root}/scripts/smoke-image.sh" \
     "${arm64_image}" \
     "${evidence_dir}/hub-image-smoke-linux-arm64.json"
@@ -190,14 +190,14 @@ jq \
   '.platform = "linux/arm64"
     | .nodeArchitecture = $architecture
     | .kungfuAgentVerified = true
-    | .policy = "qemu-full-course-contract"
+    | .policy = "qemu-platform-contract"
     | .agentEvidence = $agentEvidence' \
   "${evidence_dir}/hub-image-smoke-linux-arm64.json" \
   >"${evidence_dir}/hub-image-smoke-linux-arm64.json.tmp"
 mv \
   "${evidence_dir}/hub-image-smoke-linux-arm64.json.tmp" \
   "${evidence_dir}/hub-image-smoke-linux-arm64.json"
-jq -e '.freshInstall == true and .restartPersistence == true' \
+jq -e '.freshInstall == true and .restartPersistence == true and .courseApiContract == true' \
   "${evidence_dir}/hub-image-smoke-linux-arm64.json" >/dev/null
 
 compose_oci() {

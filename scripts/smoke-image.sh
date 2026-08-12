@@ -13,6 +13,7 @@ database_volume="${prefix}-postgres"
 state_volume="${prefix}-state"
 model_volume="${prefix}-models"
 port=${COURSE_SMOKE_PORT:-18081}
+smoke_mode=${COURSE_SMOKE_MODE:-initial}
 migration_password=synthetic_migration_password_42
 app_password=synthetic_application_password_42
 state_path="${evidence_path%.json}-state.json"
@@ -100,7 +101,7 @@ wait_ready
 COURSE_ORIGIN="http://127.0.0.1:${port}" \
 COURSE_SMOKE_RUN_KEY="${run_key}" \
 IMAGE_REF="${image_ref}" \
-  node "${script_dir}/smoke-course-api.mjs" initial "${state_path}" "${evidence_path}"
+  node "${script_dir}/smoke-course-api.mjs" "${smoke_mode}" "${state_path}" "${evidence_path}"
 
 docker restart "${hub}" >/dev/null
 wait_ready

@@ -249,8 +249,8 @@ for (const invariant of [
   'platform_digest()',
   '"${image_name}@${image_digest_arm64}"',
   'COURSE_SMOKE_PORT=18082',
-  'COURSE_SMOKE_SETTLE_TIMEOUT_SECONDS=900',
-  'qemu-full-course-contract',
+  'COURSE_SMOKE_MODE=platform',
+  'qemu-platform-contract',
   'agent verify --json',
   'scripts/smoke-image.sh',
   'compose-v${BUILDCHAIN_VERSION}',
@@ -323,6 +323,9 @@ if (
 }
 
 for (const invariant of [
+  "if (mode === 'platform')",
+  'courseApiContract: true',
+  "if (state.mode === 'platform')",
   "process.env.COURSE_SMOKE_SETTLE_TIMEOUT_SECONDS ?? '180'",
   'Number.isSafeInteger(settleTimeoutSeconds)',
   "const phase = process.env.COURSE_SMOKE_PHASE ?? 'restart'",
