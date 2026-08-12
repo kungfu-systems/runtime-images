@@ -1,6 +1,6 @@
 {
   "schema": "kungfu.course-hub-runtime/v2",
-  "status": "development-candidate",
+  "status": "runtime-input-qualified",
   "authority": {
     "identitySessionsCoursesVersionsApprovals": "PostgreSQL with forced per-account row isolation",
     "inference": "selected AgentWorkPort backend with PostgreSQL-persisted provenance",
@@ -39,20 +39,29 @@
     "recovery": "resume from public native status without reconstructing private records"
   },
   "sourceBuild": {
-    "kungfuSourceSha": "83e75ffc8ff3cc05199e257a180eac6a7380949d",
-    "qualificationRuns": {
-      "linux/amd64": "https://github.com/kungfu-systems/kungfu/actions/runs/30330617397",
-      "linux/arm64": "https://github.com/kungfu-systems/kungfu/actions/runs/30330528786"
-    },
+    "kungfuSourceSha": "4c84cd4d7a68ab85a25bc9bcc0e42c0ae725cfc0",
+    "kungfuBuildHeadSha": "27e39dfeb508e120c10181b07a23f8fa594fa95c",
+    "kungfuBuildRun": "https://github.com/kungfu-systems/kungfu/actions/runs/31596687047",
+    "packageQualificationRun": "https://github.com/kungfu-systems/runtime-images/actions/runs/31609064831",
+    "packageQualificationArtifact": "hub-package-input-qualification-31609064831",
+    "packageRelease": "https://github.com/kungfu-systems/runtime-images/releases/tag/hub-runtime-4c84cd4d7a68-build-31596687047",
+    "packageVersion": "4.0.0-alpha.2",
     "packages": {
       "linux/amd64": {
         "name": "kungfu-episodes-cli-linux-x64.tar.gz",
-        "sha256": "c58add4d6530541b1a7e4233573f13502a306614a8bb79e0bd60988b78f061ca"
+        "qualificationRoot": "sha256:3c7e38d5fbca426c0fd8003427e13f52cbc2a44104429bb9979b8064887205f2",
+        "sha256": "114651fde21446b62479f74eace111edfb981aaf373e13dbd33660d608d52c05"
       },
       "linux/arm64": {
         "name": "kungfu-episodes-cli-linux-arm64.tar.gz",
-        "sha256": "36085af2deeb62e35b7e147ad573281f5961877fc35cd2e54ed3ed52d5fbe4ab"
+        "qualificationRoot": "sha256:df41a1d3aba590e2af1fa305be866502d7548a8328d7571462e0a78387ad1b03",
+        "sha256": "1fbdd562c7aa4cd113aa8573e0f6d10d7e09be85b6f6dc556f96ef95ba8ad719"
       }
+    },
+    "admission": {
+      "receiptRoot": "sha256:4e73e8778d4595c505eb57f052de868c667026635ab31432c0bfd072b9b93d32",
+      "capsuleRoot": "sha256:9b52c57463667a5d792c1468425b5c3c359ecf357b3539c5d1cb58abdfe3b856",
+      "candidateRoot": "sha256:1bb11c0d3595016c307dbcb5bcbddaccd46ce52b3e73840b9252f028414c10bc"
     }
   },
   "runtime": {
