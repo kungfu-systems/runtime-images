@@ -81,7 +81,53 @@ async function waitForVersion(browser, courseId) {
   );
 }
 
-if (mode === 'initial') {
+if (mode === 'platform') {
+  const runtimeResponse = await fetch(`${origin}/api/runtime`);
+  assert.equal(runtimeResponse.status, 200);
+  const { runtime } = await runtimeResponse.json();
+  assert.equal(runtime.workControl.nativeCourseBinding, true);
+
+  const alpha = new Browser();
+  const beta = new Browser();
+  const alphaEmail = `alpha-${runKey}@example.test`;
+  const betaEmail = `beta-${runKey}@example.test`;
+  const alphaUser = await register(alpha, 'Alpha Builder', alphaEmail);
+  const betaUser = await register(beta, 'Beta Builder', betaEmail);
+  assert.notEqual(alphaUser.id, betaUser.id);
+
+  const alphaCreated = await alpha.call('/api/courses', {
+    method: 'POST',
+    body: brief('ARM64 Course API contract'),
+  });
+  const betaCreated = await beta.call('/api/courses', {
+    method: 'POST',
+    body: brief('Private ARM64 course'),
+  });
+  assert.equal(alphaCreated.status, 201);
+  assert.equal(betaCreated.status, 201);
+  const courseId = alphaCreated.value.course.id;
+  const betaCourseId = betaCreated.value.course.id;
+  assert.equal(alphaCreated.value.course.kungfuBindingId, `kungfu:course:${courseId}`);
+  assert.equal((await alpha.call(`/api/courses/${betaCourseId}`)).status, 404);
+
+  await writeFile(statePath, `${JSON.stringify({
+    schema: 'kungfu.course-hub.smoke-state/v1',
+    mode,
+    alphaEmail,
+    betaEmail,
+    courseId,
+    betaCourseId,
+  }, null, 2)}\n`);
+  await writeFile(evidencePath, `${JSON.stringify({
+    schema: 'kungfu.course-hub.image-smoke/v1',
+    image: process.env.IMAGE_REF ?? '',
+    accountIsolation: true,
+    kungfuBindingId: alphaCreated.value.course.kungfuBindingId,
+    courseApiContract: true,
+    freshInstall: true,
+    restartPersistence: false,
+  }, null, 2)}\n`);
+} else if (mode === 'initial') {
   const runtimeResponse = await fetch(`${origin}/api/runtime`);
   assert.equal(runtimeResponse.status, 200);
   const { runtime } = await runtimeResponse.json();
@@ -167,8 +213,13 @@ if (mode === 'initial') {
   await login(alpha, state.alphaEmail);
   const response = await alpha.call(`/api/courses/${state.courseId}`);
   assert.equal(response.status, 200);
-  assert.equal(response.value.course.currentOutlineVersionId, state.versionId);
-  assert.equal(response.value.course.versions[0].workControl.seal.stateRoot, state.stateRoot);
+  if (state.mode === 'platform') {
+    assert.equal(response.value.course.title, 'ARM64 Course API contract');
+    assert.equal(response.value.course.kungfuBindingId, `kungfu:course:${state.courseId}`);
+  } else {
+    assert.equal(response.value.course.currentOutlineVersionId, state.versionId);
+    assert.equal(response.value.course.versions[0].workControl.seal.stateRoot, state.stateRoot);
+  }
   const beta = new Browser();
   await login(beta, state.betaEmail);
   assert.equal((await beta.call(`/api/courses/${state.courseId}`)).status, 404);
