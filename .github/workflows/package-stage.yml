@@ -3,17 +3,17 @@ name: Kungfu package input qualification
 on:
   workflow_dispatch:
     inputs:
-      kungfu-run-id-amd64:
-        description: Successful kungfu-systems/kungfu Build run containing the exact Linux x64 CLI package
+      kungfu-build-run-id:
+        description: Exact successful kungfu-systems/kungfu Build run containing both Linux CLI packages and the product admission capsule
         required: true
-      kungfu-run-id-arm64:
-        description: Successful kungfu-systems/kungfu Linux ARM64 Alpha Qualification run containing the exact Linux arm64 CLI package
+      kungfu-build-head-sha:
+        description: Exact GitHub head SHA recorded by the Build run
         required: true
       kungfu-source-sha:
-        description: Exact Kungfu source commit built by both runs
+        description: Exact qualified source SHA built by the candidate run; for pull requests this can be the synthetic merge SHA
         required: true
       package-version:
-        description: Exact product version recorded inside both packages
+        description: Exact product version sealed by the candidate admission receipt
         required: true
 
 permissions:
@@ -25,32 +25,32 @@ jobs:
     name: Retain a non-release qualification artifact
     runs-on: ubuntu-24.04
     steps:
-      - name: Validate exact upstream run identity
+      - name: Check out exact source
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - name: Use Node.js 24
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "24"
+      - name: Validate exact upstream Build candidate identity
         env:
           GH_TOKEN: ${{ secrets.KUNGFU_GITHUB_TOKEN }}
-          KUNGFU_RUN_ID_AMD64: ${{ inputs.kungfu-run-id-amd64 }}
-          KUNGFU_RUN_ID_ARM64: ${{ inputs.kungfu-run-id-arm64 }}
-          KUNGFU_SOURCE_SHA: ${{ inputs.kungfu-source-sha }}
+          KUNGFU_BUILD_RUN_ID: ${{ inputs.kungfu-build-run-id }}
+          KUNGFU_BUILD_HEAD_SHA: ${{ inputs.kungfu-build-head-sha }}
         run: |
           set -euo pipefail
-          [[ "${KUNGFU_RUN_ID_AMD64}" =~ ^[0-9]+$ ]]
-          [[ "${KUNGFU_RUN_ID_ARM64}" =~ ^[0-9]+$ ]]
-          [[ "${KUNGFU_SOURCE_SHA}" =~ ^[0-9a-f]{40}$ ]]
-          validate_run() {
-            local run_id="$1"
-            local workflow_name="$2"
-            gh api "repos/kungfu-systems/kungfu/actions/runs/${run_id}" \
-              --jq '[.status, .conclusion, .head_sha, .name] | @tsv' \
-              | grep -Fx $'completed\tsuccess\t'"${KUNGFU_SOURCE_SHA}"$'\t'"${workflow_name}"
-          }
-          validate_run "${KUNGFU_RUN_ID_AMD64}" Build
-          validate_run "${KUNGFU_RUN_ID_ARM64}" 'Linux ARM64 Alpha Qualification'
+          [[ "${KUNGFU_BUILD_RUN_ID}" =~ ^[1-9][0-9]*$ ]]
+          [[ "${KUNGFU_BUILD_HEAD_SHA}" =~ ^[0-9a-f]{40}$ ]]
+          gh api "repos/kungfu-systems/kungfu/actions/runs/${KUNGFU_BUILD_RUN_ID}" \
+            --jq '[.status, .conclusion, .head_sha, .name] | @tsv' \
+            | grep -Fx $'completed\tsuccess\t'"${KUNGFU_BUILD_HEAD_SHA}"$'\tBuild'
       - name: Download exact Linux amd64 package artifact
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         with:
           github-token: ${{ secrets.KUNGFU_GITHUB_TOKEN }}
           repository: kungfu-systems/kungfu
-          run-id: ${{ inputs.kungfu-run-id-amd64 }}
+          run-id: ${{ inputs.kungfu-build-run-id }}
           pattern: kungfu-linux-x64-*
           path: upstream/linux-amd64
           merge-multiple: true
@@ -59,33 +59,45 @@ jobs:
         with:
           github-token: ${{ secrets.KUNGFU_GITHUB_TOKEN }}
           repository: kungfu-systems/kungfu
-          run-id: ${{ inputs.kungfu-run-id-arm64 }}
-          pattern: kungfu-hub-cli-linux-arm64-*
+          run-id: ${{ inputs.kungfu-build-run-id }}
+          pattern: kungfu-linux-arm64-*
           path: upstream/linux-arm64
           merge-multiple: true
-      - name: Verify and normalize package bytes
+      - name: Download exact product admission capsule
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          github-token: ${{ secrets.KUNGFU_GITHUB_TOKEN }}
+          repository: kungfu-systems/kungfu
+          run-id: ${{ inputs.kungfu-build-run-id }}
+          pattern: kungfu-product-upgrade-publication-admission-*
+          path: upstream/admission
+          merge-multiple: true
+      - name: Verify and normalize one exact Build candidate
         env:
+          KUNGFU_BUILD_RUN_ID: ${{ inputs.kungfu-build-run-id }}
           KUNGFU_SOURCE_SHA: ${{ inputs.kungfu-source-sha }}
           PACKAGE_VERSION: ${{ inputs.package-version }}
         run: |
           set -euo pipefail
-          mkdir -p stage
-          amd64_matches=$(find upstream/linux-amd64 -type f -name kungfu-episodes-cli-linux-x64.tar.gz -print)
-          arm64_matches=$(find upstream/linux-arm64 -type f -name kungfu-episodes-cli-linux-arm64.tar.gz -print)
-          test "$(printf '%s\n' "${amd64_matches}" | grep -c .)" -eq 1
-          test "$(printf '%s\n' "${arm64_matches}" | grep -c .)" -eq 1
-          cp "${amd64_matches}" stage/kungfu-episodes-cli-linux-x64.tar.gz
-          cp "${arm64_matches}" stage/kungfu-episodes-cli-linux-arm64.tar.gz
-          for archive in stage/*.tar.gz; do
-            tar -tzf "${archive}" | grep -q '/kungfu-release-manifest.json$'
-          done
-          sha256sum stage/*.tar.gz >stage/SHA256SUMS
-          jq -n \
-            --arg schema 'kungfu.hub-starter.package-input-qualification/v1' \
-            --arg sourceSha "${KUNGFU_SOURCE_SHA}" \
-            --arg version "${PACKAGE_VERSION}" \
-            '{schema:$schema,sourceSha:$sourceSha,packageVersion:$version,authority:"qualification-only"}' \
-            >stage/qualification.json
+          node scripts/prepare-kungfu-build-candidate.mjs \
+            --admission-root upstream/admission \
+            --amd64-root upstream/linux-amd64 \
+            --arm64-root upstream/linux-arm64 \
+            --head-sha "${{ inputs.kungfu-build-head-sha }}" \
+            --output-dir stage \
+            --package-version "${PACKAGE_VERSION}" \
+            --run-id "${KUNGFU_BUILD_RUN_ID}" \
+            --source-sha "${KUNGFU_SOURCE_SHA}"
+      - name: Upload immutable candidate metadata
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: hub-package-input-metadata-${{ github.run_id }}
+          path: |
+            stage/qualification.json
+            stage/runtime-input-proposal.json
+            stage/SHA256SUMS
+          if-no-files-found: error
+          retention-days: 7
       - name: Upload bounded qualification evidence
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:

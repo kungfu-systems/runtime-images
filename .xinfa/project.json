@@ -1,0 +1,317 @@
+{
+  "$schema": "https://xinfa.dev/schema/project-v1.schema.json",
+  "schema": "xinfa.project/v1",
+  "project": {
+    "id": "runtime-images-release-input",
+    "title": "Runtime images qualified release input"
+  },
+  "cut": {
+    "id": "runtime-images-release-input.v1",
+    "revision": "sha256:9cc68cc6523052d044560f05e630e3f8598b4c30a33dd74d039b306feffd822c"
+  },
+  "roots": [
+    {
+      "id": "repository",
+      "path": ".",
+      "visibility": "public"
+    }
+  ],
+  "providers": [
+    {
+      "id": "runtime-images.files",
+      "kind": "exact-file-manifest",
+      "authority": "buildchain",
+      "visibility": "public",
+      "root": "repository",
+      "paths": [
+        ".github/workflows/buildchain-ref-promotion.yml",
+        ".github/workflows/package-stage.yml",
+        ".github/workflows/verify.yml",
+        "AGENTS.md",
+        "CONTRIBUTING.md",
+        "README.md",
+        "buildchain.toml",
+        "contracts/hub-starter-runtime.contract.json",
+        "docs/ARCHITECTURE.md",
+        "docs/DEVELOPMENT-CANDIDATE.md",
+        "docs/MAP.md",
+        "docs/UPGRADING.md",
+        "release/runtime.lock.json",
+        "scripts/prepare-kungfu-build-candidate.mjs",
+        "scripts/publish-runtime-release.sh",
+        "scripts/stage-kungfu-package-release.sh",
+        "scripts/smoke-course-api.mjs",
+        "scripts/smoke-image.sh",
+        "scripts/verify.mjs",
+        "test/kungfu-build-candidate.test.mjs"
+      ],
+      "revision": "sha256:78296239b2c7c6226b3f8c1877619e6c013dbba731b08ff45d27b82e6976c78a"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "runtime-images.source.agents",
+      "kind": "document",
+      "visibility": "public",
+      "revision": "sha256:daaad159588876591f6eacc9e87272e1c22be44fbd6bb830f820df3cd2f5eeaf",
+      "provenance": {"kind": "project-source", "authority": "buildchain"},
+      "source": {"provider": "runtime-images.files", "path": "AGENTS.md"},
+      "verification": {"mode": "non-claim", "status": "non-claim", "dependencies": [], "waiver": null}
+    },
+    {
+      "id": "runtime-images.source.contributing",
+      "kind": "document",
+      "visibility": "public",
+      "revision": "sha256:deadb2e0128a8afd40e467038476e4a877ba053d59db42b7600aace68e0bc085",
+      "provenance": {"kind": "project-source", "authority": "buildchain"},
+      "source": {"provider": "runtime-images.files", "path": "CONTRIBUTING.md"},
+      "verification": {"mode": "non-claim", "status": "non-claim", "dependencies": [], "waiver": null}
+    },
+    {
+      "id": "runtime-images.source.readme",
+      "kind": "document",
+      "visibility": "public",
+      "revision": "sha256:f6cc544ed3197426283236afbb58fbe982a3f50d8d1afa7638e06354c3170d4f",
+      "provenance": {"kind": "project-source", "authority": "buildchain"},
+      "source": {"provider": "runtime-images.files", "path": "README.md"},
+      "verification": {"mode": "non-claim", "status": "non-claim", "dependencies": [], "waiver": null}
+    },
+    {
+      "id": "runtime-images.source.architecture",
+      "kind": "document",
+      "visibility": "public",
+      "revision": "sha256:a659c4db992fca169464296f9578cc4139d814387000c6cc5943e4bcef396587",
+      "provenance": {"kind": "project-source", "authority": "buildchain"},
+      "source": {"provider": "runtime-images.files", "path": "docs/ARCHITECTURE.md"},
+      "verification": {"mode": "non-claim", "status": "non-claim", "dependencies": [], "waiver": null}
+    },
+    {
+      "id": "runtime-images.source.development-candidate",
+      "kind": "document",
+      "visibility": "public",
+      "revision": "sha256:b2c56c29c93cb4fd37dcca358fac38d26f7c605dd4b18569d1e7898ad5c434e9",
+      "provenance": {"kind": "project-source", "authority": "buildchain"},
+      "source": {"provider": "runtime-images.files", "path": "docs/DEVELOPMENT-CANDIDATE.md"},
+      "verification": {"mode": "non-claim", "status": "non-claim", "dependencies": [], "waiver": null}
+    },
+    {
+      "id": "runtime-images.source.upgrading",
+      "kind": "document",
+      "visibility": "public",
+      "revision": "sha256:001f525d147562ba7d6c6ae0d1674391af41690a572685b4e09f87b09eacac40",
+      "provenance": {"kind": "project-source", "authority": "buildchain"},
+      "source": {"provider": "runtime-images.files", "path": "docs/UPGRADING.md"},
+      "verification": {"mode": "non-claim", "status": "non-claim", "dependencies": [], "waiver": null}
+    },
+    {
+      "id": "runtime-images.source.map",
+      "kind": "document",
+      "visibility": "public",
+      "revision": "sha256:470ac182c9ab9bb8d78b0aed0669f8560e72d668748063e8abd9c6f6e05ea991",
+      "provenance": {"kind": "project-source", "authority": "buildchain"},
+      "source": {"provider": "runtime-images.files", "path": "docs/MAP.md"},
+      "verification": {"mode": "non-claim", "status": "non-claim", "dependencies": [], "waiver": null}
+    },
+    {
+      "id": "runtime-images.source.buildchain-contract",
+      "kind": "implementation",
+      "visibility": "public",
+      "revision": "sha256:0edf87e284630bb9b332a6394abb47c16432358c1cbf8aedf906083110602b1e",
+      "provenance": {"kind": "project-source", "authority": "buildchain"},
+      "source": {"provider": "runtime-images.files", "path": "buildchain.toml"},
+      "verification": {"mode": "non-claim", "status": "non-claim", "dependencies": [], "waiver": null}
+    },
+    {
+      "id": "runtime-images.source.runtime-lock",
+      "kind": "document",
+      "visibility": "public",
+      "revision": "sha256:d049ea32947460cd421cdd0a621afaec1821146e4d2feb4272acea5851bab399",
+      "provenance": {"kind": "project-source", "authority": "buildchain"},
+      "source": {"provider": "runtime-images.files", "path": "release/runtime.lock.json"},
+      "verification": {"mode": "non-claim", "status": "non-claim", "dependencies": [], "waiver": null}
+    },
+    {
+      "id": "runtime-images.source.runtime-contract",
+      "kind": "document",
+      "visibility": "public",
+      "revision": "sha256:338e3bb1dcce6c85a3f58990b31d380fbaddc9fe2d3d2866443e0f7a35d36b34",
+      "provenance": {"kind": "project-source", "authority": "buildchain"},
+      "source": {"provider": "runtime-images.files", "path": "contracts/hub-starter-runtime.contract.json"},
+      "verification": {"mode": "non-claim", "status": "non-claim", "dependencies": [], "waiver": null}
+    },
+    {
+      "id": "runtime-images.source.package-stage",
+      "kind": "implementation",
+      "visibility": "public",
+      "revision": "sha256:6db619f99eabf098c7e9c80388f5d48f9468c2de14c72f3f57d4b35ce0228be2",
+      "provenance": {"kind": "project-source", "authority": "buildchain"},
+      "source": {"provider": "runtime-images.files", "path": ".github/workflows/package-stage.yml"},
+      "verification": {"mode": "non-claim", "status": "non-claim", "dependencies": [], "waiver": null}
+    },
+    {
+      "id": "runtime-images.source.promotion",
+      "kind": "implementation",
+      "visibility": "public",
+      "revision": "sha256:6108b1bc85148558b7857a8b613764ec4c91f389821085f06afe35808f89749f",
+      "provenance": {"kind": "project-source", "authority": "buildchain"},
+      "source": {"provider": "runtime-images.files", "path": ".github/workflows/buildchain-ref-promotion.yml"},
+      "verification": {"mode": "non-claim", "status": "non-claim", "dependencies": [], "waiver": null}
+    },
+    {
+      "id": "runtime-images.source.verify-workflow",
+      "kind": "probe",
+      "visibility": "public",
+      "revision": "sha256:61924a7ebfd23098bd3fc33453d44f8335816e8f4234b4f399dbba766d539bf2",
+      "provenance": {"kind": "project-source", "authority": "buildchain"},
+      "source": {"provider": "runtime-images.files", "path": ".github/workflows/verify.yml"},
+      "verification": {"mode": "non-claim", "status": "non-claim", "dependencies": [], "waiver": null}
+    },
+    {
+      "id": "runtime-images.source.candidate-verifier",
+      "kind": "implementation",
+      "visibility": "public",
+      "revision": "sha256:9175785ae43c82cc4cf4f78b8b36d4077108f2dda31f565936b1d7858d1c9769",
+      "provenance": {"kind": "project-source", "authority": "buildchain"},
+      "source": {"provider": "runtime-images.files", "path": "scripts/prepare-kungfu-build-candidate.mjs"},
+      "verification": {"mode": "non-claim", "status": "non-claim", "dependencies": [], "waiver": null}
+    },
+    {
+      "id": "runtime-images.source.release-adapter",
+      "kind": "implementation",
+      "visibility": "public",
+      "revision": "sha256:a115f497375e8e04d87a2cba5e5f6d3e7ec38145c10627955e8bf0339ac6ba17",
+      "provenance": {"kind": "project-source", "authority": "buildchain"},
+      "source": {"provider": "runtime-images.files", "path": "scripts/publish-runtime-release.sh"},
+      "verification": {"mode": "non-claim", "status": "non-claim", "dependencies": [], "waiver": null}
+    },
+    {
+      "id": "runtime-images.source.package-release-stager",
+      "kind": "implementation",
+      "visibility": "public",
+      "revision": "sha256:96daac88553fd83f5d8c382d432084ce24696da1928df2dc177162b4bb6e3ce3",
+      "provenance": {"kind": "project-source", "authority": "buildchain"},
+      "source": {"provider": "runtime-images.files", "path": "scripts/stage-kungfu-package-release.sh"},
+      "verification": {"mode": "non-claim", "status": "non-claim", "dependencies": [], "waiver": null}
+    },
+    {
+      "id": "runtime-images.source.image-smoke",
+      "kind": "probe",
+      "visibility": "public",
+      "revision": "sha256:7ac9ca64c90b793ec5196b5f9814cf8a78d665fc81e500e1d11f269c0dda3bb1",
+      "provenance": {"kind": "project-source", "authority": "buildchain"},
+      "source": {"provider": "runtime-images.files", "path": "scripts/smoke-image.sh"},
+      "verification": {"mode": "non-claim", "status": "non-claim", "dependencies": [], "waiver": null}
+    },
+    {
+      "id": "runtime-images.source.course-api-smoke",
+      "kind": "probe",
+      "visibility": "public",
+      "revision": "sha256:e8cbd1ce50f66c9d8b025112d9dfd7fdc48274387c0afff54bf6e76c0c24cbc2",
+      "provenance": {"kind": "project-source", "authority": "buildchain"},
+      "source": {"provider": "runtime-images.files", "path": "scripts/smoke-course-api.mjs"},
+      "verification": {"mode": "non-claim", "status": "non-claim", "dependencies": [], "waiver": null}
+    },
+    {
+      "id": "runtime-images.source.verification",
+      "kind": "probe",
+      "visibility": "public",
+      "revision": "sha256:2367fcdc2f61d90994af32828080216c5c3603e4dbe5d39f5ff6c33b56f40a34",
+      "provenance": {"kind": "project-source", "authority": "buildchain"},
+      "source": {"provider": "runtime-images.files", "path": "scripts/verify.mjs"},
+      "verification": {"mode": "non-claim", "status": "non-claim", "dependencies": [], "waiver": null}
+    },
+    {
+      "id": "runtime-images.source.candidate-tests",
+      "kind": "probe",
+      "visibility": "public",
+      "revision": "sha256:69869076b6e6c537101513337f5d66a696cb7ee2b50010f4e6630fb8eba869b3",
+      "provenance": {"kind": "project-source", "authority": "buildchain"},
+      "source": {"provider": "runtime-images.files", "path": "test/kungfu-build-candidate.test.mjs"},
+      "verification": {"mode": "non-claim", "status": "non-claim", "dependencies": [], "waiver": null}
+    }
+  ],
+  "edges": [],
+  "routes": [
+    {
+      "id": "kungfu-buildchain-release-agent",
+      "audience": "agent",
+      "parityGroup": "kungfu-buildchain-release",
+      "visibility": "public",
+      "nodes": [
+        "runtime-images.source.agents",
+        "runtime-images.source.contributing",
+        "runtime-images.source.readme",
+        "runtime-images.source.architecture",
+        "runtime-images.source.development-candidate",
+        "runtime-images.source.map",
+        "runtime-images.source.upgrading",
+        "runtime-images.source.buildchain-contract",
+        "runtime-images.source.runtime-lock",
+        "runtime-images.source.runtime-contract",
+        "runtime-images.source.package-stage",
+        "runtime-images.source.promotion",
+        "runtime-images.source.verify-workflow",
+        "runtime-images.source.candidate-verifier",
+        "runtime-images.source.release-adapter",
+        "runtime-images.source.package-release-stager",
+        "runtime-images.source.image-smoke",
+        "runtime-images.source.course-api-smoke",
+        "runtime-images.source.verification",
+        "runtime-images.source.candidate-tests"
+      ],
+      "entrypoints": ["AGENTS.md", "docs/DEVELOPMENT-CANDIDATE.md", "release/runtime.lock.json"],
+      "resolution": {
+        "subjects": ["build-candidate", "buildchain", "hub", "release", "runtime-images"],
+        "capabilities": ["authority", "consumer-validation", "evidence", "external-repository", "go-admission", "known-limits", "next-action", "release-governance", "use"],
+        "owners": ["kungfu-buildchain-release"],
+        "roles": ["release-control-engineer"],
+        "mission_tracks": ["release-governance"],
+        "terms": ["alpha", "candidate", "digest", "lock", "rollback", "upgrade"]
+      }
+    },
+    {
+      "id": "kungfu-buildchain-release-human",
+      "audience": "human",
+      "parityGroup": "kungfu-buildchain-release",
+      "visibility": "public",
+      "nodes": [
+        "runtime-images.source.agents",
+        "runtime-images.source.contributing",
+        "runtime-images.source.readme",
+        "runtime-images.source.architecture",
+        "runtime-images.source.development-candidate",
+        "runtime-images.source.map",
+        "runtime-images.source.upgrading",
+        "runtime-images.source.buildchain-contract",
+        "runtime-images.source.runtime-lock",
+        "runtime-images.source.runtime-contract",
+        "runtime-images.source.package-stage",
+        "runtime-images.source.promotion",
+        "runtime-images.source.verify-workflow",
+        "runtime-images.source.candidate-verifier",
+        "runtime-images.source.release-adapter",
+        "runtime-images.source.package-release-stager",
+        "runtime-images.source.image-smoke",
+        "runtime-images.source.course-api-smoke",
+        "runtime-images.source.verification",
+        "runtime-images.source.candidate-tests"
+      ],
+      "entrypoints": ["README.md", "docs/UPGRADING.md"],
+      "resolution": {
+        "subjects": ["build-candidate", "buildchain", "hub", "release", "runtime-images"],
+        "capabilities": ["authority", "consumer-validation", "evidence", "external-repository", "go-admission", "known-limits", "next-action", "release-governance", "use"],
+        "owners": ["kungfu-buildchain-release"],
+        "roles": ["release-control-engineer"],
+        "mission_tracks": ["release-governance"],
+        "terms": ["alpha", "candidate", "digest", "lock", "rollback", "upgrade"]
+      }
+    }
+  ],
+  "policies": {
+    "unknownFields": "reject",
+    "pathSemantics": "repository-relative-posix",
+    "visibility": "fail-closed",
+    "dualFirstParity": "required",
+    "verification": "declared-dependencies"
+  }
+}

@@ -148,6 +148,7 @@ if (mode === 'initial') {
     decision: version.workControl.decision.action,
     stateRoot: version.workControl.seal.stateRoot,
     approvedVersionId: version.id,
+    freshInstall: true,
     restartPersistence: false,
   }, null, 2)}\n`);
 } else if (mode === 'verify') {
@@ -162,7 +163,10 @@ if (mode === 'initial') {
   const beta = new Browser();
   await login(beta, state.betaEmail);
   assert.equal((await beta.call(`/api/courses/${state.courseId}`)).status, 404);
-  evidence.restartPersistence = true;
+  const phase = process.env.COURSE_SMOKE_PHASE ?? 'restart';
+  assert.match(phase, /^(restart|upgrade|rollback)$/u);
+  evidence[`${phase}Persistence`] = true;
+  if (process.env.IMAGE_REF) evidence[`${phase}Image`] = process.env.IMAGE_REF;
   await writeFile(evidencePath, `${JSON.stringify(evidence, null, 2)}\n`);
 } else {
   throw new Error(`unsupported smoke mode: ${mode}`);
