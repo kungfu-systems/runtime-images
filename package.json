@@ -27,7 +27,7 @@
     "url": "git+https://github.com/kungfu-systems/runtime-images.git"
   },
   "devDependencies": {
-    "@kungfu-tech/buildchain": "4.0.2-alpha.50",
+    "@kungfu-tech/buildchain": "4.0.2-alpha.51",
     "@kungfu-tech/buildchain-stable": "npm:@kungfu-tech/buildchain@4.0.2",
     "@kungfu-tech/kfd": "1.0.0-alpha.21",
     "yaml": "2.9.0"
