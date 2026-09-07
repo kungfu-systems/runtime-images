@@ -5,6 +5,9 @@ import YAML from 'yaml';
 
 const read = (name) => fs.readFileSync(new URL(`../${name}`, import.meta.url), 'utf8');
 const workflow = (name) => YAML.parse(read(`.github/workflows/${name}.yml`));
+for (const [name, entry] of Object.entries(JSON.parse(read('package-lock.json')).packages)) {
+  if (entry.resolved) assert.equal(new URL(entry.resolved).origin, 'https://registry.npmjs.org', `dependency must be publicly installable: ${name}`);
+}
 const build = workflow('build');
 const promotion = workflow('buildchain-ref-promotion');
 const qualify = workflow('qualify-release');
