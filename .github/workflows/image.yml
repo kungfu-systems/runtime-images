@@ -25,6 +25,6 @@ jobs:
           npm ci --ignore-scripts --registry=https://registry.npmjs.org/
           npm run check
           grep -F 'ARG TARGETARCH' Dockerfile
-          grep -F 'linux/amd64,linux/arm64' scripts/publish-runtime-release.sh
+          grep -F 'linux/amd64,linux/arm64' scripts/build-oci-candidate.mjs
       - name: Confirm dry-run boundary
         run: echo "Exact image publication is available only inside the Buildchain release transaction."

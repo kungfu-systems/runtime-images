@@ -1,0 +1,17 @@
+name: Activate Qualified Compose Preview
+
+on:
+  workflow_run:
+    workflows: ["Qualify Public OCI Release"]
+    types: [completed]
+
+permissions:
+  actions: read
+  contents: write
+  packages: write
+
+jobs:
+  preview:
+    uses: kungfu-systems/buildchain/.github/workflows/public-release-oci-compose-preview.yml@v4-alpha
+    secrets:
+      BUILDCHAIN_PROMOTION_TOKEN: ${{ secrets.BUILDCHAIN_PROMOTION_TOKEN }}

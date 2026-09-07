@@ -235,7 +235,7 @@ apps/course-hub/             canonical business application
   test/                      domain and boundary tests
 contracts/                   image/runtime claim boundary
 release/                     exact source, package, image, and CI identities
-buildchain.toml              Buildchain-owned verify and publish lifecycles
+.buildchain/buildchain.toml  Buildchain v4 version state and verification
 .buildchain/                 release impact and generated transaction evidence
 .github/workflows/           verification, dry runs, and governed promotion
 course-business-reference/   compatibility Compose entry only
@@ -273,10 +273,10 @@ and [`release/runtime.lock.json`](release/runtime.lock.json) bind the exact
 Kungfu source, architecture packages, base images, published image, and
 qualification run.
 
-Buildchain owns version selection, exact alpha and release refs, the image and
-OCI Compose publish transaction, durable evidence, finalization, and the
-Release Passport. Repository code still owns the Dockerfile, Compose source,
-registry inspection, multi-platform smoke, and evidence adapter.
+Buildchain v4 owns protected alpha version state, sealed image and immutable
+OCI Compose publication, anonymous readback, settlement, and the Release
+Passport. Repository code owns candidate construction and read-only public
+qualification. See [the release procedure](docs/RELEASING.md).
 
 The exact release artifacts use these coordinates:
 
@@ -287,8 +287,10 @@ ghcr.io/kungfu-systems/runtime-images/hub-starter:compose-v<VERSION>
 
 `compose-preview` remains the low-friction pre-Alpha channel. It moves only
 after the exact versioned application passes a fresh installation smoke and
-the repository has written complete transaction evidence. The GitHub Release
-retains that evidence and the Buildchain Release Passport.
+restart, account-isolation, and preserved-volume upgrade/rollback checks pass.
+The public Buildchain callback verifies the completed publication and exact
+qualification receipt before moving the preview digest. The GitHub Release
+retains the publication evidence, Release Passport, and preview receipt.
 
 The manual Image candidate, Compose application, and Kungfu package input
 workflows are qualification-only. Package intake consumes the x64 archive,
@@ -296,13 +298,13 @@ arm64 archive, and product admission capsule from one exact Kungfu `Build` run,
 binding both its recorded head SHA and its exact qualified source SHA, and emits
 a fail-closed runtime lock/contract proposal. These workflows cannot
 authenticate to GHCR, publish a release artifact, or move `compose-preview`. A
-non-dry-run release starts only after a protected alpha or release merge
+non-dry-run alpha publication starts only after a protected alpha merge
 succeeds in `Verify`.
 
-Inside that protected transaction, the exact retained package qualification is
-revalidated against the committed lock and staged as an immutable prerelease
-before the multi-platform image is built. This is the only package publication
-path; manual qualification workflows retain no release authority.
+Candidate construction downloads the existing immutable package release and
+verifies both archive digests against the accepted lock. A package update still
+requires its own qualified source, admission roots, and accepted lock; this v4
+migration does not republish or replace those package inputs.
 
 To test another qualified image from a source checkout, set
 `KUNGFU_HUB_IMAGE` to an exact `registry/path@sha256:<digest>` reference.

@@ -57,12 +57,12 @@ not replace this application's business API or grant permission to mutate work.
 - `apps/course-hub/web/` — non-authoritative browser projection.
 - `apps/course-hub/test/` — application and boundary tests.
 - `Dockerfile` and `compose.yaml` — canonical publication and installation.
-- `buildchain.toml` — the verify and publish lifecycle consumed by Buildchain.
-- `scripts/publish-runtime-release.sh` — repository-owned registry adapter,
-  multi-platform smoke, exact Compose smoke, and evidence writer invoked only
-  inside the Buildchain transaction.
+- `.buildchain/buildchain.toml` — version state and verification consumed by Buildchain v4.
+- `scripts/build-oci-candidate.mjs` — sealed dual-platform image and immutable Compose candidate.
+- `scripts/qualify-runtime-release.sh` — read-only exact public installation, upgrade and rollback qualification.
+- `docs/RELEASING.md` — public v4 publication and qualified preview procedure.
 - `.github/workflows/buildchain-ref-promotion.yml` — protected channel entry
-  into Buildchain alpha or stable promotion.
+  into Buildchain v4 alpha publication.
 - `.github/workflows/application.yml`, `image.yml`, and `package-stage.yml` —
   bounded manual qualification surfaces with no release authority.
 - `Dockerfile.dev` and `compose.dev.yaml` — fast source exploration over the

@@ -1,0 +1,1125 @@
+{
+  "schemaVersion": 1,
+  "contract": "kungfu-buildchain-kfd-aggregate",
+  "product": {
+    "id": "kungfu-tech-hub-starter-runtime",
+    "name": "@kungfu-tech/hub-starter-runtime",
+    "version": "",
+    "repository": "git+https://github.com/kungfu-systems/runtime-images.git"
+  },
+  "own": {
+    "status": {
+      "schemaVersion": 1,
+      "contract": "kungfu-buildchain-kfd-status",
+      "cwd": "",
+      "layout": {
+        "status": "current",
+        "canonicalRoot": ".buildchain",
+        "migrationNeeded": false,
+        "moves": []
+      },
+      "standards": {
+        "kfd-1": [
+          {
+            "name": "adopterConformanceManifest",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-adopter-conformance/manifest.schema.json",
+            "schemaPath": "schemas/kfd-adopter-conformance/manifest.schema.json"
+          },
+          {
+            "name": "agentHubAdapterRequest",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-agent-hub/adapter-request.schema.json",
+            "schemaPath": "schemas/kfd-agent-hub/adapter-request.schema.json"
+          },
+          {
+            "name": "agentHubAdapterResponse",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-agent-hub/adapter-response.schema.json",
+            "schemaPath": "schemas/kfd-agent-hub/adapter-response.schema.json"
+          },
+          {
+            "name": "agentHubCapabilities",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-agent-hub/capabilities.schema.json",
+            "schemaPath": "schemas/kfd-agent-hub/capabilities.schema.json"
+          },
+          {
+            "name": "agentHubConformanceManifest",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-agent-hub/conformance-manifest.schema.json",
+            "schemaPath": "schemas/kfd-agent-hub/conformance-manifest.schema.json"
+          },
+          {
+            "name": "agentHubExchange",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-agent-hub/exchange.schema.json",
+            "schemaPath": "schemas/kfd-agent-hub/exchange.schema.json"
+          },
+          {
+            "name": "agentHubManifest",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-agent-hub/manifest.schema.json",
+            "schemaPath": "schemas/kfd-agent-hub/manifest.schema.json"
+          },
+          {
+            "name": "agentHubReport",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-agent-hub/report.schema.json",
+            "schemaPath": "schemas/kfd-agent-hub/report.schema.json"
+          },
+          {
+            "name": "agentHubSuite",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-agent-hub/suite.schema.json",
+            "schemaPath": "schemas/kfd-agent-hub/suite.schema.json"
+          },
+          {
+            "name": "agentRuntimeAdapterRequest",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-agent-runtime/adapter-request.schema.json",
+            "schemaPath": "schemas/kfd-agent-runtime/adapter-request.schema.json"
+          },
+          {
+            "name": "agentRuntimeAdapterResponse",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-agent-runtime/adapter-response.schema.json",
+            "schemaPath": "schemas/kfd-agent-runtime/adapter-response.schema.json"
+          },
+          {
+            "name": "agentRuntimeManifest",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-agent-runtime/manifest.schema.json",
+            "schemaPath": "schemas/kfd-agent-runtime/manifest.schema.json"
+          },
+          {
+            "name": "agentRuntimeReport",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-agent-runtime/report.schema.json",
+            "schemaPath": "schemas/kfd-agent-runtime/report.schema.json"
+          },
+          {
+            "name": "agentRuntimeSuite",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-agent-runtime/suite.schema.json",
+            "schemaPath": "schemas/kfd-agent-runtime/suite.schema.json"
+          },
+          {
+            "name": "candidateRegistry",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-candidate-registry.schema.json",
+            "schemaPath": "schemas/kfd-candidate-registry.schema.json"
+          },
+          {
+            "name": "contractWorld",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-1/contract-world.schema.json",
+            "schemaPath": "schemas/kfd-1/contract-world.schema.json"
+          },
+          {
+            "name": "metadata",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-standards.schema.json",
+            "schemaPath": "schemas/kfd-standards.schema.json"
+          },
+          {
+            "name": "publicationUrlSemantics",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-1/publication-url-semantics.schema.json",
+            "schemaPath": "schemas/kfd-1/publication-url-semantics.schema.json"
+          },
+          {
+            "name": "selfConformanceBootstrapAnchor",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-self-conformance/bootstrap-anchor.schema.json",
+            "schemaPath": "schemas/kfd-self-conformance/bootstrap-anchor.schema.json"
+          },
+          {
+            "name": "selfConformanceLifecycleGateReport",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-self-conformance/lifecycle-gate-report.schema.json",
+            "schemaPath": "schemas/kfd-self-conformance/lifecycle-gate-report.schema.json"
+          },
+          {
+            "name": "selfConformanceLifecycleGateRequest",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-self-conformance/lifecycle-gate-request.schema.json",
+            "schemaPath": "schemas/kfd-self-conformance/lifecycle-gate-request.schema.json"
+          },
+          {
+            "name": "selfConformancePackageManifest",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-self-conformance/package-manifest.schema.json",
+            "schemaPath": "schemas/kfd-self-conformance/package-manifest.schema.json"
+          },
+          {
+            "name": "selfConformanceState",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-self-conformance/state.schema.json",
+            "schemaPath": "schemas/kfd-self-conformance/state.schema.json"
+          },
+          {
+            "name": "selfConformanceTransitionBundle",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-self-conformance/transition-bundle.schema.json",
+            "schemaPath": "schemas/kfd-self-conformance/transition-bundle.schema.json"
+          },
+          {
+            "name": "selfConformanceTransitionReport",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-self-conformance/transition-report.schema.json",
+            "schemaPath": "schemas/kfd-self-conformance/transition-report.schema.json"
+          },
+          {
+            "name": "selfConformanceVectorRegistry",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-self-conformance/vector-registry.schema.json",
+            "schemaPath": "schemas/kfd-self-conformance/vector-registry.schema.json"
+          },
+          {
+            "name": "verificationBundle",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-verification-bundle.schema.json",
+            "schemaPath": "schemas/kfd-verification-bundle.schema.json"
+          },
+          {
+            "name": "verificationReport",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-verification-report.schema.json",
+            "schemaPath": "schemas/kfd-verification-report.schema.json"
+          },
+          {
+            "name": "witness",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-1/witness.schema.json",
+            "schemaPath": "schemas/kfd-1/witness.schema.json"
+          }
+        ],
+        "kfd-10": [
+          {
+            "name": "metadata",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-standards.schema.json",
+            "schemaPath": "schemas/kfd-standards.schema.json"
+          }
+        ],
+        "kfd-11": [
+          {
+            "name": "activationRecord",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-activation/activation-record.schema.json",
+            "schemaPath": "schemas/kfd-activation/activation-record.schema.json"
+          },
+          {
+            "name": "adopterWitness",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-11/adopter-witness.schema.json",
+            "schemaPath": "schemas/kfd-11/adopter-witness.schema.json"
+          },
+          {
+            "name": "decisionAdmission",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-11/decision-admission.schema.json",
+            "schemaPath": "schemas/kfd-11/decision-admission.schema.json"
+          },
+          {
+            "name": "metadata",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-standards.schema.json",
+            "schemaPath": "schemas/kfd-standards.schema.json"
+          },
+          {
+            "name": "qualificationReport",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-activation/qualification-report.schema.json",
+            "schemaPath": "schemas/kfd-activation/qualification-report.schema.json"
+          }
+        ],
+        "kfd-12": [
+          {
+            "name": "activationRecord",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-activation/activation-record.schema.json",
+            "schemaPath": "schemas/kfd-activation/activation-record.schema.json"
+          },
+          {
+            "name": "adopterWitness",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-12/adopter-witness.schema.json",
+            "schemaPath": "schemas/kfd-12/adopter-witness.schema.json"
+          },
+          {
+            "name": "metadata",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-standards.schema.json",
+            "schemaPath": "schemas/kfd-standards.schema.json"
+          },
+          {
+            "name": "qualificationReport",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-activation/qualification-report.schema.json",
+            "schemaPath": "schemas/kfd-activation/qualification-report.schema.json"
+          }
+        ],
+        "kfd-13": [
+          {
+            "name": "activationRecord",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-activation/activation-record.schema.json",
+            "schemaPath": "schemas/kfd-activation/activation-record.schema.json"
+          },
+          {
+            "name": "adopterWitness",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-13/adopter-witness.schema.json",
+            "schemaPath": "schemas/kfd-13/adopter-witness.schema.json"
+          },
+          {
+            "name": "metadata",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-standards.schema.json",
+            "schemaPath": "schemas/kfd-standards.schema.json"
+          },
+          {
+            "name": "qualificationReport",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-activation/qualification-report.schema.json",
+            "schemaPath": "schemas/kfd-activation/qualification-report.schema.json"
+          }
+        ],
+        "kfd-2": [
+          {
+            "name": "metadata",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-standards.schema.json",
+            "schemaPath": "schemas/kfd-standards.schema.json"
+          },
+          {
+            "name": "releaseClaims",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-2/release-claims.schema.json",
+            "schemaPath": "schemas/kfd-2/release-claims.schema.json"
+          },
+          {
+            "name": "releaseTrustPassport",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-2/release-trust-passport.schema.json",
+            "schemaPath": "schemas/kfd-2/release-trust-passport.schema.json"
+          },
+          {
+            "name": "trustAssessment",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-2/trust-assessment.schema.json",
+            "schemaPath": "schemas/kfd-2/trust-assessment.schema.json"
+          },
+          {
+            "name": "trustClaims",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-2/trust-claims.schema.json",
+            "schemaPath": "schemas/kfd-2/trust-claims.schema.json"
+          },
+          {
+            "name": "trustTaxonomy",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-2/trust-taxonomy.schema.json",
+            "schemaPath": "schemas/kfd-2/trust-taxonomy.schema.json"
+          }
+        ],
+        "kfd-3": [
+          {
+            "name": "collaborationInterface",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-3/collaboration-interface.schema.json",
+            "schemaPath": "schemas/kfd-3/collaboration-interface.schema.json"
+          },
+          {
+            "name": "metadata",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-standards.schema.json",
+            "schemaPath": "schemas/kfd-standards.schema.json"
+          },
+          {
+            "name": "witness",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-3/witness.schema.json",
+            "schemaPath": "schemas/kfd-3/witness.schema.json"
+          }
+        ],
+        "kfd-4": [
+          {
+            "name": "conformanceWitness",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-4/conformance-witness.schema.json",
+            "schemaPath": "schemas/kfd-4/conformance-witness.schema.json"
+          },
+          {
+            "name": "metadata",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-standards.schema.json",
+            "schemaPath": "schemas/kfd-standards.schema.json"
+          },
+          {
+            "name": "observerPerspective",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-4/observer-perspective.schema.json",
+            "schemaPath": "schemas/kfd-4/observer-perspective.schema.json"
+          },
+          {
+            "name": "perspectiveReplay",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-4/perspective-replay.schema.json",
+            "schemaPath": "schemas/kfd-4/perspective-replay.schema.json"
+          }
+        ],
+        "kfd-5": [
+          {
+            "name": "liveCaseRegistry",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-live-case-registry.schema.json",
+            "schemaPath": "schemas/kfd-live-case-registry.schema.json"
+          },
+          {
+            "name": "metadata",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-standards.schema.json",
+            "schemaPath": "schemas/kfd-standards.schema.json"
+          },
+          {
+            "name": "primitiveDiscovery",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-5/primitive-discovery.schema.json",
+            "schemaPath": "schemas/kfd-5/primitive-discovery.schema.json"
+          }
+        ],
+        "kfd-6": [
+          {
+            "name": "autonomousDiscoveryLoop",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-6/autonomous-discovery-loop.schema.json",
+            "schemaPath": "schemas/kfd-6/autonomous-discovery-loop.schema.json"
+          },
+          {
+            "name": "metadata",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-standards.schema.json",
+            "schemaPath": "schemas/kfd-standards.schema.json"
+          }
+        ],
+        "kfd-7": [
+          {
+            "name": "domainProfileDeclaration",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-7/domain-profile.schema.json",
+            "schemaPath": "schemas/kfd-7/domain-profile.schema.json"
+          },
+          {
+            "name": "metadata",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-standards.schema.json",
+            "schemaPath": "schemas/kfd-standards.schema.json"
+          }
+        ],
+        "kfd-8": [
+          {
+            "name": "atlasCoordinate",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-8/atlas-coordinate.schema.json",
+            "schemaPath": "schemas/kfd-8/atlas-coordinate.schema.json"
+          },
+          {
+            "name": "metadata",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-standards.schema.json",
+            "schemaPath": "schemas/kfd-standards.schema.json"
+          }
+        ],
+        "kfd-9": [
+          {
+            "name": "metadata",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-standards.schema.json",
+            "schemaPath": "schemas/kfd-standards.schema.json"
+          }
+        ]
+      },
+      "support": {
+        "kfd-1": [
+          "schema",
+          "witness",
+          "gate",
+          "verify"
+        ],
+        "kfd-2": [
+          "schema",
+          "taxonomy",
+          "claims",
+          "product-claims",
+          "trust-claims",
+          "trust-assessment",
+          "upstream"
+        ],
+        "kfd-3": [
+          "schema",
+          "detect",
+          "register",
+          "audit",
+          "witness",
+          "query",
+          "aggregate"
+        ],
+        "kfd-4": [
+          "schema",
+          "product-gate",
+          "verify",
+          "support-projection"
+        ],
+        "kfd-5": [
+          "schema",
+          "product-gate",
+          "verify",
+          "support-projection"
+        ],
+        "kfd-6": [
+          "schema",
+          "unsupported-claim-barrier"
+        ],
+        "kfd-7": [
+          "schema",
+          "product-gate",
+          "verify",
+          "support-projection"
+        ],
+        "kfd-8": [
+          "schema",
+          "draft-claim-barrier"
+        ],
+        "kfd-9": [
+          "schema",
+          "draft-claim-barrier"
+        ],
+        "kfd-10": [
+          "schema",
+          "draft-claim-barrier"
+        ],
+        "kfd-11": [
+          "schema",
+          "draft-claim-barrier"
+        ],
+        "kfd-12": [
+          "schema",
+          "draft-claim-barrier"
+        ],
+        "kfd-13": [
+          "schema",
+          "draft-claim-barrier"
+        ]
+      },
+      "paths": {
+        "config": {
+          "path": ".buildchain/buildchain.toml",
+          "exists": true
+        },
+        "contractLock": {
+          "path": ".buildchain/contract-lock.json",
+          "exists": true
+        },
+        "kfd2ProductClaimsRegistry": {
+          "path": ".buildchain/kfd/kfd-2/registry.json",
+          "exists": false
+        },
+        "kfd3SurfaceRegistry": {
+          "path": ".buildchain/kfd/kfd-3/surfaces.json",
+          "exists": true
+        },
+        "releasePassport": {
+          "path": ".buildchain/release-passport/buildchain.release.json",
+          "exists": false
+        }
+      }
+    }
+  },
+  "upstream": {
+    "schemaVersion": 1,
+    "contract": "kungfu-buildchain-kfd-upstream-aggregate",
+    "product": {
+      "id": "kungfu-tech-hub-starter-runtime",
+      "name": "@kungfu-tech/hub-starter-runtime",
+      "version": "",
+      "repository": "git+https://github.com/kungfu-systems/runtime-images.git"
+    },
+    "source": {
+      "generator": "@kungfu-tech/buildchain/kfd.collectKfdUpstreamFacts",
+      "configPath": ".buildchain/buildchain.toml",
+      "autoDiscover": true
+    },
+    "upstreams": [
+      {
+        "id": "buildchain",
+        "role": "release-passport-and-kfd-gate-provider",
+        "roleSource": "known-package",
+        "roleReason": "@kungfu-tech/buildchain is a Buildchain-known KFD upstream package.",
+        "roleValid": true,
+        "package": {
+          "name": "@kungfu-tech/buildchain",
+          "version": "4.0.2-alpha.49"
+        },
+        "repository": "https://github.com/kungfu-systems/buildchain",
+        "kfd": {
+          "kfd1": "declared",
+          "kfd2": "declared",
+          "kfd3": "declared",
+          "kfd4": "declared",
+          "kfd5": "declared",
+          "kfd6": "declared",
+          "kfd7": "declared",
+          "kfd8": "declared",
+          "kfd9": "declared",
+          "kfd10": "declared",
+          "kfd11": "declared",
+          "kfd12": "declared",
+          "kfd13": "declared"
+        },
+        "releasePassport": "",
+        "releaseAnchor": null,
+        "kfd3SurfaceCount": 0,
+        "assets": [
+          {
+            "path": "dist/site/kfd-claims.json",
+            "kind": "package",
+            "sha256": "sha256:29396c519ca84dffc5347f7db12c4b8962a2ebea5466b92e98bb3f0df2894db7",
+            "contract": "kungfu-buildchain-kfd-claim-registry",
+            "role": "",
+            "directory": false
+          }
+        ],
+        "residualRisk": [],
+        "status": "collected"
+      },
+      {
+        "id": "kfd",
+        "role": "standard-and-schema-provider",
+        "roleSource": "known-package",
+        "roleReason": "@kungfu-tech/kfd is a Buildchain-known KFD upstream package.",
+        "roleValid": true,
+        "package": {
+          "name": "@kungfu-tech/kfd",
+          "version": "1.0.0-alpha.21"
+        },
+        "repository": "git+https://github.com/kungfu-systems/kfd.git",
+        "kfd": {
+          "kfd1": "declared",
+          "kfd2": "declared",
+          "kfd3": "declared",
+          "kfd4": "declared",
+          "kfd5": "declared",
+          "kfd6": "declared",
+          "kfd7": "declared",
+          "kfd8": "declared",
+          "kfd9": "declared",
+          "kfd10": "declared",
+          "kfd11": "declared",
+          "kfd12": "declared",
+          "kfd13": "declared"
+        },
+        "releasePassport": "",
+        "releaseAnchor": {
+          "schemaVersion": 1,
+          "contract": "kfd-release-anchor",
+          "line": "v1.0",
+          "channel": "alpha",
+          "npmPackage": "@kungfu-tech/kfd",
+          "npmVersion": "1.0.0-alpha.21",
+          "source": {
+            "repository": "kungfu-systems/kfd",
+            "branch": "alpha/v1/v1.0"
+          },
+          "rationale": "KFD uses an anchored/manual Buildchain mode: the public package version is an explicit release fact, while the outer KFD line remains v1.0."
+        },
+        "kfd3SurfaceCount": 18,
+        "assets": [
+          {
+            "path": "kfd.release.json",
+            "kind": "package",
+            "sha256": "sha256:bfb302c839b6cb45204d541b5af5b1c211568efb16fb3eebbb04dc65f7de83d2",
+            "contract": "kfd-release-anchor",
+            "role": "",
+            "directory": false
+          },
+          {
+            "path": "standards.json",
+            "kind": "package",
+            "sha256": "sha256:4ee9e5fc732eef1b43c75a146125496e0dbd859ef5a11d0c637c41e9091c677f",
+            "contract": "kfd-standards-metadata",
+            "role": "",
+            "directory": false
+          },
+          {
+            "path": ".buildchain/kfd-1/contract-world.witness.json",
+            "kind": "package",
+            "sha256": "sha256:542fe5b730f2e4782655d096ec04a5dd82a88d4fc9e8701ee235eb111a06dab6",
+            "contract": "",
+            "role": "",
+            "directory": false
+          },
+          {
+            "path": ".buildchain/kfd-2/public-release-trust.claim.json",
+            "kind": "package",
+            "sha256": "sha256:3780b47472762b5ce9575250da73ee800af71dd194a9b0a3f61a063569311237",
+            "contract": "",
+            "role": "",
+            "directory": false
+          },
+          {
+            "path": ".buildchain/kfd-2/kfd-foundation.trust-claims.json",
+            "kind": "package",
+            "sha256": "sha256:87757bd26c8f64465472aaafda05fe56497939a3ce66274563c142594d9d769b",
+            "contract": "kfd-2-trust-claims",
+            "role": "",
+            "directory": false
+          },
+          {
+            "path": ".buildchain/kfd-2/kfd-foundation.trust-assessment.json",
+            "kind": "package",
+            "sha256": "sha256:c3749585bb4a295bb2f0f510a4b6030f0398d9a09dc50dab0ace31248bf95b0f",
+            "contract": "kfd-2-trust-assessment",
+            "role": "",
+            "directory": false
+          },
+          {
+            "path": ".buildchain/kfd-3/collaboration-interface.json",
+            "kind": "package",
+            "sha256": "sha256:fa41128be4ee57a4a40b76d4d7a063c01d7c2e5c53aec2b9c6db819c7a27b22b",
+            "contract": "kfd-3-collaboration-interface",
+            "role": "",
+            "directory": false
+          }
+        ],
+        "residualRisk": [],
+        "status": "collected"
+      }
+    ],
+    "ownKfd": {
+      "schemaVersion": 1,
+      "contract": "kungfu-buildchain-kfd-status",
+      "cwd": "",
+      "layout": {
+        "status": "current",
+        "canonicalRoot": ".buildchain",
+        "migrationNeeded": false,
+        "moves": []
+      },
+      "standards": {
+        "kfd-1": [
+          {
+            "name": "adopterConformanceManifest",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-adopter-conformance/manifest.schema.json",
+            "schemaPath": "schemas/kfd-adopter-conformance/manifest.schema.json"
+          },
+          {
+            "name": "agentHubAdapterRequest",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-agent-hub/adapter-request.schema.json",
+            "schemaPath": "schemas/kfd-agent-hub/adapter-request.schema.json"
+          },
+          {
+            "name": "agentHubAdapterResponse",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-agent-hub/adapter-response.schema.json",
+            "schemaPath": "schemas/kfd-agent-hub/adapter-response.schema.json"
+          },
+          {
+            "name": "agentHubCapabilities",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-agent-hub/capabilities.schema.json",
+            "schemaPath": "schemas/kfd-agent-hub/capabilities.schema.json"
+          },
+          {
+            "name": "agentHubConformanceManifest",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-agent-hub/conformance-manifest.schema.json",
+            "schemaPath": "schemas/kfd-agent-hub/conformance-manifest.schema.json"
+          },
+          {
+            "name": "agentHubExchange",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-agent-hub/exchange.schema.json",
+            "schemaPath": "schemas/kfd-agent-hub/exchange.schema.json"
+          },
+          {
+            "name": "agentHubManifest",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-agent-hub/manifest.schema.json",
+            "schemaPath": "schemas/kfd-agent-hub/manifest.schema.json"
+          },
+          {
+            "name": "agentHubReport",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-agent-hub/report.schema.json",
+            "schemaPath": "schemas/kfd-agent-hub/report.schema.json"
+          },
+          {
+            "name": "agentHubSuite",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-agent-hub/suite.schema.json",
+            "schemaPath": "schemas/kfd-agent-hub/suite.schema.json"
+          },
+          {
+            "name": "agentRuntimeAdapterRequest",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-agent-runtime/adapter-request.schema.json",
+            "schemaPath": "schemas/kfd-agent-runtime/adapter-request.schema.json"
+          },
+          {
+            "name": "agentRuntimeAdapterResponse",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-agent-runtime/adapter-response.schema.json",
+            "schemaPath": "schemas/kfd-agent-runtime/adapter-response.schema.json"
+          },
+          {
+            "name": "agentRuntimeManifest",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-agent-runtime/manifest.schema.json",
+            "schemaPath": "schemas/kfd-agent-runtime/manifest.schema.json"
+          },
+          {
+            "name": "agentRuntimeReport",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-agent-runtime/report.schema.json",
+            "schemaPath": "schemas/kfd-agent-runtime/report.schema.json"
+          },
+          {
+            "name": "agentRuntimeSuite",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-agent-runtime/suite.schema.json",
+            "schemaPath": "schemas/kfd-agent-runtime/suite.schema.json"
+          },
+          {
+            "name": "candidateRegistry",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-candidate-registry.schema.json",
+            "schemaPath": "schemas/kfd-candidate-registry.schema.json"
+          },
+          {
+            "name": "contractWorld",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-1/contract-world.schema.json",
+            "schemaPath": "schemas/kfd-1/contract-world.schema.json"
+          },
+          {
+            "name": "metadata",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-standards.schema.json",
+            "schemaPath": "schemas/kfd-standards.schema.json"
+          },
+          {
+            "name": "publicationUrlSemantics",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-1/publication-url-semantics.schema.json",
+            "schemaPath": "schemas/kfd-1/publication-url-semantics.schema.json"
+          },
+          {
+            "name": "selfConformanceBootstrapAnchor",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-self-conformance/bootstrap-anchor.schema.json",
+            "schemaPath": "schemas/kfd-self-conformance/bootstrap-anchor.schema.json"
+          },
+          {
+            "name": "selfConformanceLifecycleGateReport",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-self-conformance/lifecycle-gate-report.schema.json",
+            "schemaPath": "schemas/kfd-self-conformance/lifecycle-gate-report.schema.json"
+          },
+          {
+            "name": "selfConformanceLifecycleGateRequest",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-self-conformance/lifecycle-gate-request.schema.json",
+            "schemaPath": "schemas/kfd-self-conformance/lifecycle-gate-request.schema.json"
+          },
+          {
+            "name": "selfConformancePackageManifest",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-self-conformance/package-manifest.schema.json",
+            "schemaPath": "schemas/kfd-self-conformance/package-manifest.schema.json"
+          },
+          {
+            "name": "selfConformanceState",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-self-conformance/state.schema.json",
+            "schemaPath": "schemas/kfd-self-conformance/state.schema.json"
+          },
+          {
+            "name": "selfConformanceTransitionBundle",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-self-conformance/transition-bundle.schema.json",
+            "schemaPath": "schemas/kfd-self-conformance/transition-bundle.schema.json"
+          },
+          {
+            "name": "selfConformanceTransitionReport",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-self-conformance/transition-report.schema.json",
+            "schemaPath": "schemas/kfd-self-conformance/transition-report.schema.json"
+          },
+          {
+            "name": "selfConformanceVectorRegistry",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-self-conformance/vector-registry.schema.json",
+            "schemaPath": "schemas/kfd-self-conformance/vector-registry.schema.json"
+          },
+          {
+            "name": "verificationBundle",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-verification-bundle.schema.json",
+            "schemaPath": "schemas/kfd-verification-bundle.schema.json"
+          },
+          {
+            "name": "verificationReport",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-verification-report.schema.json",
+            "schemaPath": "schemas/kfd-verification-report.schema.json"
+          },
+          {
+            "name": "witness",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-1/witness.schema.json",
+            "schemaPath": "schemas/kfd-1/witness.schema.json"
+          }
+        ],
+        "kfd-10": [
+          {
+            "name": "metadata",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-standards.schema.json",
+            "schemaPath": "schemas/kfd-standards.schema.json"
+          }
+        ],
+        "kfd-11": [
+          {
+            "name": "activationRecord",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-activation/activation-record.schema.json",
+            "schemaPath": "schemas/kfd-activation/activation-record.schema.json"
+          },
+          {
+            "name": "adopterWitness",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-11/adopter-witness.schema.json",
+            "schemaPath": "schemas/kfd-11/adopter-witness.schema.json"
+          },
+          {
+            "name": "decisionAdmission",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-11/decision-admission.schema.json",
+            "schemaPath": "schemas/kfd-11/decision-admission.schema.json"
+          },
+          {
+            "name": "metadata",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-standards.schema.json",
+            "schemaPath": "schemas/kfd-standards.schema.json"
+          },
+          {
+            "name": "qualificationReport",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-activation/qualification-report.schema.json",
+            "schemaPath": "schemas/kfd-activation/qualification-report.schema.json"
+          }
+        ],
+        "kfd-12": [
+          {
+            "name": "activationRecord",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-activation/activation-record.schema.json",
+            "schemaPath": "schemas/kfd-activation/activation-record.schema.json"
+          },
+          {
+            "name": "adopterWitness",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-12/adopter-witness.schema.json",
+            "schemaPath": "schemas/kfd-12/adopter-witness.schema.json"
+          },
+          {
+            "name": "metadata",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-standards.schema.json",
+            "schemaPath": "schemas/kfd-standards.schema.json"
+          },
+          {
+            "name": "qualificationReport",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-activation/qualification-report.schema.json",
+            "schemaPath": "schemas/kfd-activation/qualification-report.schema.json"
+          }
+        ],
+        "kfd-13": [
+          {
+            "name": "activationRecord",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-activation/activation-record.schema.json",
+            "schemaPath": "schemas/kfd-activation/activation-record.schema.json"
+          },
+          {
+            "name": "adopterWitness",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-13/adopter-witness.schema.json",
+            "schemaPath": "schemas/kfd-13/adopter-witness.schema.json"
+          },
+          {
+            "name": "metadata",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-standards.schema.json",
+            "schemaPath": "schemas/kfd-standards.schema.json"
+          },
+          {
+            "name": "qualificationReport",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-activation/qualification-report.schema.json",
+            "schemaPath": "schemas/kfd-activation/qualification-report.schema.json"
+          }
+        ],
+        "kfd-2": [
+          {
+            "name": "metadata",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-standards.schema.json",
+            "schemaPath": "schemas/kfd-standards.schema.json"
+          },
+          {
+            "name": "releaseClaims",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-2/release-claims.schema.json",
+            "schemaPath": "schemas/kfd-2/release-claims.schema.json"
+          },
+          {
+            "name": "releaseTrustPassport",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-2/release-trust-passport.schema.json",
+            "schemaPath": "schemas/kfd-2/release-trust-passport.schema.json"
+          },
+          {
+            "name": "trustAssessment",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-2/trust-assessment.schema.json",
+            "schemaPath": "schemas/kfd-2/trust-assessment.schema.json"
+          },
+          {
+            "name": "trustClaims",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-2/trust-claims.schema.json",
+            "schemaPath": "schemas/kfd-2/trust-claims.schema.json"
+          },
+          {
+            "name": "trustTaxonomy",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-2/trust-taxonomy.schema.json",
+            "schemaPath": "schemas/kfd-2/trust-taxonomy.schema.json"
+          }
+        ],
+        "kfd-3": [
+          {
+            "name": "collaborationInterface",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-3/collaboration-interface.schema.json",
+            "schemaPath": "schemas/kfd-3/collaboration-interface.schema.json"
+          },
+          {
+            "name": "metadata",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-standards.schema.json",
+            "schemaPath": "schemas/kfd-standards.schema.json"
+          },
+          {
+            "name": "witness",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-3/witness.schema.json",
+            "schemaPath": "schemas/kfd-3/witness.schema.json"
+          }
+        ],
+        "kfd-4": [
+          {
+            "name": "conformanceWitness",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-4/conformance-witness.schema.json",
+            "schemaPath": "schemas/kfd-4/conformance-witness.schema.json"
+          },
+          {
+            "name": "metadata",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-standards.schema.json",
+            "schemaPath": "schemas/kfd-standards.schema.json"
+          },
+          {
+            "name": "observerPerspective",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-4/observer-perspective.schema.json",
+            "schemaPath": "schemas/kfd-4/observer-perspective.schema.json"
+          },
+          {
+            "name": "perspectiveReplay",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-4/perspective-replay.schema.json",
+            "schemaPath": "schemas/kfd-4/perspective-replay.schema.json"
+          }
+        ],
+        "kfd-5": [
+          {
+            "name": "liveCaseRegistry",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-live-case-registry.schema.json",
+            "schemaPath": "schemas/kfd-live-case-registry.schema.json"
+          },
+          {
+            "name": "metadata",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-standards.schema.json",
+            "schemaPath": "schemas/kfd-standards.schema.json"
+          },
+          {
+            "name": "primitiveDiscovery",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-5/primitive-discovery.schema.json",
+            "schemaPath": "schemas/kfd-5/primitive-discovery.schema.json"
+          }
+        ],
+        "kfd-6": [
+          {
+            "name": "autonomousDiscoveryLoop",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-6/autonomous-discovery-loop.schema.json",
+            "schemaPath": "schemas/kfd-6/autonomous-discovery-loop.schema.json"
+          },
+          {
+            "name": "metadata",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-standards.schema.json",
+            "schemaPath": "schemas/kfd-standards.schema.json"
+          }
+        ],
+        "kfd-7": [
+          {
+            "name": "domainProfileDeclaration",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-7/domain-profile.schema.json",
+            "schemaPath": "schemas/kfd-7/domain-profile.schema.json"
+          },
+          {
+            "name": "metadata",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-standards.schema.json",
+            "schemaPath": "schemas/kfd-standards.schema.json"
+          }
+        ],
+        "kfd-8": [
+          {
+            "name": "atlasCoordinate",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-8/atlas-coordinate.schema.json",
+            "schemaPath": "schemas/kfd-8/atlas-coordinate.schema.json"
+          },
+          {
+            "name": "metadata",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-standards.schema.json",
+            "schemaPath": "schemas/kfd-standards.schema.json"
+          }
+        ],
+        "kfd-9": [
+          {
+            "name": "metadata",
+            "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-standards.schema.json",
+            "schemaPath": "schemas/kfd-standards.schema.json"
+          }
+        ]
+      },
+      "support": {
+        "kfd-1": [
+          "schema",
+          "witness",
+          "gate",
+          "verify"
+        ],
+        "kfd-2": [
+          "schema",
+          "taxonomy",
+          "claims",
+          "product-claims",
+          "trust-claims",
+          "trust-assessment",
+          "upstream"
+        ],
+        "kfd-3": [
+          "schema",
+          "detect",
+          "register",
+          "audit",
+          "witness",
+          "query",
+          "aggregate"
+        ],
+        "kfd-4": [
+          "schema",
+          "product-gate",
+          "verify",
+          "support-projection"
+        ],
+        "kfd-5": [
+          "schema",
+          "product-gate",
+          "verify",
+          "support-projection"
+        ],
+        "kfd-6": [
+          "schema",
+          "unsupported-claim-barrier"
+        ],
+        "kfd-7": [
+          "schema",
+          "product-gate",
+          "verify",
+          "support-projection"
+        ],
+        "kfd-8": [
+          "schema",
+          "draft-claim-barrier"
+        ],
+        "kfd-9": [
+          "schema",
+          "draft-claim-barrier"
+        ],
+        "kfd-10": [
+          "schema",
+          "draft-claim-barrier"
+        ],
+        "kfd-11": [
+          "schema",
+          "draft-claim-barrier"
+        ],
+        "kfd-12": [
+          "schema",
+          "draft-claim-barrier"
+        ],
+        "kfd-13": [
+          "schema",
+          "draft-claim-barrier"
+        ]
+      },
+      "paths": {
+        "config": {
+          "path": ".buildchain/buildchain.toml",
+          "exists": true
+        },
+        "contractLock": {
+          "path": ".buildchain/contract-lock.json",
+          "exists": true
+        },
+        "kfd2ProductClaimsRegistry": {
+          "path": ".buildchain/kfd/kfd-2/registry.json",
+          "exists": false
+        },
+        "kfd3SurfaceRegistry": {
+          "path": ".buildchain/kfd/kfd-3/surfaces.json",
+          "exists": true
+        },
+        "releasePassport": {
+          "path": ".buildchain/release-passport/buildchain.release.json",
+          "exists": false
+        }
+      }
+    },
+    "summary": {
+      "upstreamCount": 2,
+      "kfdAwareUpstreams": [
+        "buildchain",
+        "kfd"
+      ],
+      "packageVersions": {
+        "buildchain": "4.0.2-alpha.49",
+        "kfd": "1.0.0-alpha.21"
+      },
+      "status": "collected"
+    }
+  },
+  "upstreamCheck": {
+    "schemaVersion": 1,
+    "contract": "kungfu-buildchain-kfd-upstream-check",
+    "ok": true,
+    "status": "passed",
+    "upstreamCount": 2,
+    "issues": []
+  },
+  "kfd": {
+    "kfd1": "own-status-plus-upstream-contract-world-facts",
+    "kfd2": "own-release-passport-plus-upstream-trust-surface",
+    "kfd3": "own-collaboration-interface-plus-upstream-capability-facts",
+    "kfd4": "schema-only-unless-product-declares-more"
+  }
+}

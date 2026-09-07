@@ -8,7 +8,7 @@ confidence: high
 sensitivity: public
 evidence_grade: A
 review_state: unreviewed
-last_reviewed: 2026-08-09
+last_reviewed: 2026-09-07
 ai_provenance:
   model_family: GPT-5
   product: Codex
@@ -77,14 +77,15 @@ qualification coordinates that are still missing. The checked-in lock and
 contract must not move until the exact package release, image digest, image
 source revision, and Hub qualification run exist and agree with that proposal.
 
-The package qualification artifact remains non-publishing. After its exact run,
-artifact name, package digests, qualification roots, and admission roots enter
-the lock, the existing protected Buildchain promotion transaction stages or
-reuses the immutable package prerelease and reads its asset bytes back before
-the image lifecycle begins. Manual package publication and mutable release
-assets are not fallback paths.
+The package qualification artifact remains non-publishing. The Buildchain v4
+candidate consumes the already published immutable package release and checks
+both archive digests against the accepted lock. This migration retains the
+existing package identity and admission roots.
 
-The release transaction then proves the exact amd64 and arm64 images, a fresh
-OCI Compose installation, and a preserved-volume previous-preview to candidate
-to previous-preview upgrade and rollback sequence before `compose-preview` may
-move.
+Buildchain publishes the sealed dual-platform image and immutable OCI Compose
+artifact. A separate exact-tag public qualification proves fresh installation,
+restart persistence, and the preserved-volume previous-preview to candidate
+to previous-preview upgrade and rollback sequence before the public Buildchain
+callback may move `compose-preview`. The hosted amd64 runner labels arm64
+execution as QEMU platform-contract evidence; it does not replace the earlier
+native qualification or claim a new native arm64 full-lifecycle result.
