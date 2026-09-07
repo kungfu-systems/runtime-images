@@ -3,10 +3,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { sealOciPublicationBundle } from '@kungfu-tech/buildchain/oci-publication';
-import { composeProject, imageRepository, sha256, writeComposeLayout } from './oci-compose-candidate.mjs';
+import { candidateArtifactPath, packageInputPath, composeProject, imageRepository, sha256, writeComposeLayout } from './oci-compose-candidate.mjs';
 
 const root = process.cwd();
-const output = path.join(root, 'build/oci-candidate');
+const output = path.join(root, candidateArtifactPath);
 const json = (file) => JSON.parse(fs.readFileSync(file));
 const run = (command, args, options = {}) => execFileSync(command, args, { stdio: 'inherit', ...options });
 const readCommand = (command, args) => run(command, args, { stdio: 'pipe', encoding: 'utf8' }).trim();
@@ -23,7 +23,7 @@ fs.mkdirSync(output, { recursive: true });
 const previousDigest = readCommand('docker', ['buildx', 'imagetools', 'inspect', `${imageRepository}:compose-preview`, '--format', '{{.Manifest.Digest}}']);
 if (!/^sha256:[0-9a-f]{64}$/u.test(previousDigest)) throw new Error('previous preview must resolve before candidate sealing');
 const packageTag = lock.packageRelease.split('/').at(-1);
-const inputDir = path.join(root, 'build/runtime-inputs');
+const inputDir = path.join(root, packageInputPath);
 fs.mkdirSync(inputDir, { recursive: true });
 const buildArgs = [];
 for (const [architecture, suffix] of [['amd64', 'x64'], ['arm64', 'arm64']]) {

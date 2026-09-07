@@ -38,7 +38,7 @@ jobs:
       artifact-compression-level: 0
       artifact-name-template: "{artifact}-{platform}-{shortSha}"
       artifact-paths: |
-        build/oci-candidate
+        .artifacts/oci-candidate
         .buildchain/kfd
         .buildchain/buildchain.toml
         .buildchain/release-impact.json
