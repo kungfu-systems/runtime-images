@@ -3,7 +3,7 @@
   "contract": "kungfu-buildchain-dev-delivery-warrant-queue",
   "repository": "kungfu-systems/runtime-images",
   "protectedBase": "dev/v1/v1.0",
-  "generation": 12,
+  "generation": 13,
   "fencingCounter": 4,
   "policy": {
     "agingSeconds": 900,
@@ -12,41 +12,7 @@
     "emergencyPolicy": "reviewed-explicit-only",
     "minimumWriterProtocolRoot": "sha256:54a203cadf0b14d4e3c198a3cc3c177c42813aa1c0cca03e900df714b6ae5563"
   },
-  "activeWarrant": {
-    "schema": "kungfu.buildchain.dev-delivery-warrant/v1",
-    "repository": "kungfu-systems/runtime-images",
-    "protectedBase": "dev/v1/v1.0",
-    "candidateId": "sha256:fce6351be4c34b79ccf53774636897db1a07e812c21890131ee13b62b7504781",
-    "pullRequestNumber": 84,
-    "sourceHead": "128d60a3b58b86c9b7dfbb282f3f1ef7578ac314",
-    "sourceRoot": "sha256:6511ff5f6609352890e8e2d02b453973f1eb4bff3b55e9ed14d20a9fbe73fb1a",
-    "sourceIdentityRoot": "sha256:c5bdba5ead7457a9b214de4ff3f2be50bc87c27f5ce609b776fa6e5a6b12edae",
-    "sourcePatchRoot": "sha256:b6b30879f9eb96a8d8b260a0b019354c6d6c8e1906bdc72b7698c6ef8acc81d1",
-    "sourceProofRoot": "sha256:f0e3b1582ff27495c623173452af87b3d8d1d5324a91fa8917e13eb787a528c8",
-    "planRoot": "sha256:269c57b828dd1d4dd031013517405184939a7ab3335350c0b29ce978ec9158a3",
-    "closureRoot": "sha256:2bbbf856c42cc3737c0fc36e8f8bcde47bc80d57b52b829d1b3a4b4518603042",
-    "dependencyRoot": "sha256:049fe3bc5767aed199f43e6d49602e2defcbd0474d2ae0515f5d8ec8fc81f560",
-    "toolchainRoot": "sha256:cf3393355481b0dccb825de23a93c66d74785461d082d56fa9194c37fe3d6a70",
-    "affectedPaths": [
-      ".buildchain/kfd/kfd-1/release-gate.json",
-      ".buildchain/kfd/kfd-1/runtime-images-contract-world.witness.json",
-      ".buildchain/kfd/kfd-2/release-claims.json",
-      ".github/workflows/build.yml",
-      "scripts/build-oci-candidate.mjs",
-      "scripts/oci-compose-candidate.mjs",
-      "test/candidate-surface-audit.test.mjs"
-    ],
-    "shardEvidenceRoots": [],
-    "sourceWorkflowRunId": 34081899755,
-    "deliveryClass": "non-native-fast",
-    "priority": "ordinary",
-    "generation": 4,
-    "expectedOldStateRoot": "sha256:406c0cbcaab9aaea4cb2192472967ba9c429095ef27432ac678dae2df6a93cac",
-    "issuedAt": "2026-09-07T04:08:10.170Z",
-    "expiresAt": "2026-09-07T05:08:10.170Z",
-    "fencingToken": "sha256:c4e5c1d4c26d8c5dce3c66a89f90895f8b6843a5984c67de0212c64e25049111",
-    "nextAction": "Replay on the exact current dev base, prove required checks, then enqueue the unchanged PR head."
-  },
+  "activeWarrant": null,
   "candidates": [
     {
       "repository": "kungfu-systems/runtime-images",
@@ -254,11 +220,19 @@
       "sourceWorkflowRunId": 34081899755,
       "priority": "ordinary",
       "enqueuedAt": "2026-09-07T04:08:07.125Z",
-      "updatedAt": "2026-09-07T04:08:10.170Z",
+      "updatedAt": "2026-09-07T04:09:40.047Z",
       "attempts": 1,
       "recoveries": 0,
-      "status": "selected",
-      "terminal": null,
+      "status": "merged",
+      "terminal": {
+        "outcome": "merged",
+        "reason": "GitHub PR 84 is merged at 959f26df5cb3cb4e1ecbb2c9bcd69c9063483085; reconcile its retained Warrant using the exact provider terminal fact.",
+        "evidenceRoot": "sha256:9b71a262758c293a995164ca4cef23fccd1086dac2c466449ff2017debc0a3ca",
+        "closedAt": "2026-09-07T04:09:40.047Z",
+        "fencingToken": "sha256:c4e5c1d4c26d8c5dce3c66a89f90895f8b6843a5984c67de0212c64e25049111",
+        "leaseGeneration": 4,
+        "successorWake": null
+      },
       "affectedPaths": [
         ".buildchain/kfd/kfd-1/release-gate.json",
         ".buildchain/kfd/kfd-1/runtime-images-contract-world.witness.json",
@@ -271,6 +245,6 @@
       "shardEvidenceRoots": []
     }
   ],
-  "updatedAt": "2026-09-07T04:08:10.170Z",
-  "stateRoot": "sha256:629466f5c7885ac7ad2ec05e061581c6d801482b8742d8673b8028d7596eeb7a"
+  "updatedAt": "2026-09-07T04:09:40.047Z",
+  "stateRoot": "sha256:f1da8ea04430662d1f0e1c0285bdd992d9b91b1b877fc325631f978ae2178177"
 }
