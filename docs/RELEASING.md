@@ -44,6 +44,13 @@ readback, the Release Passport, and publication settlement are retained.
 The old shell publisher refuses execution. There is no branch-protection
 bypass or consumer shell publication fallback.
 
+The image labels retain the original built candidate SHA. A protected merge
+may have a different SHA with the same source tree: qualification binds the
+family to the Passport's `builtSourceSha` and `builtSourceTreeSha`, while the
+public tag, readback, and workflow run bind to the protected publication SHA.
+Do not rewrite an already published tag to repair its qualification tooling;
+publish and qualify the next alpha instead.
+
 Once those immutable artifacts and settlement are public, dispatch
 `qualify-release.yml` on the exact `v<VERSION>` tag. This read-only workflow
 pulls the published image members and Compose digest and exercises fresh

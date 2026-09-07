@@ -7,15 +7,15 @@
   },
   "contractWorld": {
     "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-1/contract-world.schema.json",
-    "digest": "sha256:63d2f6ec10c711a4b5ae473fe0c2ba6259a18ffc46e11ba8d1efb40b8e3621d1"
+    "digest": "sha256:2d134e2db86abc1353f13be9b1c2e544dfc8cf00f4a833e02f0a2e2c81a9d77b"
   },
   "canonicalPolicy": {
     "path": "docs/RELEASING.md",
-    "sha256": "6f21efa315087de16343c6dfe2e861c758a7120f2a1e3a3bd4ebdbd9d7aefcdc"
+    "sha256": "50251f3e22e0200f7377bd5b0d383836de7a9a17018b0cba4eeba00ee067d7ea"
   },
   "registry": {
     "path": ".buildchain/kfd/kfd-3/surfaces.json",
-    "sha256": "b84a0ba0878aa1bdc5634f10d15cfb092fcfabac54c4ad44bdcf32592bcdc724"
+    "sha256": "93db781491e020bdde365038c132e708d255fa25b66a50bb0220f7574f5c1fdc"
   },
   "surfaces": [
     {
@@ -37,9 +37,9 @@
     {
       "name": "release-and-tags",
       "sourcePath": "docs/RELEASING.md",
-      "sourceSha256": "6f21efa315087de16343c6dfe2e861c758a7120f2a1e3a3bd4ebdbd9d7aefcdc",
+      "sourceSha256": "50251f3e22e0200f7377bd5b0d383836de7a9a17018b0cba4eeba00ee067d7ea",
       "artifactPath": "docs/RELEASING.md",
-      "expectedSha256": "6f21efa315087de16343c6dfe2e861c758a7120f2a1e3a3bd4ebdbd9d7aefcdc",
+      "expectedSha256": "50251f3e22e0200f7377bd5b0d383836de7a9a17018b0cba4eeba00ee067d7ea",
       "byteForByte": true
     },
     {
@@ -61,9 +61,9 @@
     {
       "name": "publish-evidence-writer",
       "sourcePath": "scripts/release-qualification.mjs",
-      "sourceSha256": "717c54824b8c967f78de37454e9a6c3fbbebef217ca339cab488bef5b385b23e",
+      "sourceSha256": "fb8d59538da47bc8400ef795f892f8bf2c2ecf2ba0bc6ea43cfd935b5bf7bd74",
       "artifactPath": "scripts/release-qualification.mjs",
-      "expectedSha256": "717c54824b8c967f78de37454e9a6c3fbbebef217ca339cab488bef5b385b23e",
+      "expectedSha256": "fb8d59538da47bc8400ef795f892f8bf2c2ecf2ba0bc6ea43cfd935b5bf7bd74",
       "byteForByte": true
     },
     {
