@@ -7,7 +7,7 @@
   },
   "contractWorld": {
     "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-1/contract-world.schema.json",
-    "digest": "sha256:2d134e2db86abc1353f13be9b1c2e544dfc8cf00f4a833e02f0a2e2c81a9d77b"
+    "digest": "sha256:a8e93e6ea3762b93f3672f83ac42ec969a1d79a4ce1be572108f82420e8e16ce"
   },
   "canonicalPolicy": {
     "path": "docs/RELEASING.md",
@@ -29,9 +29,9 @@
     {
       "name": "image-contract",
       "sourcePath": "contracts/hub-starter-runtime.contract.json",
-      "sourceSha256": "b74b93d78230f8029ff7745420321c142b492a7ab247621a18696b82d5f3236d",
+      "sourceSha256": "6da1939ab57dab8c86c10ede08bcf7f62e750937b5bc305616ba22d32cf3048a",
       "artifactPath": "contracts/hub-starter-runtime.contract.json",
-      "expectedSha256": "b74b93d78230f8029ff7745420321c142b492a7ab247621a18696b82d5f3236d",
+      "expectedSha256": "6da1939ab57dab8c86c10ede08bcf7f62e750937b5bc305616ba22d32cf3048a",
       "byteForByte": true
     },
     {
@@ -53,9 +53,9 @@
     {
       "name": "image-lock",
       "sourcePath": "release/runtime.lock.json",
-      "sourceSha256": "5cb044d612e85e74f512d0c9229205e12967b7249fa4614d854809d2cfeb4e9b",
+      "sourceSha256": "51595148e0e3e6c85a370a448c0c830cd72fbcee0f43b535ee0d6e1748d5cd9d",
       "artifactPath": "release/runtime.lock.json",
-      "expectedSha256": "5cb044d612e85e74f512d0c9229205e12967b7249fa4614d854809d2cfeb4e9b",
+      "expectedSha256": "51595148e0e3e6c85a370a448c0c830cd72fbcee0f43b535ee0d6e1748d5cd9d",
       "byteForByte": true
     },
     {
