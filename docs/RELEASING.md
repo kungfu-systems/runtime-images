@@ -24,6 +24,12 @@ enter `dev/v1/v1.0` through a reviewed PR. A PR from that branch into
 `alpha/v1/v1.0` requests a new alpha. The package and release-impact versions
 must agree with the next available public v1.0 alpha version.
 
+If prior alpha release preparation diverges from development, reconcile that
+alpha ancestry through a reviewed development PR before requesting a candidate.
+Retain the intended next version in both version files and verify the merge
+tree against the reviewed development tree. Do not resolve an alpha PR by
+reverting its version or force-pushing either protected branch.
+
 The `Build` workflow produces one sealed `kungfu-buildchain-oci-family/v2`
 candidate containing the complete `linux/amd64` and `linux/arm64` image index,
 SBOM/provenance, and an OCI 1.1 Compose manifest. Package archives and base
