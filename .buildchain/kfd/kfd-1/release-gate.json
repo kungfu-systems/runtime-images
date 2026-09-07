@@ -106,13 +106,13 @@
       "standard": "KFD-1",
       "standardKey": "kfd-1",
       "result": "passed",
-      "preBuildWitnessSha256": "e909f05ab329200ce713eeb4e12026fcd7da6880e70fadd88489e932c08f59b2",
+      "preBuildWitnessSha256": "764673173116c24c6d008e81713e857ff93e01fd2c070ddaac53af8cd97fbe8a",
       "sourceHashes": {
-        "sha256": "c8df1ab9089d5d3b3816c078341f0475ec18c2f8c2ef978d2d53bd3da97be5f2",
+        "sha256": "d640ddca213a853de4164e7d6ce3df71971e5fdbfe334c9606a4c0428782b2f5",
         "surfaceCount": 9
       },
       "artifactHashes": {
-        "sha256": "87fe45041665f0c3b338db438c0316c4d851656214fd3ed28a2a8fba529a8fd5",
+        "sha256": "77d13f92681393093246ea8409b86462df183b3c530137874fbc8bb6c1d46124",
         "surfaceCount": 9
       },
       "witness": {
@@ -127,14 +127,14 @@
         },
         "contractWorld": {
           "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-1/contract-world.schema.json",
-          "digest": "sha256:e9e6ebb1981db08fb46010e5e68b0195cb55db7cc716c3e0104e82da696902d2"
+          "digest": "sha256:63d2f6ec10c711a4b5ae473fe0c2ba6259a18ffc46e11ba8d1efb40b8e3621d1"
         },
         "standardContract": {
           "id": "",
           "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-1/contract-world.schema.json",
           "path": "",
           "sha256": "",
-          "digest": "sha256:e9e6ebb1981db08fb46010e5e68b0195cb55db7cc716c3e0104e82da696902d2"
+          "digest": "sha256:63d2f6ec10c711a4b5ae473fe0c2ba6259a18ffc46e11ba8d1efb40b8e3621d1"
         },
         "selfHostingBoundary": {
           "mode": "external-contract-world",
@@ -209,17 +209,17 @@
           {
             "name": "oci-candidate-builder",
             "sourcePath": "scripts/build-oci-candidate.mjs",
-            "sourceSha256": "f8051e9f63333c7e1719bd681f13b1e81ddf7add12979f0f3e3051c75cc99e27",
+            "sourceSha256": "7021df10a5149052a7b11bb53103e49e56c867e170bd48e98a9cded79f78c855",
             "artifactPath": "scripts/build-oci-candidate.mjs",
-            "expectedSha256": "f8051e9f63333c7e1719bd681f13b1e81ddf7add12979f0f3e3051c75cc99e27",
+            "expectedSha256": "7021df10a5149052a7b11bb53103e49e56c867e170bd48e98a9cded79f78c855",
             "byteForByte": true
           },
           {
             "name": "oci-candidate-sealer",
             "sourcePath": "scripts/oci-compose-candidate.mjs",
-            "sourceSha256": "40388b19cb0ebf1046365943f00ea58b804c8678a9da7f1da0094b454feb4855",
+            "sourceSha256": "43602a6bfa920113a33c44b35448a9ada6b1e1ee13e71af350be5b2d1709a6f1",
             "artifactPath": "scripts/oci-compose-candidate.mjs",
-            "expectedSha256": "40388b19cb0ebf1046365943f00ea58b804c8678a9da7f1da0094b454feb4855",
+            "expectedSha256": "43602a6bfa920113a33c44b35448a9ada6b1e1ee13e71af350be5b2d1709a6f1",
             "byteForByte": true
           },
           {
@@ -306,7 +306,7 @@
         "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-1/contract-world.schema.json",
         "path": "",
         "sha256": "",
-        "digest": "sha256:e9e6ebb1981db08fb46010e5e68b0195cb55db7cc716c3e0104e82da696902d2"
+        "digest": "sha256:63d2f6ec10c711a4b5ae473fe0c2ba6259a18ffc46e11ba8d1efb40b8e3621d1"
       },
       "selfHostingBoundary": {
         "mode": "external-contract-world",
@@ -376,16 +376,16 @@
           {
             "name": "oci-candidate-builder",
             "sourcePath": "scripts/build-oci-candidate.mjs",
-            "expectedSha256": "f8051e9f63333c7e1719bd681f13b1e81ddf7add12979f0f3e3051c75cc99e27",
-            "actualSha256": "f8051e9f63333c7e1719bd681f13b1e81ddf7add12979f0f3e3051c75cc99e27",
+            "expectedSha256": "7021df10a5149052a7b11bb53103e49e56c867e170bd48e98a9cded79f78c855",
+            "actualSha256": "7021df10a5149052a7b11bb53103e49e56c867e170bd48e98a9cded79f78c855",
             "status": "passed",
             "reason": ""
           },
           {
             "name": "oci-candidate-sealer",
             "sourcePath": "scripts/oci-compose-candidate.mjs",
-            "expectedSha256": "40388b19cb0ebf1046365943f00ea58b804c8678a9da7f1da0094b454feb4855",
-            "actualSha256": "40388b19cb0ebf1046365943f00ea58b804c8678a9da7f1da0094b454feb4855",
+            "expectedSha256": "43602a6bfa920113a33c44b35448a9ada6b1e1ee13e71af350be5b2d1709a6f1",
+            "actualSha256": "43602a6bfa920113a33c44b35448a9ada6b1e1ee13e71af350be5b2d1709a6f1",
             "status": "passed",
             "reason": ""
           },
@@ -472,10 +472,10 @@
           {
             "name": "oci-candidate-builder",
             "sourcePath": "scripts/build-oci-candidate.mjs",
-            "sourceSha256": "f8051e9f63333c7e1719bd681f13b1e81ddf7add12979f0f3e3051c75cc99e27",
+            "sourceSha256": "7021df10a5149052a7b11bb53103e49e56c867e170bd48e98a9cded79f78c855",
             "artifactPath": "scripts/build-oci-candidate.mjs",
-            "expectedSha256": "f8051e9f63333c7e1719bd681f13b1e81ddf7add12979f0f3e3051c75cc99e27",
-            "actualSha256": "f8051e9f63333c7e1719bd681f13b1e81ddf7add12979f0f3e3051c75cc99e27",
+            "expectedSha256": "7021df10a5149052a7b11bb53103e49e56c867e170bd48e98a9cded79f78c855",
+            "actualSha256": "7021df10a5149052a7b11bb53103e49e56c867e170bd48e98a9cded79f78c855",
             "byteForByte": true,
             "status": "passed",
             "reason": ""
@@ -483,10 +483,10 @@
           {
             "name": "oci-candidate-sealer",
             "sourcePath": "scripts/oci-compose-candidate.mjs",
-            "sourceSha256": "40388b19cb0ebf1046365943f00ea58b804c8678a9da7f1da0094b454feb4855",
+            "sourceSha256": "43602a6bfa920113a33c44b35448a9ada6b1e1ee13e71af350be5b2d1709a6f1",
             "artifactPath": "scripts/oci-compose-candidate.mjs",
-            "expectedSha256": "40388b19cb0ebf1046365943f00ea58b804c8678a9da7f1da0094b454feb4855",
-            "actualSha256": "40388b19cb0ebf1046365943f00ea58b804c8678a9da7f1da0094b454feb4855",
+            "expectedSha256": "43602a6bfa920113a33c44b35448a9ada6b1e1ee13e71af350be5b2d1709a6f1",
+            "actualSha256": "43602a6bfa920113a33c44b35448a9ada6b1e1ee13e71af350be5b2d1709a6f1",
             "byteForByte": true,
             "status": "passed",
             "reason": ""

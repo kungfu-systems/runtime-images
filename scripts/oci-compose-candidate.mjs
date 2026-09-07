@@ -5,6 +5,9 @@ import path from 'node:path';
 import YAML from 'yaml';
 
 export const sha256 = (bytes) => `sha256:${crypto.createHash('sha256').update(bytes).digest('hex')}`;
+// Transport blobs and downloaded packages are build inputs, not public binary APIs.
+export const candidateArtifactPath = '.artifacts/oci-candidate';
+export const packageInputPath = '.artifacts/runtime-inputs';
 export const imageRepository = 'ghcr.io/kungfu-systems/runtime-images/hub-starter';
 
 export function composeProject(source, imageDigest) {
