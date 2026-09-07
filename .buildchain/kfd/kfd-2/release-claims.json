@@ -1,0 +1,112 @@
+{
+  "id": "claim:runtime-images-release-trust",
+  "public": true,
+  "claim": "Course Hub releases are governed by declared image contracts, Buildchain v4 sealed OCI publication, channel-specific locked Buildchain runtime contracts, and KFD upstream evidence.",
+  "sourceBindings": [
+    {
+      "id": "readme",
+      "path": "README.md",
+      "sha256": "371580448fe64ac19737f30bbbea10580957f63d591b20c8e120d23011523cde"
+    },
+    {
+      "id": "image-contract",
+      "path": "contracts/hub-starter-runtime.contract.json",
+      "sha256": "b74b93d78230f8029ff7745420321c142b492a7ab247621a18696b82d5f3236d"
+    },
+    {
+      "id": "release-and-tags",
+      "path": "docs/RELEASING.md",
+      "sha256": "6f21efa315087de16343c6dfe2e861c758a7120f2a1e3a3bd4ebdbd9d7aefcdc"
+    },
+    {
+      "id": "image-lock",
+      "path": "release/runtime.lock.json",
+      "sha256": "5cb044d612e85e74f512d0c9229205e12967b7249fa4614d854809d2cfeb4e9b"
+    },
+    {
+      "id": "buildchain-config",
+      "path": ".buildchain/buildchain.toml",
+      "sha256": "32f755354abd6e4a1b08ae52e1c9d8b2f3ae9cc6a5882dcbacb303583221ce20"
+    },
+    {
+      "id": "alpha-contract-lock",
+      "path": ".buildchain/alpha-contract-lock.json",
+      "sha256": "f0fb348743a795875db3bae7604da6543e27dfb8dd371483294c0180447b18e4"
+    },
+    {
+      "id": "stable-contract-lock",
+      "path": ".buildchain/contract-lock.json",
+      "sha256": "869e1bb88239ae99a076bb3ed841b24b7b5b9944cdd57d3c35f2296ec503a813"
+    }
+  ],
+  "machineEvidence": [
+    {
+      "id": "kfd-1-contract-world-witness",
+      "path": ".buildchain/kfd/kfd-1/runtime-images-contract-world.witness.json",
+      "sha256": "9a028caffc9eb2178cdbe76f81a203b1b0ec80bef332d57c7976b2a4e4ab0d4a",
+      "contract": "kfd-1",
+      "status": "passed"
+    },
+    {
+      "id": "kfd-upstream-aggregate",
+      "path": ".buildchain/kfd/kfd-2/kfd-upstream-aggregate.json",
+      "sha256": "e5b962aaf3ef616b2f3955383056c14e323505e69255dca816a23e89eaaffda7",
+      "contract": "kungfu-buildchain-kfd-upstream-aggregate",
+      "status": "passed"
+    },
+    {
+      "id": "kfd-3-surface-registry",
+      "path": ".buildchain/kfd/kfd-3/surfaces.json",
+      "sha256": "b84a0ba0878aa1bdc5634f10d15cfb092fcfabac54c4ad44bdcf32592bcdc724",
+      "contract": "kungfu-buildchain-kfd-3-surface-registry",
+      "status": "passed"
+    }
+  ],
+  "hashes": {
+    "kfd1WitnessSha256": "f601512cb3ec11f7bfba334584235c6e2fc6e46e614d1d562afae5ade70e7b36",
+    "upstreamAggregateSha256": "a3f8ad37b437abd90adc6eb4572a6dd6a4c0a3af315b97c6b3b12d4f4da8cfe0",
+    "sourceBindingsSha256": "68d4c2af6b20953d427abaa6d90327c13212338f395fb12b230f0ae7496e0e2e",
+    "machineEvidenceSha256": "fbf31158df1691c9cd4f82f1cb03190a402cc7cbf7ec25d6f59bea54e85f0997"
+  },
+  "artifacts": [
+    {
+      "id": "oci-image-lock",
+      "path": "release/runtime.lock.json",
+      "sha256": "5cb044d612e85e74f512d0c9229205e12967b7249fa4614d854809d2cfeb4e9b"
+    },
+    {
+      "id": "publish-evidence-writer",
+      "path": "scripts/release-qualification.mjs",
+      "sha256": "717c54824b8c967f78de37454e9a6c3fbbebef217ca339cab488bef5b385b23e"
+    },
+    {
+      "id": "oci-candidate-builder",
+      "path": "scripts/build-oci-candidate.mjs",
+      "sha256": "7021df10a5149052a7b11bb53103e49e56c867e170bd48e98a9cded79f78c855"
+    },
+    {
+      "id": "oci-candidate-sealer",
+      "path": "scripts/oci-compose-candidate.mjs",
+      "sha256": "43602a6bfa920113a33c44b35448a9ada6b1e1ee13e71af350be5b2d1709a6f1"
+    },
+    {
+      "id": "oci-evidence-projection",
+      "path": "scripts/qualify-runtime-release.sh",
+      "sha256": "8f048160953b1b3fa39262bd9057d0e18097ab277178c2443b73e66c9a01ea43"
+    }
+  ],
+  "verification": {
+    "result": "passed",
+    "method": "npm run check:kfd"
+  },
+  "auditBoundary": {
+    "mode": "machine-bound-release-contract",
+    "scope": "Course Hub repository config, declared public surfaces, image lock, alpha/stable Buildchain runtime contract locks, OCI candidate construction and sealing, and publication evidence projection."
+  },
+  "responsibility": {
+    "owner": "Kungfu Course Hub maintainers",
+    "sourceOwner": "Kungfu Course Hub maintainers",
+    "releasePassportProofOwner": "Buildchain"
+  },
+  "residualRisk": []
+}

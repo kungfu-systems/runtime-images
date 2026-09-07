@@ -19,7 +19,7 @@ const packageStageWorkflow = await read('../.github/workflows/package-stage.yml'
 const applicationWorkflow = await read('../.github/workflows/application.yml');
 const verifyWorkflow = await read('../.github/workflows/verify.yml');
 const promotionWorkflow = await read('../.github/workflows/buildchain-ref-promotion.yml');
-const buildchainConfig = await read('../buildchain.toml');
+const buildchainConfig = await read('../.buildchain/buildchain.toml');
 const publishRuntime = await read('./publish-runtime-release.sh');
 const publishEvidence = await read('./write-runtime-publish-evidence.mjs');
 const requiredArtifacts = await read('./required-publish-artifacts.mjs');
@@ -175,43 +175,7 @@ for (const [name, workflow] of [
   }
 }
 
-for (const invariant of [
-  'kungfu-systems/buildchain/actions/validate-config@v3',
-  'require-version-state: "true"',
-  'require-lifecycle-stages: "verify,publish"',
-  'name: check',
-  'npm run check',
-]) {
-  if (!verifyWorkflow.includes(invariant)) {
-    throw new Error(`Buildchain Verify workflow invariant missing: ${invariant}`);
-  }
-}
-
-for (const invariant of [
-  'workflow_run:',
-  'workflows: ["Verify"]',
-  'Reject manual apply',
-  "inputs['dry-run'] != 'true'",
-  'kungfu-systems/buildchain/actions/promote-buildchain-ref@v3-alpha',
-  'kungfu-systems/buildchain/actions/promote-buildchain-ref@v3',
-  'generated-status-check-token: ${{ github.token }}',
-  'generated-pull-request-token: ${{ secrets.BUILDCHAIN_PROMOTION_TOKEN || github.token }}',
-  'generated-ref-update-token: ${{ github.token }}',
-  'required-status-check: "check"',
-  'publish-transaction: "true"',
-  'publish-required-artifacts-json:',
-  'release-passport: "true"',
-  'release-passport-impact-json: ".buildchain/release-impact.json"',
-  'github-release: "true"',
-  'actions: read',
-  'bash scripts/stage-kungfu-package-release.sh',
-  'docker/setup-qemu-action@v3',
-  'version: v5.1.2',
-]) {
-  if (!promotionWorkflow.includes(invariant)) {
-    throw new Error(`Buildchain promotion workflow invariant missing: ${invariant}`);
-  }
-}
+await import('./verify-release-surface.mjs');
 
 for (const invariant of [
   'packageQualificationRun',
@@ -227,99 +191,6 @@ for (const invariant of [
   if (!stagePackageRelease.includes(invariant)) {
     throw new Error(`protected package release staging invariant missing: ${invariant}`);
   }
-}
-
-for (const invariant of [
-  'path = "package.json"',
-  'path = ".buildchain/release-impact.json"',
-  '[lifecycle.verify]',
-  '"npm run check"',
-  '[lifecycle.publish]',
-  '"bash scripts/publish-runtime-release.sh"',
-]) {
-  if (!buildchainConfig.includes(invariant)) {
-    throw new Error(`Buildchain consumer configuration invariant missing: ${invariant}`);
-  }
-}
-
-for (const invariant of [
-  'linux/amd64,linux/arm64',
-  '--provenance mode=max',
-  '--sbom=true',
-  'platform_digest()',
-  '"${image_name}@${image_digest_arm64}"',
-  'COURSE_SMOKE_PORT=18082',
-  'COURSE_SMOKE_MODE=platform',
-  'qemu-platform-contract',
-  'agent verify --json',
-  'scripts/smoke-image.sh',
-  'compose-v${BUILDCHAIN_VERSION}',
-  'compose_config_with_retry',
-  'compose_up_with_retry',
-  'compose_config_has_exact_image',
-  'max_attempts=12',
-  'for digest in "${image_digest}" "${image_digest_amd64}" "${image_digest_arm64}"',
-  'application_source_path',
-  'application_source_config_path',
-  'index($0, "image: ${KUNGFU_HUB_IMAGE:-")',
-  'grep -Fq \'${HUB_PORT:-8080}\'',
-  'docker compose -f "${application_source_path}" config',
-  'docker compose -f "${application_source_path}" publish',
-  'NetworkSettings.Ports["5432/tcp"] == null',
-  'hub-application-fresh-install.json',
-  ".freshInstall == true",
-  'hub-application-upgrade.json',
-  'scripts/smoke-course-api.mjs',
-  'test "${upgrade_database_id_after}" = "${upgrade_database_id_before}"',
-  'test "${rollback_database_id}" = "${upgrade_database_id_before}"',
-  'COURSE_SMOKE_PHASE=upgrade',
-  'COURSE_SMOKE_PHASE=rollback',
-  ".upgradePersistence == true and .rollbackPersistence == true",
-  'scripts/write-runtime-publish-evidence.mjs',
-  '--prefer-index=false',
-  'compose-preview',
-  'test "${promoted_preview_digest}" = "${application_digest}"',
-]) {
-  if (!publishRuntime.includes(invariant)) {
-    throw new Error(`Buildchain publish lifecycle invariant missing: ${invariant}`);
-  }
-}
-if (/down\s+-v/u.test(publishRuntime)) {
-  throw new Error('Buildchain publish lifecycle must not delete named volumes');
-}
-if ((publishRuntime.match(/scripts\/smoke-image\.sh/gu) ?? []).length !== 2) {
-  throw new Error('both amd64 and arm64 images require the full Course Hub smoke');
-}
-const exactApplicationSmoke = publishRuntime.indexOf(
-  'compose_up_with_retry "${application_ref}" "${smoke_project}" 18083',
-);
-const freshApplicationCourse = publishRuntime.indexOf(
-  'initial "${application_fresh_state_path}" "${application_fresh_path}"',
-);
-const evidenceWrite = publishRuntime.indexOf(
-  'node "${repo_root}/scripts/write-runtime-publish-evidence.mjs"',
-);
-const upgradeSmoke = publishRuntime.indexOf(
-  'test "${upgrade_database_id_after}" = "${upgrade_database_id_before}"',
-);
-const rollbackSmoke = publishRuntime.indexOf(
-  'test "${rollback_database_id}" = "${upgrade_database_id_before}"',
-);
-const previewPromotion = publishRuntime.indexOf(
-  'docker buildx imagetools create',
-);
-if (
-  exactApplicationSmoke < 0
-  || freshApplicationCourse <= exactApplicationSmoke
-  || upgradeSmoke <= freshApplicationCourse
-  || rollbackSmoke <= upgradeSmoke
-  || evidenceWrite <= rollbackSmoke
-  || previewPromotion <= evidenceWrite
-) {
-  throw new Error(
-    'exact application smoke, preserved-database upgrade and rollback smoke, and evidence validation '
-    + 'must precede preview promotion',
-  );
 }
 
 for (const invariant of [
@@ -356,7 +227,7 @@ for (const field of [
 }
 if (
   releaseImpact.release.line !== 'v1.0'
-  || releaseImpact.versionImpact.final !== 'major'
+  || releaseImpact.versionImpact.final !== 'patch'
   || releaseImpact.surfaceImpacts.length < 3
 ) {
   throw new Error('release impact ledger does not describe the governed v1.0 alpha surface');
@@ -365,6 +236,7 @@ if (
 const acceptedStatePairs = new Set([
   'qualified-input-candidate:runtime-input-qualified',
   'qualified-development-candidate:development-candidate',
+  'qualified-alpha-release:alpha-release',
 ]);
 if (!acceptedStatePairs.has(`${lock.status}:${contract.status}`)) {
   throw new Error('runtime lock and contract do not identify the same qualified lifecycle state');
@@ -428,6 +300,35 @@ for (const platform of ['linux/amd64', 'linux/arm64']) {
   }
 }
 validateImageReference(lock.image);
+if (lock.status === 'qualified-alpha-release') {
+  const release = lock.release;
+  const contractRelease = contract.release;
+  if (
+    release?.version !== '1.0.0-alpha.13'
+    || release.tag !== `v${release.version}`
+    || release.releaseRevision !== contractRelease?.releaseRevision
+    || lock.imageSourceRevision !== contractRelease?.sourceRevision
+    || lock.qualificationRun !== contractRelease?.qualificationRun
+    || release.promotionRun !== contractRelease?.promotionRun
+    || release.transactionStateRef !== contractRelease?.transactionStateRef
+    || lock.image !== contractRelease?.image
+    || release.composeApplication !== contractRelease?.composeApplication
+    || contract.substitutionSeam.officialAlpha !== release.tag
+  ) {
+    throw new Error('runtime lock and contract do not bind the same promoted Alpha');
+  }
+  validateImageReference(lock.image);
+  if (!/^ghcr\.io\/kungfu-systems\/runtime-images\/hub-starter:compose-v[0-9]+\.[0-9]+\.[0-9]+-alpha\.[1-9][0-9]*@sha256:[0-9a-f]{64}$/u.test(
+    release.composeApplication,
+  )) {
+    throw new Error('promoted Alpha Compose application is not pinned by version and digest');
+  }
+  if (!/^refs\/heads\/buildchain\/release-state\/1-0-0-alpha-[1-9][0-9]*$/u.test(
+    release.transactionStateRef,
+  )) {
+    throw new Error('promoted Alpha transaction state ref is not exact');
+  }
+}
 if (!compose.includes(`image: ${'${KUNGFU_HUB_IMAGE:-'}${lock.image}}`)) {
   throw new Error('Compose does not default to the qualified exact image');
 }

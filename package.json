@@ -1,6 +1,6 @@
 {
   "name": "@kungfu-tech/hub-starter-runtime",
-  "version": "1.0.0-alpha.13",
+  "version": "1.0.0-alpha.14",
   "description": "Unified PostgreSQL Course Hub with selectable inference and Kungfu-managed work.",
   "license": "Apache-2.0",
   "private": true,
@@ -12,10 +12,12 @@
     "./client": "./legacy/hub-starter/src/client.mjs"
   },
   "scripts": {
-    "check": "node scripts/verify.mjs && node course-business-reference/scripts/verify.mjs && node --test test/*.test.mjs apps/course-hub/test/*.test.mjs",
+    "check": "node scripts/verify.mjs && node course-business-reference/scripts/verify.mjs && node --test test/*.test.mjs apps/course-hub/test/*.test.mjs && npm run check:kfd",
     "start": "node apps/course-hub/src/server.mjs",
     "start:legacy": "node legacy/hub-starter/src/server.mjs",
-    "test": "node --test"
+    "test": "node --test",
+    "build:oci": "node scripts/build-oci-candidate.mjs",
+    "check:kfd": "node scripts/check-kfd123.mjs"
   },
   "dependencies": {
     "pg": "8.16.3"
@@ -23,5 +25,11 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/kungfu-systems/runtime-images.git"
+  },
+  "devDependencies": {
+    "@kungfu-tech/buildchain": "4.0.2-alpha.50",
+    "@kungfu-tech/buildchain-stable": "npm:@kungfu-tech/buildchain@4.0.2",
+    "@kungfu-tech/kfd": "1.0.0-alpha.21",
+    "yaml": "2.9.0"
   }
 }

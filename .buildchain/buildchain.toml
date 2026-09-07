@@ -22,7 +22,5 @@ commands = [
   "npm run check",
 ]
 
-[lifecycle.publish]
-commands = [
-  "bash scripts/publish-runtime-release.sh",
-]
+[kfd.upstream]
+auto_discover = true

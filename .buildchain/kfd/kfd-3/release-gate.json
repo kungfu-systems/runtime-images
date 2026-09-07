@@ -1,0 +1,766 @@
+{
+  "key": "kfd-3",
+  "passportSection": {
+    "schemaVersion": 1,
+    "contract": "kungfu-buildchain-kfd-3-collaboration-interface-release-gate",
+    "status": "passed",
+    "releaseStatus": "enforced",
+    "trustProof": {
+      "contract": "kungfu-buildchain-kfd-3-passport-trust-proof",
+      "result": "pass",
+      "statement": "No unclassified reachable surface within the declared audit boundary.",
+      "factSourceRole": "product-owned-registry-and-witnesses",
+      "proofOwner": "buildchain-release-passport",
+      "collaborationInterfaceCount": 1,
+      "audited": true
+    },
+    "metadata": {
+      "standard": {
+        "key": "kfd-3",
+        "id": "KFD-3",
+        "label": "KFD-3",
+        "title": "Cooperation must start from trusted value",
+        "revision": 5,
+        "status": "active"
+      },
+      "schemas": {
+        "ids": {
+          "metadata": "https://kfd.libkungfu.dev/schemas/kfd-standards.schema.json",
+          "collaborationInterface": "https://kfd.libkungfu.dev/schemas/kfd-3/collaboration-interface.schema.json",
+          "witness": "https://kfd.libkungfu.dev/schemas/kfd-3/witness.schema.json"
+        },
+        "paths": {
+          "metadata": "schemas/kfd-standards.schema.json",
+          "collaborationInterface": "schemas/kfd-3/collaboration-interface.schema.json",
+          "witness": "schemas/kfd-3/witness.schema.json"
+        },
+        "metadata": {
+          "id": "https://kfd.libkungfu.dev/schemas/kfd-standards.schema.json",
+          "path": "schemas/kfd-standards.schema.json",
+          "version": "2"
+        },
+        "hasCollaborationSchemas": true
+      },
+      "package": {
+        "name": "@kungfu-tech/kfd",
+        "version": "1.0.0-alpha.62",
+        "repository": "git+https://github.com/kungfu-systems/kfd.git"
+      }
+    },
+    "formatting": {
+      "name": "buildchain-release-evidence-json-v1",
+      "indentation": 2,
+      "trailingNewline": true,
+      "canonicalDigest": "stable-json-sha256-v1"
+    },
+    "collaborationInterfaces": [
+      {
+        "id": "Kungfu Course Hub",
+        "standard": "KFD-3",
+        "standardKey": "kfd-3",
+        "preBuildWitnessSha256": "89f83c580a6944a6a1a92b60af7ffc6f5bb8f2166c38288e502d454ff31b84a6",
+        "artifactWitnessSha256": "3766752e4a4ffcd12ca489902e8e2d842dece8898284b99c4723b0c938c5255a",
+        "prebuildWitness": {
+          "schemaVersion": 1,
+          "contract": "kungfu-buildchain-kfd-3-collaboration-interface-prebuild-witness",
+          "id": "Kungfu Course Hub",
+          "standard": "kfd-3",
+          "standardLabel": "KFD-3",
+          "supportLevel": "release",
+          "source": {
+            "cwd": "",
+            "sourceSha": "",
+            "registryPath": ".buildchain/kfd/kfd-3/surfaces.json",
+            "registryDigest": "sha256:e4c4ab27bee1196b94d24b6edd09355452e97ea517f729a99a5744911332610a"
+          },
+          "registry": {
+            "id": "Kungfu Course Hub",
+            "version": "",
+            "path": ".buildchain/kfd/kfd-3/surfaces.json",
+            "sha256": "b84a0ba0878aa1bdc5634f10d15cfb092fcfabac54c4ad44bdcf32592bcdc724",
+            "digest": "sha256:b84a0ba0878aa1bdc5634f10d15cfb092fcfabac54c4ad44bdcf32592bcdc724"
+          },
+          "participantProfiles": [],
+          "expectedArtifactVerification": {
+            "command": ""
+          },
+          "collaborationInterfaceDigest": "sha256:222302f39bb0e8f6012995ac397bca2c0d52a338c6467aa9a5891e8b013e115a",
+          "auditBoundary": {
+            "mode": "closed-world",
+            "scope": "KFD-3 registered product public surfaces detected by Buildchain",
+            "reachableSurfaceMode": "declared-boundary",
+            "unclassifiedPolicy": "fail",
+            "nonExhaustivelyEnumerableSurfaces": [],
+            "explicitlyExemptedSurfaces": []
+          },
+          "residualRisk": [],
+          "extensionRequests": [],
+          "responsibility": {
+            "registryFactsOwner": "product",
+            "artifactVerificationOwner": "Buildchain KFD-3 surface audit",
+            "releasePassportProofOwner": "Buildchain"
+          },
+          "declaredSurfaces": [
+            {
+              "id": "doc:agents.md",
+              "name": "AGENTS.md",
+              "kind": "documentation",
+              "participantProfile": "",
+              "availability": "shipped",
+              "visibility": "public",
+              "participantFacing": true,
+              "public": true,
+              "sourcePath": "AGENTS.md",
+              "evidencePath": "AGENTS.md"
+            },
+            {
+              "id": "doc:docs/api.md",
+              "name": "docs/API.md",
+              "kind": "documentation",
+              "participantProfile": "",
+              "availability": "shipped",
+              "visibility": "public",
+              "participantFacing": true,
+              "public": true,
+              "sourcePath": "docs/API.md",
+              "evidencePath": "docs/API.md"
+            },
+            {
+              "id": "doc:docs/architecture.md",
+              "name": "docs/ARCHITECTURE.md",
+              "kind": "documentation",
+              "participantProfile": "",
+              "availability": "shipped",
+              "visibility": "public",
+              "participantFacing": true,
+              "public": true,
+              "sourcePath": "docs/ARCHITECTURE.md",
+              "evidencePath": "docs/ARCHITECTURE.md"
+            },
+            {
+              "id": "doc:docs/development-candidate.md",
+              "name": "docs/DEVELOPMENT-CANDIDATE.md",
+              "kind": "documentation",
+              "participantProfile": "",
+              "availability": "shipped",
+              "visibility": "public",
+              "participantFacing": true,
+              "public": true,
+              "sourcePath": "docs/DEVELOPMENT-CANDIDATE.md",
+              "evidencePath": "docs/DEVELOPMENT-CANDIDATE.md"
+            },
+            {
+              "id": "doc:docs/extending.md",
+              "name": "docs/EXTENDING.md",
+              "kind": "documentation",
+              "participantProfile": "",
+              "availability": "shipped",
+              "visibility": "public",
+              "participantFacing": true,
+              "public": true,
+              "sourcePath": "docs/EXTENDING.md",
+              "evidencePath": "docs/EXTENDING.md"
+            },
+            {
+              "id": "doc:docs/map.md",
+              "name": "docs/MAP.md",
+              "kind": "documentation",
+              "participantProfile": "",
+              "availability": "shipped",
+              "visibility": "public",
+              "participantFacing": true,
+              "public": true,
+              "sourcePath": "docs/MAP.md",
+              "evidencePath": "docs/MAP.md"
+            },
+            {
+              "id": "doc:docs/releasing.md",
+              "name": "docs/RELEASING.md",
+              "kind": "documentation",
+              "participantProfile": "",
+              "availability": "shipped",
+              "visibility": "public",
+              "participantFacing": true,
+              "public": true,
+              "sourcePath": "docs/RELEASING.md",
+              "evidencePath": "docs/RELEASING.md"
+            },
+            {
+              "id": "doc:docs/upgrading.md",
+              "name": "docs/UPGRADING.md",
+              "kind": "documentation",
+              "participantProfile": "",
+              "availability": "shipped",
+              "visibility": "public",
+              "participantFacing": true,
+              "public": true,
+              "sourcePath": "docs/UPGRADING.md",
+              "evidencePath": "docs/UPGRADING.md"
+            },
+            {
+              "id": "doc:readme.md",
+              "name": "README.md",
+              "kind": "documentation",
+              "participantProfile": "",
+              "availability": "shipped",
+              "visibility": "public",
+              "participantFacing": true,
+              "public": true,
+              "sourcePath": "README.md",
+              "evidencePath": "README.md"
+            },
+            {
+              "id": "node-api:kungfu-tech/hub-starter-runtime/client",
+              "name": "@kungfu-tech/hub-starter-runtime/client",
+              "kind": "node-api",
+              "participantProfile": "",
+              "availability": "shipped",
+              "visibility": "public",
+              "participantFacing": true,
+              "public": true,
+              "sourcePath": "legacy/hub-starter/src/client.mjs",
+              "evidencePath": "legacy/hub-starter/src/client.mjs"
+            }
+          ],
+          "metadata": {
+            "kfdPackage": {
+              "name": "@kungfu-tech/kfd",
+              "version": "1.0.0-alpha.62",
+              "repository": "git+https://github.com/kungfu-systems/kfd.git"
+            },
+            "schemaIds": {
+              "metadata": "https://kfd.libkungfu.dev/schemas/kfd-standards.schema.json",
+              "collaborationInterface": "https://kfd.libkungfu.dev/schemas/kfd-3/collaboration-interface.schema.json",
+              "witness": "https://kfd.libkungfu.dev/schemas/kfd-3/witness.schema.json"
+            },
+            "schemaPaths": {
+              "metadata": "schemas/kfd-standards.schema.json",
+              "collaborationInterface": "schemas/kfd-3/collaboration-interface.schema.json",
+              "witness": "schemas/kfd-3/witness.schema.json"
+            },
+            "hasCollaborationSchemas": true
+          }
+        },
+        "artifactWitness": {
+          "schemaVersion": 1,
+          "contract": "kungfu-buildchain-kfd-3-collaboration-interface-artifact-witness",
+          "id": "Kungfu Course Hub",
+          "standard": "kfd-3",
+          "standardLabel": "KFD-3",
+          "artifact": {
+            "name": "ghcr.io/kungfu-systems/runtime-images/hub-starter",
+            "path": "",
+            "digest": ""
+          },
+          "registry": {
+            "id": "Kungfu Course Hub",
+            "version": "",
+            "path": ".buildchain/kfd/kfd-3/surfaces.json",
+            "sha256": "b84a0ba0878aa1bdc5634f10d15cfb092fcfabac54c4ad44bdcf32592bcdc724",
+            "digest": "sha256:b84a0ba0878aa1bdc5634f10d15cfb092fcfabac54c4ad44bdcf32592bcdc724"
+          },
+          "collaborationInterfaceDigest": "sha256:222302f39bb0e8f6012995ac397bca2c0d52a338c6467aa9a5891e8b013e115a",
+          "exposedSurfaces": [
+            {
+              "id": "doc:agents.md",
+              "name": "AGENTS.md",
+              "kind": "documentation",
+              "participantProfile": "",
+              "availability": "shipped",
+              "visibility": "public",
+              "participantFacing": true,
+              "public": true,
+              "sourcePath": "AGENTS.md",
+              "evidencePath": "AGENTS.md"
+            },
+            {
+              "id": "doc:docs/api.md",
+              "name": "docs/API.md",
+              "kind": "documentation",
+              "participantProfile": "",
+              "availability": "shipped",
+              "visibility": "public",
+              "participantFacing": true,
+              "public": true,
+              "sourcePath": "docs/API.md",
+              "evidencePath": "docs/API.md"
+            },
+            {
+              "id": "doc:docs/architecture.md",
+              "name": "docs/ARCHITECTURE.md",
+              "kind": "documentation",
+              "participantProfile": "",
+              "availability": "shipped",
+              "visibility": "public",
+              "participantFacing": true,
+              "public": true,
+              "sourcePath": "docs/ARCHITECTURE.md",
+              "evidencePath": "docs/ARCHITECTURE.md"
+            },
+            {
+              "id": "doc:docs/development-candidate.md",
+              "name": "docs/DEVELOPMENT-CANDIDATE.md",
+              "kind": "documentation",
+              "participantProfile": "",
+              "availability": "shipped",
+              "visibility": "public",
+              "participantFacing": true,
+              "public": true,
+              "sourcePath": "docs/DEVELOPMENT-CANDIDATE.md",
+              "evidencePath": "docs/DEVELOPMENT-CANDIDATE.md"
+            },
+            {
+              "id": "doc:docs/extending.md",
+              "name": "docs/EXTENDING.md",
+              "kind": "documentation",
+              "participantProfile": "",
+              "availability": "shipped",
+              "visibility": "public",
+              "participantFacing": true,
+              "public": true,
+              "sourcePath": "docs/EXTENDING.md",
+              "evidencePath": "docs/EXTENDING.md"
+            },
+            {
+              "id": "doc:docs/map.md",
+              "name": "docs/MAP.md",
+              "kind": "documentation",
+              "participantProfile": "",
+              "availability": "shipped",
+              "visibility": "public",
+              "participantFacing": true,
+              "public": true,
+              "sourcePath": "docs/MAP.md",
+              "evidencePath": "docs/MAP.md"
+            },
+            {
+              "id": "doc:docs/releasing.md",
+              "name": "docs/RELEASING.md",
+              "kind": "documentation",
+              "participantProfile": "",
+              "availability": "shipped",
+              "visibility": "public",
+              "participantFacing": true,
+              "public": true,
+              "sourcePath": "docs/RELEASING.md",
+              "evidencePath": "docs/RELEASING.md"
+            },
+            {
+              "id": "doc:docs/upgrading.md",
+              "name": "docs/UPGRADING.md",
+              "kind": "documentation",
+              "participantProfile": "",
+              "availability": "shipped",
+              "visibility": "public",
+              "participantFacing": true,
+              "public": true,
+              "sourcePath": "docs/UPGRADING.md",
+              "evidencePath": "docs/UPGRADING.md"
+            },
+            {
+              "id": "doc:readme.md",
+              "name": "README.md",
+              "kind": "documentation",
+              "participantProfile": "",
+              "availability": "shipped",
+              "visibility": "public",
+              "participantFacing": true,
+              "public": true,
+              "sourcePath": "README.md",
+              "evidencePath": "README.md"
+            },
+            {
+              "id": "node-api:kungfu-tech/hub-starter-runtime/client",
+              "name": "@kungfu-tech/hub-starter-runtime/client",
+              "kind": "node-api",
+              "participantProfile": "",
+              "availability": "shipped",
+              "visibility": "public",
+              "participantFacing": true,
+              "public": true,
+              "sourcePath": "legacy/hub-starter/src/client.mjs",
+              "evidencePath": "legacy/hub-starter/src/client.mjs"
+            }
+          ],
+          "residualRisk": [],
+          "extensionRequests": [],
+          "verifier": {},
+          "metadata": {
+            "kfdPackage": {
+              "name": "@kungfu-tech/kfd",
+              "version": "1.0.0-alpha.62",
+              "repository": "git+https://github.com/kungfu-systems/kfd.git"
+            },
+            "schemaIds": {
+              "metadata": "https://kfd.libkungfu.dev/schemas/kfd-standards.schema.json",
+              "collaborationInterface": "https://kfd.libkungfu.dev/schemas/kfd-3/collaboration-interface.schema.json",
+              "witness": "https://kfd.libkungfu.dev/schemas/kfd-3/witness.schema.json"
+            },
+            "schemaPaths": {
+              "metadata": "schemas/kfd-standards.schema.json",
+              "collaborationInterface": "schemas/kfd-3/collaboration-interface.schema.json",
+              "witness": "schemas/kfd-3/witness.schema.json"
+            },
+            "hasCollaborationSchemas": true
+          }
+        },
+        "declaredSurfaces": [
+          {
+            "id": "doc:agents.md",
+            "name": "AGENTS.md",
+            "kind": "documentation",
+            "participantProfile": "",
+            "availability": "shipped",
+            "visibility": "public",
+            "participantFacing": true,
+            "public": true,
+            "sourcePath": "AGENTS.md",
+            "evidencePath": "AGENTS.md"
+          },
+          {
+            "id": "doc:docs/api.md",
+            "name": "docs/API.md",
+            "kind": "documentation",
+            "participantProfile": "",
+            "availability": "shipped",
+            "visibility": "public",
+            "participantFacing": true,
+            "public": true,
+            "sourcePath": "docs/API.md",
+            "evidencePath": "docs/API.md"
+          },
+          {
+            "id": "doc:docs/architecture.md",
+            "name": "docs/ARCHITECTURE.md",
+            "kind": "documentation",
+            "participantProfile": "",
+            "availability": "shipped",
+            "visibility": "public",
+            "participantFacing": true,
+            "public": true,
+            "sourcePath": "docs/ARCHITECTURE.md",
+            "evidencePath": "docs/ARCHITECTURE.md"
+          },
+          {
+            "id": "doc:docs/development-candidate.md",
+            "name": "docs/DEVELOPMENT-CANDIDATE.md",
+            "kind": "documentation",
+            "participantProfile": "",
+            "availability": "shipped",
+            "visibility": "public",
+            "participantFacing": true,
+            "public": true,
+            "sourcePath": "docs/DEVELOPMENT-CANDIDATE.md",
+            "evidencePath": "docs/DEVELOPMENT-CANDIDATE.md"
+          },
+          {
+            "id": "doc:docs/extending.md",
+            "name": "docs/EXTENDING.md",
+            "kind": "documentation",
+            "participantProfile": "",
+            "availability": "shipped",
+            "visibility": "public",
+            "participantFacing": true,
+            "public": true,
+            "sourcePath": "docs/EXTENDING.md",
+            "evidencePath": "docs/EXTENDING.md"
+          },
+          {
+            "id": "doc:docs/map.md",
+            "name": "docs/MAP.md",
+            "kind": "documentation",
+            "participantProfile": "",
+            "availability": "shipped",
+            "visibility": "public",
+            "participantFacing": true,
+            "public": true,
+            "sourcePath": "docs/MAP.md",
+            "evidencePath": "docs/MAP.md"
+          },
+          {
+            "id": "doc:docs/releasing.md",
+            "name": "docs/RELEASING.md",
+            "kind": "documentation",
+            "participantProfile": "",
+            "availability": "shipped",
+            "visibility": "public",
+            "participantFacing": true,
+            "public": true,
+            "sourcePath": "docs/RELEASING.md",
+            "evidencePath": "docs/RELEASING.md"
+          },
+          {
+            "id": "doc:docs/upgrading.md",
+            "name": "docs/UPGRADING.md",
+            "kind": "documentation",
+            "participantProfile": "",
+            "availability": "shipped",
+            "visibility": "public",
+            "participantFacing": true,
+            "public": true,
+            "sourcePath": "docs/UPGRADING.md",
+            "evidencePath": "docs/UPGRADING.md"
+          },
+          {
+            "id": "doc:readme.md",
+            "name": "README.md",
+            "kind": "documentation",
+            "participantProfile": "",
+            "availability": "shipped",
+            "visibility": "public",
+            "participantFacing": true,
+            "public": true,
+            "sourcePath": "README.md",
+            "evidencePath": "README.md"
+          },
+          {
+            "id": "node-api:kungfu-tech/hub-starter-runtime/client",
+            "name": "@kungfu-tech/hub-starter-runtime/client",
+            "kind": "node-api",
+            "participantProfile": "",
+            "availability": "shipped",
+            "visibility": "public",
+            "participantFacing": true,
+            "public": true,
+            "sourcePath": "legacy/hub-starter/src/client.mjs",
+            "evidencePath": "legacy/hub-starter/src/client.mjs"
+          }
+        ],
+        "exposedSurfaces": [
+          {
+            "id": "doc:agents.md",
+            "name": "AGENTS.md",
+            "kind": "documentation",
+            "participantProfile": "",
+            "availability": "shipped",
+            "visibility": "public",
+            "participantFacing": true,
+            "public": true,
+            "sourcePath": "AGENTS.md",
+            "evidencePath": "AGENTS.md"
+          },
+          {
+            "id": "doc:docs/api.md",
+            "name": "docs/API.md",
+            "kind": "documentation",
+            "participantProfile": "",
+            "availability": "shipped",
+            "visibility": "public",
+            "participantFacing": true,
+            "public": true,
+            "sourcePath": "docs/API.md",
+            "evidencePath": "docs/API.md"
+          },
+          {
+            "id": "doc:docs/architecture.md",
+            "name": "docs/ARCHITECTURE.md",
+            "kind": "documentation",
+            "participantProfile": "",
+            "availability": "shipped",
+            "visibility": "public",
+            "participantFacing": true,
+            "public": true,
+            "sourcePath": "docs/ARCHITECTURE.md",
+            "evidencePath": "docs/ARCHITECTURE.md"
+          },
+          {
+            "id": "doc:docs/development-candidate.md",
+            "name": "docs/DEVELOPMENT-CANDIDATE.md",
+            "kind": "documentation",
+            "participantProfile": "",
+            "availability": "shipped",
+            "visibility": "public",
+            "participantFacing": true,
+            "public": true,
+            "sourcePath": "docs/DEVELOPMENT-CANDIDATE.md",
+            "evidencePath": "docs/DEVELOPMENT-CANDIDATE.md"
+          },
+          {
+            "id": "doc:docs/extending.md",
+            "name": "docs/EXTENDING.md",
+            "kind": "documentation",
+            "participantProfile": "",
+            "availability": "shipped",
+            "visibility": "public",
+            "participantFacing": true,
+            "public": true,
+            "sourcePath": "docs/EXTENDING.md",
+            "evidencePath": "docs/EXTENDING.md"
+          },
+          {
+            "id": "doc:docs/map.md",
+            "name": "docs/MAP.md",
+            "kind": "documentation",
+            "participantProfile": "",
+            "availability": "shipped",
+            "visibility": "public",
+            "participantFacing": true,
+            "public": true,
+            "sourcePath": "docs/MAP.md",
+            "evidencePath": "docs/MAP.md"
+          },
+          {
+            "id": "doc:docs/releasing.md",
+            "name": "docs/RELEASING.md",
+            "kind": "documentation",
+            "participantProfile": "",
+            "availability": "shipped",
+            "visibility": "public",
+            "participantFacing": true,
+            "public": true,
+            "sourcePath": "docs/RELEASING.md",
+            "evidencePath": "docs/RELEASING.md"
+          },
+          {
+            "id": "doc:docs/upgrading.md",
+            "name": "docs/UPGRADING.md",
+            "kind": "documentation",
+            "participantProfile": "",
+            "availability": "shipped",
+            "visibility": "public",
+            "participantFacing": true,
+            "public": true,
+            "sourcePath": "docs/UPGRADING.md",
+            "evidencePath": "docs/UPGRADING.md"
+          },
+          {
+            "id": "doc:readme.md",
+            "name": "README.md",
+            "kind": "documentation",
+            "participantProfile": "",
+            "availability": "shipped",
+            "visibility": "public",
+            "participantFacing": true,
+            "public": true,
+            "sourcePath": "README.md",
+            "evidencePath": "README.md"
+          },
+          {
+            "id": "node-api:kungfu-tech/hub-starter-runtime/client",
+            "name": "@kungfu-tech/hub-starter-runtime/client",
+            "kind": "node-api",
+            "participantProfile": "",
+            "availability": "shipped",
+            "visibility": "public",
+            "participantFacing": true,
+            "public": true,
+            "sourcePath": "legacy/hub-starter/src/client.mjs",
+            "evidencePath": "legacy/hub-starter/src/client.mjs"
+          }
+        ],
+        "factSource": {
+          "role": "product-owned",
+          "registry": {
+            "id": "Kungfu Course Hub",
+            "version": "",
+            "path": ".buildchain/kfd/kfd-3/surfaces.json",
+            "sha256": "b84a0ba0878aa1bdc5634f10d15cfb092fcfabac54c4ad44bdcf32592bcdc724",
+            "digest": "sha256:b84a0ba0878aa1bdc5634f10d15cfb092fcfabac54c4ad44bdcf32592bcdc724"
+          },
+          "collaborationInterfaceDigest": "sha256:222302f39bb0e8f6012995ac397bca2c0d52a338c6467aa9a5891e8b013e115a"
+        },
+        "witnessEvidence": {
+          "prebuild": {
+            "path": "",
+            "sha256": "",
+            "canonicalSha256": "89f83c580a6944a6a1a92b60af7ffc6f5bb8f2166c38288e502d454ff31b84a6"
+          },
+          "artifact": {
+            "path": "",
+            "sha256": "",
+            "canonicalSha256": "3766752e4a4ffcd12ca489902e8e2d842dece8898284b99c4723b0c938c5255a"
+          },
+          "artifactVerifyCommandSha256": ""
+        },
+        "auditBoundary": {
+          "mode": "closed-world",
+          "scope": "KFD-3 registered product public surfaces detected by Buildchain",
+          "reachableSurfaceMode": "declared-boundary",
+          "unclassifiedPolicy": "fail",
+          "nonExhaustivelyEnumerableSurfaces": [],
+          "explicitlyExemptedSurfaces": []
+        },
+        "residualRisk": [],
+        "responsibility": {
+          "registryFactsOwner": "product",
+          "artifactVerificationOwner": "Buildchain KFD-3 surface audit",
+          "releasePassportProofOwner": "Buildchain"
+        },
+        "releaseStatus": "enforced",
+        "trustProof": {
+          "contract": "kungfu-buildchain-kfd-3-passport-trust-proof",
+          "result": "pass",
+          "releaseStatus": "enforced",
+          "statement": "No unclassified reachable surface within the declared audit boundary.",
+          "factSourceRole": "product-owned-registry-and-witnesses",
+          "proofOwner": "buildchain-release-passport",
+          "declaredCapabilityVerification": {
+            "status": "passed",
+            "result": "passed",
+            "declaredCapabilityCount": 10,
+            "declaredShippedPublicSurfaceCount": 10,
+            "implementedPublicSurfaceCount": 10,
+            "missingDeclaredShipped": []
+          },
+          "reverseAudit": {
+            "status": "passed",
+            "auditBoundary": {
+              "mode": "closed-world",
+              "scope": "KFD-3 registered product public surfaces detected by Buildchain",
+              "reachableSurfaceMode": "declared-boundary",
+              "unclassifiedPolicy": "fail",
+              "nonExhaustivelyEnumerableSurfaces": [],
+              "explicitlyExemptedSurfaces": []
+            },
+            "reachablePublicSurfaceCount": 10,
+            "unclassifiedReachableSurfaces": [],
+            "explicitlyExemptedSurfaces": [],
+            "nonExhaustivelyEnumerableSurfaces": [],
+            "statement": "No unclassified reachable surface within the declared audit boundary."
+          },
+          "residualRisk": [],
+          "responsibility": {
+            "registryFactsOwner": "product",
+            "artifactVerificationOwner": "Buildchain KFD-3 surface audit",
+            "releasePassportProofOwner": "Buildchain"
+          }
+        },
+        "declaredCapabilityVerification": {
+          "status": "passed",
+          "result": "passed",
+          "declaredCapabilityCount": 10,
+          "declaredShippedPublicSurfaceCount": 10,
+          "implementedPublicSurfaceCount": 10,
+          "missingDeclaredShipped": []
+        },
+        "reverseAudit": {
+          "status": "passed",
+          "auditBoundary": {
+            "mode": "closed-world",
+            "scope": "KFD-3 registered product public surfaces detected by Buildchain",
+            "reachableSurfaceMode": "declared-boundary",
+            "unclassifiedPolicy": "fail",
+            "nonExhaustivelyEnumerableSurfaces": [],
+            "explicitlyExemptedSurfaces": []
+          },
+          "reachablePublicSurfaceCount": 10,
+          "unclassifiedReachableSurfaces": [],
+          "explicitlyExemptedSurfaces": [],
+          "nonExhaustivelyEnumerableSurfaces": [],
+          "statement": "No unclassified reachable surface within the declared audit boundary."
+        },
+        "comparison": {
+          "status": "passed",
+          "verifiedAt": "1970-01-01T00:00:00.000Z",
+          "supportLevel": "release",
+          "declaredPublicSurfaceCount": 10,
+          "declaredShippedPublicSurfaceCount": 10,
+          "artifactPublicSurfaceCount": 10,
+          "missingDeclaredShipped": [],
+          "unclassifiedArtifactPublic": [],
+          "reasons": []
+        }
+      }
+    ]
+  }
+}

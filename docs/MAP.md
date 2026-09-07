@@ -8,7 +8,7 @@ confidence: high
 sensitivity: public
 evidence_grade: A
 review_state: unreviewed
-last_reviewed: 2026-08-09
+last_reviewed: 2026-09-07
 ai_provenance:
   model_family: GPT-5
   product: Codex
@@ -53,18 +53,18 @@ ai_provenance:
   model install, activation, real generated content, provenance, and Kungfu
   settlement smoke.
 - `scripts/smoke-browser.sh` — real-browser authenticated product-entry smoke.
-- `.github/workflows/image.yml` — trusted dual-package consumption,
-  multi-platform development publication, and native amd64/arm64 evidence.
-- `.github/workflows/application.yml` — immutable plus preview OCI Compose
-  publication and fresh one-command installation smoke.
+- `.github/workflows/build.yml` — Buildchain v4 sealed dual-platform OCI candidate.
+- `.github/workflows/image.yml` and `application.yml` — manual read-only contract checks.
+- `.github/workflows/qualify-release.yml` — exact published-tag image and Compose qualification.
+- `.github/workflows/compose-preview.yml` — thin public v4 qualification callback.
+- `docs/RELEASING.md` — immutable publication, public qualification, and preview evidence.
 - `.github/workflows/package-stage.yml` and
   `scripts/prepare-kungfu-build-candidate.mjs` — one-run intake of the Linux
   x64 package, Linux arm64 package, and product admission capsule from the same
   exact Kungfu `Build` candidate. The retained qualification artifact contains
   a fail-closed runtime lock/contract proposal but has no publication authority.
-- `scripts/stage-kungfu-package-release.sh` — stages or reuses the exact package
-  prerelease inside the protected Buildchain transaction and verifies its asset
-  bytes against the committed lock.
+- `scripts/stage-kungfu-package-release.sh` — retained package-staging adapter; the v4 runtime
+  candidate consumes the already published, accepted package release.
 - `docs/ARCHITECTURE.md`, `docs/EXTENDING.md`, `docs/API.md`, and
   `docs/UPGRADING.md` — authority, extension, transport, and installation
   lifecycle guides.

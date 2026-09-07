@@ -11,12 +11,26 @@ on:
       - alpha/v*/v*
       - release/v*/v*
   workflow_dispatch:
+    inputs:
+      buildchain-ref:
+        description: Temporary trusted runtime for validation
+        required: false
+        default: ""
+      delivery-request-json:
+        description: Exact source-qualified development delivery request
+        required: false
+        default: ""
+      native-roots-json:
+        description: Native Work sourceRoot binding
+        required: false
+        default: "{}"
 
 permissions:
   contents: read
 
 jobs:
   check:
+    if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.delivery-request-json != '') }}
     name: check
     runs-on: ubuntu-24.04
     steps:
@@ -30,10 +44,10 @@ jobs:
           node-version: "24"
           cache: npm
       - name: Validate Buildchain config
-        uses: kungfu-systems/buildchain/actions/validate-config@v3
+        uses: kungfu-systems/buildchain/actions/validate-config@v4-alpha
         with:
           require-version-state: "true"
-          require-lifecycle-stages: "verify,publish"
+          require-lifecycle-stages: "verify"
       - name: Install exact dependency graph
         run: npm ci --ignore-scripts --registry=https://registry.npmjs.org/
       - name: Run Buildchain verify lifecycle
@@ -45,3 +59,36 @@ jobs:
           scripts/smoke-browser.sh
           scripts/stage-kungfu-package-release.sh
           scripts/publish-runtime-release.sh
+          scripts/qualify-runtime-release.sh
+
+  deliver:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.delivery-request-json != '' }}
+    uses: kungfu-systems/buildchain/.github/workflows/dev-pr-auto-merge.yml@v4-alpha
+    permissions:
+      actions: write
+      contents: write
+      pull-requests: write
+      checks: read
+      statuses: write
+    secrets:
+      github-token: ${{ secrets.BUILDCHAIN_PROMOTION_TOKEN }}
+    with:
+      buildchain-ref: ${{ inputs.buildchain-ref || 'v4-alpha' }}
+      target-branch: dev/v1/v1.0
+      expected-pr-number: ${{ fromJSON(inputs.delivery-request-json).pullRequestNumber }}
+      expected-head-sha: ${{ fromJSON(inputs.delivery-request-json).sourceHead }}
+      source-workflow-run-id: ${{ fromJSON(inputs.delivery-request-json).sourceWorkflowRunId }}
+      source-workflow-id: verify.yml
+      delivery-warrant-mode: required
+      delivery-class: non-native-fast
+      source-identity-root: ${{ fromJSON(inputs.delivery-request-json).sourceIdentityRoot }}
+      source-patch-root: ${{ fromJSON(inputs.delivery-request-json).sourcePatchRoot }}
+      plan-root: ${{ fromJSON(inputs.delivery-request-json).planRoot }}
+      closure-root: ${{ fromJSON(inputs.delivery-request-json).closureRoot }}
+      dependency-root: ${{ fromJSON(inputs.delivery-request-json).dependencyRoot }}
+      toolchain-root: ${{ fromJSON(inputs.delivery-request-json).toolchainRoot }}
+      affected-paths-json: ${{ toJSON(fromJSON(inputs.delivery-request-json).affectedPaths) }}
+      required-status-checks: "check,Signed-off commits"
+      ready-label: ready
+      landing-mode: auto
+      dry-run: false

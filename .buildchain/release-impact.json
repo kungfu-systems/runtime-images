@@ -2,40 +2,40 @@
   "schemaVersion": 1,
   "contract": "kungfu-buildchain-impact",
   "release": {
-    "version": "1.0.0-alpha.13",
+    "version": "1.0.0-alpha.14",
     "line": "v1.0"
   },
   "versionImpact": {
-    "final": "major",
-    "source": "runtime-images-buildchain-migration",
-    "rationale": "The first Buildchain-governed product line establishes the v1.0 alpha namespace for the existing Course Hub image and OCI Compose application without removing the pre-Alpha preview route."
+    "final": "patch",
+    "source": "runtime-images-buildchain-v4-migration",
+    "rationale": "Adopt the v4 sealed OCI provider and qualified preview callback while retaining the existing v1.0 installation, package, and data contracts."
   },
   "surfaceImpacts": [
     {
       "id": "hub-starter-buildchain-release",
-      "impact": "major",
+      "impact": "patch",
       "class": "release-governance",
-      "rationale": "Buildchain now establishes the first governed v1.0 alpha line and owns version selection, exact publication, durable evidence, release finalization, and the Release Passport.",
+      "rationale": "Buildchain v4 owns sealed OCI publication, protected version state, the Release Passport and settlement.",
       "source": ".github/workflows/buildchain-ref-promotion.yml"
     },
     {
       "id": "hub-starter-multi-platform-image",
-      "impact": "minor",
+      "impact": "patch",
       "class": "container-runtime",
-      "rationale": "The existing linux/amd64 and linux/arm64 Course Hub image becomes an exact versioned release artifact with retained SBOM, provenance, and native-contract smoke evidence.",
-      "source": "scripts/publish-runtime-release.sh"
+      "rationale": "Retain both architectures, pinned package and base inputs, SBOM, provenance and execution smokes in one immutable OCI index.",
+      "source": "scripts/build-oci-candidate.mjs"
     },
     {
       "id": "hub-starter-oci-compose",
-      "impact": "minor",
+      "impact": "patch",
       "class": "installation",
-      "rationale": "The one-command OCI Compose application becomes an exact versioned release artifact while the verified compose-preview convenience channel remains compatible.",
+      "rationale": "Retain one-command Compose and preserved-volume upgrade/rollback; move preview through the public v4 callback after qualification.",
       "source": "compose.yaml"
     }
   ],
-  "classification": "major",
+  "classification": "patch",
   "breaking": false,
   "security": false,
   "migrationRequired": false,
-  "summary": "Runtime Images v1.0 alpha publishes the Course Hub image and one-command Compose application through one Buildchain-owned, evidence-gated transaction."
+  "summary": "Buildchain v4 publishes the sealed dual-platform image and immutable Compose application; the preview moves only after exact public installation and persistence qualification."
 }

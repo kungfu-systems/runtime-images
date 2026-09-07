@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "contract": "kungfu-runtime-images-kfd123-check",
+  "status": "passed",
+  "buildchain": {
+    "configPath": ".buildchain/buildchain.toml",
+    "alphaContractLockRef": "v4-alpha",
+    "alphaContractLockStatus": "unchanged",
+    "alphaContractDrift": false,
+    "alphaContractDigest": "sha256:1ffa084654fcf7d8f82f11b15b0fffb6da3a5d5c68ca0e8ea667f3fb08e2b0f6",
+    "stableContractLockRef": "v4",
+    "stableContractLockStatus": "unchanged",
+    "stableContractDrift": false,
+    "stableContractDigest": "sha256:3ff4d0a46c909ad17c7c91718c5440580e0a43e137a8b7fec767ca5e23b70768"
+  },
+  "kfd1": {
+    "witness": ".buildchain/kfd/kfd-1/runtime-images-contract-world.witness.json",
+    "surfaceCount": 9
+  },
+  "kfd2": {
+    "claim": ".buildchain/kfd/kfd-2/release-claims.json",
+    "upstreamCount": 2,
+    "claimStatus": "passed"
+  },
+  "kfd3": {
+    "registry": ".buildchain/kfd/kfd-3/surfaces.json",
+    "auditStatus": "passed",
+    "declared": 10,
+    "prebuildWitness": ".buildchain/kfd/kfd-3/collaboration-interface.prebuild.json",
+    "artifactWitness": ".buildchain/kfd/kfd-3/collaboration-interface.artifact.json"
+  },
+  "releasePassportSmoke": {
+    "ok": true
+  }
+}

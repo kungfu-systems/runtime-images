@@ -1,6 +1,6 @@
 {
   "schema": "kungfu.course-hub-runtime/v2",
-  "status": "runtime-input-qualified",
+  "status": "alpha-release",
   "authority": {
     "identitySessionsCoursesVersionsApprovals": "PostgreSQL with forced per-account row isolation",
     "inference": "selected AgentWorkPort backend with PostgreSQL-persisted provenance",
@@ -81,10 +81,21 @@
     "volumes": ["PostgreSQL business data", "Kungfu native state", "optional model weights"],
     "destructiveCleanupCommand": null
   },
+  "release": {
+    "version": "1.0.0-alpha.13",
+    "tag": "v1.0.0-alpha.13",
+    "sourceRevision": "4305406a37ecaaba8eb0b942eb2fe36fe0e9f095",
+    "releaseRevision": "a6fe02cdd0bded1bfd4d51d96c87371281c8420e",
+    "qualificationRun": "https://github.com/kungfu-systems/runtime-images/actions/runs/31626038779",
+    "promotionRun": "https://github.com/kungfu-systems/runtime-images/actions/runs/31627184153",
+    "transactionStateRef": "refs/heads/buildchain/release-state/1-0-0-alpha-13",
+    "image": "ghcr.io/kungfu-systems/runtime-images/hub-starter@sha256:a0a94c04188210beaa779a094661d99bd232795fa26b17881b53ec83a50a486e",
+    "composeApplication": "ghcr.io/kungfu-systems/runtime-images/hub-starter:compose-v1.0.0-alpha.13@sha256:c1e2a459d5057ac9d875204823413a82a9aae66da0d555f8677c014cdb7e1347"
+  },
   "substitutionSeam": {
     "environment": "KUNGFU_HUB_IMAGE",
     "policy": "exact digest only",
-    "officialAlpha": "replace only after independent qualification and lock update"
+    "officialAlpha": "v1.0.0-alpha.13"
   },
   "nonClaims": [
     "not production ready",
@@ -93,6 +104,6 @@
     "not billing or account recovery",
     "not highly available",
     "not a native Windows container",
-    "not an official Kungfu Alpha or stable release"
+    "not a stable release"
   ]
 }
