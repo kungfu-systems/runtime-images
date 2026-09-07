@@ -146,7 +146,7 @@
       "policy": {},
       "facts": {
         "path": "docs/RELEASING.md",
-        "sha256": "6f21efa315087de16343c6dfe2e861c758a7120f2a1e3a3bd4ebdbd9d7aefcdc"
+        "sha256": "50251f3e22e0200f7377bd5b0d383836de7a9a17018b0cba4eeba00ee067d7ea"
       },
       "declaration": {
         "owner": "product",

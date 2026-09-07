@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { imageRepository, sha256 } from './oci-compose-candidate.mjs';
+import { verifyPublicationSource } from './publication-source.mjs';
 
 const directory = '.artifacts/public-release';
 const read = (name) => JSON.parse(fs.readFileSync(path.join(directory, name)));
@@ -29,7 +30,7 @@ if (process.argv[2] === 'prepare') {
   const settlement = read('buildchain-publication-settlement.json').documents;
   const readback = read('oci-publication-readback.json');
   check(family.repository === repository && family.version === tag.slice(1), 'family identity mismatch');
-  check(settlement.product.publication.releaseSha === sourceSha && settlement.invocation.candidate.commit === family.sourceSha, 'publication source mismatch');
+  verifyPublicationSource({ documents: settlement, family, readback, sourceSha });
   const image = family.images.find((entry) => entry.name === 'hub-starter');
   const application = family.images.find((entry) => entry.name === 'hub-starter-compose');
   for (const entry of [image, application]) {

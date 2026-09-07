@@ -8,14 +8,14 @@
     "cwd": "",
     "sourceSha": "",
     "registryPath": ".buildchain/kfd/kfd-3/surfaces.json",
-    "registryDigest": "sha256:e4c4ab27bee1196b94d24b6edd09355452e97ea517f729a99a5744911332610a"
+    "registryDigest": "sha256:9d56335d65a8973765d89970e4e296453f43f9b9ea3f9cd5a46be57927cef57c"
   },
   "sourceRegistry": {
     "id": "Kungfu Course Hub",
     "path": ".buildchain/kfd/kfd-3/surfaces.json",
-    "sha256": "b84a0ba0878aa1bdc5634f10d15cfb092fcfabac54c4ad44bdcf32592bcdc724"
+    "sha256": "93db781491e020bdde365038c132e708d255fa25b66a50bb0220f7574f5c1fdc"
   },
-  "collaborationInterfaceDigest": "sha256:222302f39bb0e8f6012995ac397bca2c0d52a338c6467aa9a5891e8b013e115a",
+  "collaborationInterfaceDigest": "sha256:56ed6ea9c0a1b1b60d3311856b200ccdff179aa1402456bedd71e71608c1b242",
   "collaborationInterface": {
     "schemaVersion": 1,
     "contract": "kungfu-buildchain-kfd-3-surface-registry",
@@ -169,7 +169,7 @@
         "policy": {},
         "facts": {
           "path": "docs/RELEASING.md",
-          "sha256": "6f21efa315087de16343c6dfe2e861c758a7120f2a1e3a3bd4ebdbd9d7aefcdc"
+          "sha256": "50251f3e22e0200f7377bd5b0d383836de7a9a17018b0cba4eeba00ee067d7ea"
         },
         "declaration": {
           "owner": "product",
@@ -362,7 +362,7 @@
         "policy": {},
         "facts": {
           "path": "docs/RELEASING.md",
-          "sha256": "6f21efa315087de16343c6dfe2e861c758a7120f2a1e3a3bd4ebdbd9d7aefcdc"
+          "sha256": "50251f3e22e0200f7377bd5b0d383836de7a9a17018b0cba4eeba00ee067d7ea"
         }
       },
       {
@@ -566,7 +566,7 @@
             "policy": {},
             "facts": {
               "path": "docs/RELEASING.md",
-              "sha256": "6f21efa315087de16343c6dfe2e861c758a7120f2a1e3a3bd4ebdbd9d7aefcdc"
+              "sha256": "50251f3e22e0200f7377bd5b0d383836de7a9a17018b0cba4eeba00ee067d7ea"
             }
           },
           {
@@ -771,7 +771,7 @@
             "policy": {},
             "facts": {
               "path": "docs/RELEASING.md",
-              "sha256": "6f21efa315087de16343c6dfe2e861c758a7120f2a1e3a3bd4ebdbd9d7aefcdc"
+              "sha256": "50251f3e22e0200f7377bd5b0d383836de7a9a17018b0cba4eeba00ee067d7ea"
             },
             "declaration": {
               "owner": "product",
@@ -973,7 +973,7 @@
             "policy": {},
             "facts": {
               "path": "docs/RELEASING.md",
-              "sha256": "6f21efa315087de16343c6dfe2e861c758a7120f2a1e3a3bd4ebdbd9d7aefcdc"
+              "sha256": "50251f3e22e0200f7377bd5b0d383836de7a9a17018b0cba4eeba00ee067d7ea"
             }
           },
           {
@@ -1170,7 +1170,7 @@
             "policy": {},
             "facts": {
               "path": "docs/RELEASING.md",
-              "sha256": "6f21efa315087de16343c6dfe2e861c758a7120f2a1e3a3bd4ebdbd9d7aefcdc"
+              "sha256": "50251f3e22e0200f7377bd5b0d383836de7a9a17018b0cba4eeba00ee067d7ea"
             },
             "declaration": {
               "owner": "product",
@@ -1415,7 +1415,7 @@
       "policy": {},
       "facts": {
         "path": "docs/RELEASING.md",
-        "sha256": "6f21efa315087de16343c6dfe2e861c758a7120f2a1e3a3bd4ebdbd9d7aefcdc"
+        "sha256": "50251f3e22e0200f7377bd5b0d383836de7a9a17018b0cba4eeba00ee067d7ea"
       },
       "declaration": {
         "owner": "product",
