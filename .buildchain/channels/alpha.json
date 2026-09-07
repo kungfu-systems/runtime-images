@@ -1,0 +1,12 @@
+{
+  "schema": "kungfu.buildchain.signed-channel/v1",
+  "subject": {
+    "repository": "kungfu-systems/runtime-images",
+    "sourceSha": "cd73567dba39d51a44c9b9957d015eaacbb1948c",
+    "version": "1.0.0-alpha.14",
+    "tag": "v1.0.0-alpha.14",
+    "channel": "alpha"
+  },
+  "qualificationRoot": "sha256:2f7def831446bb3782be76b9a18e26017bca848561a97509da384075d254c78e",
+  "releaseAssetsRoot": "sha256:77254c1ceacec1c26a609e44383f482146e68dd3b2bd84f3b059966bdecf5849"
+}
