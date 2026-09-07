@@ -1,0 +1,55 @@
+name: Build
+
+on:
+  pull_request:
+    branches: ["alpha/v1/v1.0"]
+  workflow_dispatch:
+    inputs:
+      buildchain-ref:
+        description: Temporary trusted runtime train
+        required: false
+        default: ""
+
+permissions:
+  actions: read
+  contents: read
+  issues: write
+  id-token: write
+
+jobs:
+  images:
+    uses: kungfu-systems/buildchain/.github/workflows/build.yml@v4-alpha
+    secrets: inherit
+    with:
+      buildchain-ref: ${{ inputs.buildchain-ref || '' }}
+      checkout-history-mode: full
+      runner-preset: custom
+      platforms-json: '[{"id":"linux-x64","name":"Linux x64","runner":"[\"ubuntu-24.04\"]"}]'
+      setup-node: true
+      node-version: "24"
+      install-command: npm ci --ignore-scripts && sudo apt-get update && sudo apt-get install -y skopeo
+      build-command: npm run build:oci
+      verify-command: npm run check
+      require-install: true
+      require-build: true
+      require-verify: true
+      lifecycle-timeout-minutes: 180
+      artifact-name: runtime-images
+      artifact-compression-level: 0
+      artifact-name-template: "{artifact}-{platform}-{shortSha}"
+      artifact-paths: |
+        build/oci-candidate
+        .buildchain/kfd
+        .buildchain/buildchain.toml
+        .buildchain/release-impact.json
+        package.json
+        README.md
+        AGENTS.md
+        legacy/hub-starter/src/client.mjs
+        docs
+        contracts
+        release/runtime.lock.json
+        compose.yaml
+        scripts
+      release-candidate: true
+      publish-channel: ${{ startsWith(github.base_ref, 'alpha/') && 'alpha' || 'none' }}

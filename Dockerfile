@@ -48,11 +48,13 @@ ARG KUNGFU_PACKAGE_SHA256_ARM64
 ARG KUNGFU_PACKAGE_VERSION
 ARG KUNGFU_SOURCE_SHA
 ARG SOURCE_REVISION
+ARG RUNTIME_VERSION
 
 LABEL org.opencontainers.image.title="Kungfu Course Hub" \
       org.opencontainers.image.description="PostgreSQL course builder with selectable inference and Kungfu-managed work" \
       org.opencontainers.image.source="https://github.com/kungfu-systems/runtime-images" \
       org.opencontainers.image.revision="${SOURCE_REVISION}" \
+      org.opencontainers.image.version="${RUNTIME_VERSION}" \
       org.opencontainers.image.licenses="Apache-2.0" \
       tech.kungfu.product.version="${KUNGFU_PACKAGE_VERSION}" \
       tech.kungfu.product.source="${KUNGFU_SOURCE_SHA}" \

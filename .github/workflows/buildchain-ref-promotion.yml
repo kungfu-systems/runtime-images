@@ -3,177 +3,113 @@ name: Buildchain Ref Promotion
 on:
   workflow_run:
     workflows: ["Verify"]
-    branches:
-      - "alpha/v*/v*"
-      - "release/v*/v*"
+    branches: ["alpha/v1/v1.0"]
     types: [completed]
   workflow_dispatch:
     inputs:
       sha:
-        description: "Verified alpha/release commit to plan. Defaults to the current workflow ref SHA."
+        description: Verified source SHA
         required: false
         default: ""
       target-ref:
-        description: "Buildchain channel branch to plan"
+        description: Protected alpha channel
         required: true
-        default: "alpha/v1/v1.0"
+        default: alpha/v1/v1.0
       dry-run:
-        description: "Only print the governed publication plan"
+        description: Inspect the promotion without publishing
         required: true
         default: "true"
+      resume-candidate-run-id:
+        description: Original successful Build run; required for manual recovery apply
+        default: ""
+      resume-expected-source-tree:
+        description: Exact source tree from the original candidate Passport
+        default: ""
+      resume-expected-candidate-root:
+        description: Optional original candidate root for an additional identity check
+        default: ""
+      resume-expected-candidate-runtime-sha:
+        description: Exact runtime recorded by the original candidate
+        default: ""
+      resume-buildchain-runtime-sha:
+        description: Exact approved repair runtime, used only for this recovery attempt
+        default: ""
+      resume-transaction-id:
+        description: Optional existing durable transaction identity
+        default: ""
 
 permissions:
-  actions: read
-  contents: write
+  actions: write
+  artifact-metadata: write
+  attestations: write
   checks: write
+  contents: write
+  id-token: write
+  issues: write
   packages: write
   pull-requests: write
 
 concurrency:
-  group: runtime-images-buildchain-promotion-${{ github.ref }}
+  group: runtime-images-v4-oci-alpha-publication
   cancel-in-progress: false
 
 jobs:
-  promote:
-    if: >-
-      ${{
-        github.event_name == 'workflow_dispatch' ||
-        github.event.workflow_run.conclusion == 'success'
-      }}
+  reject-manual-apply:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs['dry-run'] != 'true' && inputs['resume-candidate-run-id'] == '' }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 120
     steps:
-      - name: Reject manual apply
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs['dry-run'] != 'true' }}
-        run: |
-          echo "::error::Manual Buildchain publication is limited to dry-run."
-          echo "::error::Merge through alpha/release and let a successful Verify workflow_run own publication."
+      - run: |
+          echo "::error::Fresh publication requires a successful protected alpha Verify push; manual apply requires a verified original candidate run."
           exit 1
 
-      - name: Resolve target SHA
-        id: target
-        env:
-          WORKFLOW_RUN_SHA: ${{ github.event.workflow_run.head_sha }}
-          INPUT_SHA: ${{ inputs.sha }}
-          FALLBACK_SHA: ${{ github.sha }}
-        run: |
-          sha="${WORKFLOW_RUN_SHA:-${INPUT_SHA:-$FALLBACK_SHA}}"
-          echo "sha=${sha}" >>"${GITHUB_OUTPUT}"
-
-      - name: Resolve target ref
-        id: target_ref
-        env:
-          WORKFLOW_RUN_BRANCH: ${{ github.event.workflow_run.head_branch }}
-          INPUT_TARGET_REF: ${{ inputs['target-ref'] }}
-        run: |
-          target_ref="${WORKFLOW_RUN_BRANCH:-${INPUT_TARGET_REF}}"
-          case "${target_ref}" in
-            alpha/v*/v*|release/v*/v*) ;;
-            *)
-              echo "::error::unsupported target ref: ${target_ref}"
-              exit 1
-              ;;
-          esac
-          echo "target_ref=${target_ref}" >>"${GITHUB_OUTPUT}"
-
-      - name: Check out exact verified source
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-        with:
-          ref: ${{ steps.target.outputs.sha }}
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Use Node.js 24
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
-        with:
-          node-version: "24"
-          cache: npm
-
-      - name: Install exact dependency graph
-        run: npm ci --ignore-scripts --registry=https://registry.npmjs.org/
-
-      - name: Resolve exact required artifacts
-        id: required_artifacts
-        run: node scripts/required-publish-artifacts.mjs --github-output "${GITHUB_OUTPUT}"
-
-      - name: Stage exact Kungfu package release inside the protected transaction
-        if: ${{ github.event_name != 'workflow_dispatch' || inputs['dry-run'] != 'true' }}
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: bash scripts/stage-kungfu-package-release.sh
-
-      - name: Set up QEMU
-        if: ${{ github.event_name != 'workflow_dispatch' || inputs['dry-run'] != 'true' }}
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Compose
-        if: ${{ github.event_name != 'workflow_dispatch' || inputs['dry-run'] != 'true' }}
-        uses: docker/setup-compose-action@4eb059ff7f16592f9c84d5ca339c53cb7c5064e2 # v2.3.0
-        with:
-          version: v5.1.2
-
-      - name: Set up Docker Buildx
-        if: ${{ github.event_name != 'workflow_dispatch' || inputs['dry-run'] != 'true' }}
-        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3
-
-      - name: Sign in to GHCR
-        if: ${{ github.event_name != 'workflow_dispatch' || inputs['dry-run'] != 'true' }}
-        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ github.token }}
-
-      - name: Publish Buildchain alpha transaction
-        if: ${{ startsWith(steps.target_ref.outputs.target_ref, 'alpha/') }}
-        uses: kungfu-systems/buildchain/actions/promote-buildchain-ref@v3-alpha
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        with:
-          token: ${{ github.token }}
-          generated-status-check-token: ${{ github.token }}
-          generated-pull-request-token: ${{ secrets.BUILDCHAIN_PROMOTION_TOKEN || github.token }}
-          generated-ref-update-token: ${{ github.token }}
-          branch-protection-bypass-apps: "github-actions"
-          sha: ${{ steps.target.outputs.sha }}
-          target-ref: ${{ steps.target_ref.outputs.target_ref }}
-          dry-run: ${{ inputs['dry-run'] || 'false' }}
-          require-governance: "true"
-          require-version-state: "true"
-          required-status-check: "check"
-          allow-repository: "kungfu-systems/runtime-images"
-          publish-transaction: "true"
-          publish-required-artifacts-json: ${{ steps.required_artifacts.outputs.json }}
-          release-passport: "true"
-          release-passport-product-name: "Kungfu Course Hub"
-          release-passport-impact-json: ".buildchain/release-impact.json"
-          github-release: "true"
-          github-release-title: "Kungfu Course Hub ${{ steps.target_ref.outputs.target_ref }}"
-          github-release-notes: "Buildchain Release Passport and exact publication evidence for the Apache-2.0 Course Hub reference application."
-
-      - name: Publish Buildchain stable transaction
-        if: ${{ startsWith(steps.target_ref.outputs.target_ref, 'release/') }}
-        uses: kungfu-systems/buildchain/actions/promote-buildchain-ref@v3
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        with:
-          token: ${{ github.token }}
-          generated-status-check-token: ${{ github.token }}
-          generated-pull-request-token: ${{ secrets.BUILDCHAIN_PROMOTION_TOKEN || github.token }}
-          generated-ref-update-token: ${{ github.token }}
-          branch-protection-bypass-apps: "github-actions"
-          sha: ${{ steps.target.outputs.sha }}
-          target-ref: ${{ steps.target_ref.outputs.target_ref }}
-          dry-run: ${{ inputs['dry-run'] || 'false' }}
-          require-governance: "true"
-          require-version-state: "true"
-          required-status-check: "check"
-          allow-repository: "kungfu-systems/runtime-images"
-          publish-transaction: "true"
-          publish-required-artifacts-json: ${{ steps.required_artifacts.outputs.json }}
-          release-passport: "true"
-          release-passport-product-name: "Kungfu Course Hub"
-          release-passport-impact-json: ".buildchain/release-impact.json"
-          github-release: "true"
-          github-release-title: "Kungfu Course Hub ${{ steps.target_ref.outputs.target_ref }}"
-          github-release-notes: "Buildchain Release Passport and exact publication evidence for the Apache-2.0 Course Hub reference application."
+  promote:
+    if: >-
+      ${{ (github.event_name == 'workflow_dispatch' && (inputs['dry-run'] == 'true' || inputs['resume-candidate-run-id'] != '')) ||
+          (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push') }}
+    uses: kungfu-systems/buildchain/.github/workflows/release-candidate-promote.yml@v4-alpha
+    secrets:
+      BUILDCHAIN_PROMOTION_TOKEN: ${{ secrets.BUILDCHAIN_PROMOTION_TOKEN }}
+      KUNGFU_GOVERNANCE_AUDITOR_APP_PRIVATE_KEY: ${{ secrets.KUNGFU_GOVERNANCE_AUDITOR_APP_PRIVATE_KEY }}
+    with:
+      buildchain-ref: ${{ inputs['resume-buildchain-runtime-sha'] || 'v4-alpha' }}
+      buildchain-contract-lock-path: .buildchain/alpha-contract-lock.json
+      target-ref: ${{ github.event.workflow_run.head_branch || inputs['target-ref'] }}
+      target-sha: ${{ github.event.workflow_run.head_sha || inputs.sha || github.sha }}
+      package-manager: npm
+      artifact-name: runtime-images
+      artifact-patterns: runtime-images-linux-x64-*
+      release-candidate-workflow-file: build.yml
+      release-candidate-workflow-name: Build
+      resume-candidate-repository: ${{ inputs['resume-candidate-run-id'] != '' && github.repository || '' }}
+      resume-candidate-run-id: ${{ inputs['resume-candidate-run-id'] || '' }}
+      resume-expected-workflow-file: build.yml
+      resume-expected-workflow-name: Build
+      resume-expected-source-tree: ${{ inputs['resume-expected-source-tree'] || '' }}
+      resume-expected-candidate-root: ${{ inputs['resume-expected-candidate-root'] || '' }}
+      resume-expected-candidate-runtime-sha: ${{ inputs['resume-expected-candidate-runtime-sha'] || '' }}
+      resume-buildchain-runtime-sha: ${{ inputs['resume-buildchain-runtime-sha'] || '' }}
+      resume-transaction-id: ${{ inputs['resume-transaction-id'] || '' }}
+      publish-transaction-override: ${{ inputs['resume-candidate-run-id'] != '' }}
+      required-status-check: check
+      required-artifact-count: 1
+      publish-artifact-kind: oci
+      publish-required-artifacts-json: "[]"
+      declarative-release-tail: true
+      publication-auto-admission: true
+      publication-auto-no-gate: true
+      publication-publisher-workflow-path: .github/workflows/buildchain-ref-promotion.yml
+      publication-product: Kungfu Course Hub
+      publication-target: oci:ghcr.io/kungfu-systems/runtime-images
+      publication-package-name: ""
+      release-passport: true
+      release-passport-product-name: Kungfu Course Hub
+      release-passport-impact-json: .buildchain/release-impact.json
+      release-passport-kfd-1-witness-jsons: .buildchain/kfd/kfd-1/runtime-images-contract-world.witness.json
+      release-passport-kfd-2-claim-jsons: .buildchain/kfd/kfd-2/release-claims.json
+      release-passport-kfd-3-prebuild-witness-jsons: .buildchain/kfd/kfd-3/collaboration-interface.prebuild.json
+      release-passport-kfd-3-artifact-witness-jsons: .buildchain/kfd/kfd-3/collaboration-interface.artifact.json
+      github-release: true
+      github-release-payload-patterns: |
+        oci-family.json
+        *-smoke.json
+      dry-run: ${{ github.event_name == 'workflow_dispatch' && inputs['dry-run'] != 'false' }}

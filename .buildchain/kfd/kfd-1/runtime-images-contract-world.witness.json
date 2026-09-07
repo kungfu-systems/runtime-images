@@ -1,0 +1,94 @@
+{
+  "id": "runtime-images-release-contract-world",
+  "standard": "kfd-1",
+  "source": {
+    "repo": "kungfu-systems/runtime-images",
+    "ref": ""
+  },
+  "contractWorld": {
+    "schemaId": "https://kfd.libkungfu.dev/schemas/kfd-1/contract-world.schema.json",
+    "digest": "sha256:2c7b8e898c9694ec28b7cd20b85580afa53da0d24fb096fb7ccc37ace627ee60"
+  },
+  "canonicalPolicy": {
+    "path": "docs/RELEASING.md",
+    "sha256": "9549d85dae4d7323d418f70fb0790d08962edc3c88a0b8ed9e38dc19894e14f2"
+  },
+  "registry": {
+    "path": ".buildchain/kfd/kfd-3/surfaces.json",
+    "sha256": "97177bc6fbf127b5ca95e4883ef158a73b3f588da70617ff8a3dc188f318d7ba"
+  },
+  "surfaces": [
+    {
+      "name": "readme",
+      "sourcePath": "README.md",
+      "sourceSha256": "371580448fe64ac19737f30bbbea10580957f63d591b20c8e120d23011523cde",
+      "artifactPath": "README.md",
+      "expectedSha256": "371580448fe64ac19737f30bbbea10580957f63d591b20c8e120d23011523cde",
+      "byteForByte": true
+    },
+    {
+      "name": "image-contract",
+      "sourcePath": "contracts/hub-starter-runtime.contract.json",
+      "sourceSha256": "b74b93d78230f8029ff7745420321c142b492a7ab247621a18696b82d5f3236d",
+      "artifactPath": "contracts/hub-starter-runtime.contract.json",
+      "expectedSha256": "b74b93d78230f8029ff7745420321c142b492a7ab247621a18696b82d5f3236d",
+      "byteForByte": true
+    },
+    {
+      "name": "release-and-tags",
+      "sourcePath": "docs/RELEASING.md",
+      "sourceSha256": "9549d85dae4d7323d418f70fb0790d08962edc3c88a0b8ed9e38dc19894e14f2",
+      "artifactPath": "docs/RELEASING.md",
+      "expectedSha256": "9549d85dae4d7323d418f70fb0790d08962edc3c88a0b8ed9e38dc19894e14f2",
+      "byteForByte": true
+    },
+    {
+      "name": "runner-boundary",
+      "sourcePath": "docs/DEVELOPMENT-CANDIDATE.md",
+      "sourceSha256": "39cd261c1bb77e19ea345191b1d9be1fe82587f873168030514c7a870ab0c962",
+      "artifactPath": "docs/DEVELOPMENT-CANDIDATE.md",
+      "expectedSha256": "39cd261c1bb77e19ea345191b1d9be1fe82587f873168030514c7a870ab0c962",
+      "byteForByte": true
+    },
+    {
+      "name": "image-lock",
+      "sourcePath": "release/runtime.lock.json",
+      "sourceSha256": "5cb044d612e85e74f512d0c9229205e12967b7249fa4614d854809d2cfeb4e9b",
+      "artifactPath": "release/runtime.lock.json",
+      "expectedSha256": "5cb044d612e85e74f512d0c9229205e12967b7249fa4614d854809d2cfeb4e9b",
+      "byteForByte": true
+    },
+    {
+      "name": "publish-evidence-writer",
+      "sourcePath": "scripts/release-qualification.mjs",
+      "sourceSha256": "717c54824b8c967f78de37454e9a6c3fbbebef217ca339cab488bef5b385b23e",
+      "artifactPath": "scripts/release-qualification.mjs",
+      "expectedSha256": "717c54824b8c967f78de37454e9a6c3fbbebef217ca339cab488bef5b385b23e",
+      "byteForByte": true
+    },
+    {
+      "name": "oci-candidate-builder",
+      "sourcePath": "scripts/build-oci-candidate.mjs",
+      "sourceSha256": "f8051e9f63333c7e1719bd681f13b1e81ddf7add12979f0f3e3051c75cc99e27",
+      "artifactPath": "scripts/build-oci-candidate.mjs",
+      "expectedSha256": "f8051e9f63333c7e1719bd681f13b1e81ddf7add12979f0f3e3051c75cc99e27",
+      "byteForByte": true
+    },
+    {
+      "name": "oci-candidate-sealer",
+      "sourcePath": "scripts/oci-compose-candidate.mjs",
+      "sourceSha256": "40388b19cb0ebf1046365943f00ea58b804c8678a9da7f1da0094b454feb4855",
+      "artifactPath": "scripts/oci-compose-candidate.mjs",
+      "expectedSha256": "40388b19cb0ebf1046365943f00ea58b804c8678a9da7f1da0094b454feb4855",
+      "byteForByte": true
+    },
+    {
+      "name": "oci-evidence-projection",
+      "sourcePath": "scripts/qualify-runtime-release.sh",
+      "sourceSha256": "8f048160953b1b3fa39262bd9057d0e18097ab277178c2443b73e66c9a01ea43",
+      "artifactPath": "scripts/qualify-runtime-release.sh",
+      "expectedSha256": "8f048160953b1b3fa39262bd9057d0e18097ab277178c2443b73e66c9a01ea43",
+      "byteForByte": true
+    }
+  ]
+}
