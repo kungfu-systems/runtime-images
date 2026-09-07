@@ -11,7 +11,7 @@
     {
       "id": "image-contract",
       "path": "contracts/hub-starter-runtime.contract.json",
-      "sha256": "b74b93d78230f8029ff7745420321c142b492a7ab247621a18696b82d5f3236d"
+      "sha256": "6da1939ab57dab8c86c10ede08bcf7f62e750937b5bc305616ba22d32cf3048a"
     },
     {
       "id": "release-and-tags",
@@ -21,7 +21,7 @@
     {
       "id": "image-lock",
       "path": "release/runtime.lock.json",
-      "sha256": "5cb044d612e85e74f512d0c9229205e12967b7249fa4614d854809d2cfeb4e9b"
+      "sha256": "51595148e0e3e6c85a370a448c0c830cd72fbcee0f43b535ee0d6e1748d5cd9d"
     },
     {
       "id": "buildchain-config",
@@ -31,7 +31,7 @@
     {
       "id": "alpha-contract-lock",
       "path": ".buildchain/alpha-contract-lock.json",
-      "sha256": "97729338dcac6c9a94ca524134ad72bd297e1957d25750f6ea8d10bab1f8b746"
+      "sha256": "78f031418866fad169942f7556b4e580f61224000f3775c25130f82697207ac3"
     },
     {
       "id": "stable-contract-lock",
@@ -43,14 +43,14 @@
     {
       "id": "kfd-1-contract-world-witness",
       "path": ".buildchain/kfd/kfd-1/runtime-images-contract-world.witness.json",
-      "sha256": "e55dfdf9e65b8d8d78e067f5ef9f37beba6b018eebf3286034c5c05b973b8b48",
+      "sha256": "be3f4dd0fcc7ad7b896f1a635889203cbbf3d2f4d0b6c11b262f51ead0904f0a",
       "contract": "kfd-1",
       "status": "passed"
     },
     {
       "id": "kfd-upstream-aggregate",
       "path": ".buildchain/kfd/kfd-2/kfd-upstream-aggregate.json",
-      "sha256": "1a8f7606a02a78d7b03e74cef70b1bd2e447bf86727763ff475a5bbf95dc4fb6",
+      "sha256": "93c520ee03d0e70dc0120cd5e44e75f444fe5946b448c7a16b4fbec46180320f",
       "contract": "kungfu-buildchain-kfd-upstream-aggregate",
       "status": "passed"
     },
@@ -63,16 +63,16 @@
     }
   ],
   "hashes": {
-    "kfd1WitnessSha256": "bba593f47712c2780fcfc5f41add8485028c60a3f94a0e50b3c5303c252add7a",
-    "upstreamAggregateSha256": "9e92d6c36b6717fc788d9cdb248a48f8b9912dc99417af24154b1ac19ab7e3ad",
-    "sourceBindingsSha256": "bd6e6f5e7a969752287da610fb04c273081e3e79b1f95bb5f2865de95e268f43",
-    "machineEvidenceSha256": "b520f10955356a17fdc19fcba84e48cedb462f6d5fa44e2b0e41a40d6e7dd5c0"
+    "kfd1WitnessSha256": "c99391830fa2e1ed64760ec2a0d0450a0be91edea666db76624b2f532a3a9a7e",
+    "upstreamAggregateSha256": "85e6a52f40a0a57562a073a4e3e982c761e615f6fd81f138e631d392ce6aebdd",
+    "sourceBindingsSha256": "5d35c1c5b43d888989e50f5dca55d57b85684ce1317c88bc35967420e1493611",
+    "machineEvidenceSha256": "e379a04b02b5a501abecf746f88e294015ef16361114a723223c9dd67db4eb39"
   },
   "artifacts": [
     {
       "id": "oci-image-lock",
       "path": "release/runtime.lock.json",
-      "sha256": "5cb044d612e85e74f512d0c9229205e12967b7249fa4614d854809d2cfeb4e9b"
+      "sha256": "51595148e0e3e6c85a370a448c0c830cd72fbcee0f43b535ee0d6e1748d5cd9d"
     },
     {
       "id": "publish-evidence-writer",

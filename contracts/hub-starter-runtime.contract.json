@@ -82,20 +82,36 @@
     "destructiveCleanupCommand": null
   },
   "release": {
-    "version": "1.0.0-alpha.13",
-    "tag": "v1.0.0-alpha.13",
-    "sourceRevision": "4305406a37ecaaba8eb0b942eb2fe36fe0e9f095",
-    "releaseRevision": "a6fe02cdd0bded1bfd4d51d96c87371281c8420e",
-    "qualificationRun": "https://github.com/kungfu-systems/runtime-images/actions/runs/31626038779",
-    "promotionRun": "https://github.com/kungfu-systems/runtime-images/actions/runs/31627184153",
-    "transactionStateRef": "refs/heads/buildchain/release-state/1-0-0-alpha-13",
-    "image": "ghcr.io/kungfu-systems/runtime-images/hub-starter@sha256:a0a94c04188210beaa779a094661d99bd232795fa26b17881b53ec83a50a486e",
-    "composeApplication": "ghcr.io/kungfu-systems/runtime-images/hub-starter:compose-v1.0.0-alpha.13@sha256:c1e2a459d5057ac9d875204823413a82a9aae66da0d555f8677c014cdb7e1347"
+    "version": "1.0.0-alpha.15",
+    "tag": "v1.0.0-alpha.15",
+    "releaseRevision": "8f4aa445fb43344f9a1ae821e70e460c778a8a9b",
+    "promotionRun": "https://github.com/kungfu-systems/runtime-images/actions/runs/34087924276",
+    "composeApplication": "ghcr.io/kungfu-systems/runtime-images/hub-starter:compose-v1.0.0-alpha.15@sha256:5eb99593c3ce76d04b5241e85ffaba3c748dd02a4b2e95c3d268249204b217fd",
+    "previousComposePreviewDigest": "sha256:c1e2a459d5057ac9d875204823413a82a9aae66da0d555f8677c014cdb7e1347",
+    "publication": {
+      "kind": "buildchain-v4",
+      "run": "https://github.com/kungfu-systems/runtime-images/actions/runs/34086384664",
+      "evidence": "https://github.com/kungfu-systems/runtime-images/releases/download/v1.0.0-alpha.15/buildchain-publication-settlement.json",
+      "receiptRoot": "sha256:9c33477fbab6e1ec5083f8adf78bbea5f1df39c9c09a083677531529efe98bcc",
+      "transactionRoot": "sha256:81202bf1d847928e1f40a5e5a07f2cc0e8885ecb34f99a4c4c54f4f8f7c6835f",
+      "stateRoot": "sha256:f04f5c207f7e35f434dfcbf94153007db0437876bb4c1c44cb01977642e7c505",
+      "planRoot": "sha256:585bcddc8a8fd375e8bc1e1f1f70c92a5665fda58c620e051728aa48133bf54d",
+      "familyRoot": "sha256:0d50aed58c752ced0e9cb2c3dc64424b0ef90eca86fef900c835d277843fc16d"
+    },
+    "preview": {
+      "evidence": "https://github.com/kungfu-systems/runtime-images/releases/download/v1.0.0-alpha.15/buildchain-compose-preview-34087470534-1.json",
+      "qualificationAttempt": 1,
+      "receiptRoot": "sha256:ab1f856230fdd94995d3326e02780b977bac5fb96d436b5c9c82aaf85ecb9911",
+      "qualificationRoot": "sha256:c654fbc621f4e9b493c85bf7fc1d437627f058727e874aac0d804dfb9d5e6c83"
+    },
+    "sourceRevision": "29ea0d639317d909607fb91d36be6ecc17b67b99",
+    "qualificationRun": "https://github.com/kungfu-systems/runtime-images/actions/runs/34087470534",
+    "image": "ghcr.io/kungfu-systems/runtime-images/hub-starter@sha256:a3c6877c514970bc14bb5e5cae47f65a85119400b1b4eb2938cf92a2f794c334"
   },
   "substitutionSeam": {
     "environment": "KUNGFU_HUB_IMAGE",
     "policy": "exact digest only",
-    "officialAlpha": "v1.0.0-alpha.13"
+    "officialAlpha": "v1.0.0-alpha.15"
   },
   "nonClaims": [
     "not production ready",

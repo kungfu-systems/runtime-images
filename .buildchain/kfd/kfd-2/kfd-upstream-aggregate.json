@@ -21,7 +21,7 @@
       "roleValid": true,
       "package": {
         "name": "@kungfu-tech/buildchain",
-        "version": "4.0.2-alpha.51"
+        "version": "4.0.2-alpha.52"
       },
       "repository": "https://github.com/kungfu-systems/buildchain",
       "kfd": {
@@ -46,7 +46,7 @@
         {
           "path": "dist/site/kfd-claims.json",
           "kind": "package",
-          "sha256": "sha256:d89ffd142f91d7b64b73b000a232418e55a95f1b475d403a6104a2fe61fd4a1a",
+          "sha256": "sha256:96c8d096be9e515e8f18018c018cf881620fe6c2df94db5e0d85f27b1202603d",
           "contract": "kungfu-buildchain-kfd-claim-registry",
           "role": "",
           "directory": false
@@ -628,7 +628,7 @@
       "kfd"
     ],
     "packageVersions": {
-      "buildchain": "4.0.2-alpha.51",
+      "buildchain": "4.0.2-alpha.52",
       "kfd": "1.0.0-alpha.21"
     },
     "status": "collected"
