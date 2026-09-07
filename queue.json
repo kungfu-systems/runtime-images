@@ -3,7 +3,7 @@
   "contract": "kungfu-buildchain-dev-delivery-warrant-queue",
   "repository": "kungfu-systems/runtime-images",
   "protectedBase": "dev/v1/v1.0",
-  "generation": 6,
+  "generation": 7,
   "fencingCounter": 2,
   "policy": {
     "agingSeconds": 900,
@@ -12,42 +12,7 @@
     "emergencyPolicy": "reviewed-explicit-only",
     "minimumWriterProtocolRoot": "sha256:54a203cadf0b14d4e3c198a3cc3c177c42813aa1c0cca03e900df714b6ae5563"
   },
-  "activeWarrant": {
-    "schema": "kungfu.buildchain.dev-delivery-warrant/v1",
-    "repository": "kungfu-systems/runtime-images",
-    "protectedBase": "dev/v1/v1.0",
-    "candidateId": "sha256:02f7aaec724296732b27ec6468901c7acf6babf93d9fb11b5d9aa904cfb516ba",
-    "pullRequestNumber": 82,
-    "sourceHead": "d0306d20806925c9e74755e6e285c75cc58860eb",
-    "sourceRoot": "sha256:2395884e2c744d27f438bcd229593f66e466b84dfe729e56c3cf56b3910f99fa",
-    "sourceIdentityRoot": "sha256:1a60a1cdc3cc7b9989ad987ec4a04f806d2093fb77ad184040d6ee5b7813e30f",
-    "sourcePatchRoot": "sha256:4a80253330cd39587f5946fd94176bd2c379bfeceeccd302f5fc7ff1e7d8b8f6",
-    "sourceProofRoot": "sha256:fc875edd557c85233a18452084df9d1e46b6a4096b03ae2c6f00297d6e353f88",
-    "planRoot": "sha256:feff80df8613389a194cb8b76722c52d3d15b332e225d1256eb0807015cfd845",
-    "closureRoot": "sha256:d387b27986adc6a5f2f17c4bf5460ed4a72a072b442f98f99e9f2235546016f8",
-    "dependencyRoot": "sha256:8eb95a62e32a2a8a0926b9b7de73b6659e10a6f66e2be04b1ea5b5d4044a86ec",
-    "toolchainRoot": "sha256:2131424c3f804688768faaf844f0dcd675962efbb7b25c39c6924355ded9b726",
-    "affectedPaths": [
-      ".buildchain/kfd/kfd-1/release-gate.json",
-      ".buildchain/kfd/kfd-1/runtime-images-contract-world.witness.json",
-      ".buildchain/kfd/kfd-2/release-claims.json",
-      ".buildchain/kfd/kfd-3/collaboration-interface.artifact.json",
-      ".buildchain/kfd/kfd-3/collaboration-interface.prebuild.json",
-      ".buildchain/kfd/kfd-3/release-gate.json",
-      ".buildchain/kfd/kfd-3/surfaces.json",
-      "docs/RELEASING.md"
-    ],
-    "shardEvidenceRoots": [],
-    "sourceWorkflowRunId": 34076914757,
-    "deliveryClass": "non-native-fast",
-    "priority": "ordinary",
-    "generation": 2,
-    "expectedOldStateRoot": "sha256:79a334d9d7c049c3162b862a09aa664a866905d8379e79b4f50a003ae2aefa1a",
-    "issuedAt": "2026-09-07T02:42:20.858Z",
-    "expiresAt": "2026-09-07T03:42:20.858Z",
-    "fencingToken": "sha256:c894e167608a0b525a0a9884223cf1a621dfc7649891ee4a7139a2540db7e9e7",
-    "nextAction": "Replay on the exact current dev base, prove required checks, then enqueue the unchanged PR head."
-  },
+  "activeWarrant": null,
   "candidates": [
     {
       "repository": "kungfu-systems/runtime-images",
@@ -170,11 +135,19 @@
       "sourceWorkflowRunId": 34076914757,
       "priority": "ordinary",
       "enqueuedAt": "2026-09-07T02:39:19.988Z",
-      "updatedAt": "2026-09-07T02:42:20.858Z",
+      "updatedAt": "2026-09-07T02:47:27.057Z",
       "attempts": 1,
       "recoveries": 0,
-      "status": "selected",
-      "terminal": null,
+      "status": "merged",
+      "terminal": {
+        "outcome": "merged",
+        "reason": "GitHub PR 82 is merged at 62f03eec4442258dc2ddc133dd8e8b74915cdcec; reconcile its retained Warrant using the exact provider terminal fact.",
+        "evidenceRoot": "sha256:83366846c2ed2cda0359a0c07a0814c912e170a61040761bd03c79242aede40f",
+        "closedAt": "2026-09-07T02:47:27.057Z",
+        "fencingToken": "sha256:c894e167608a0b525a0a9884223cf1a621dfc7649891ee4a7139a2540db7e9e7",
+        "leaseGeneration": 2,
+        "successorWake": null
+      },
       "affectedPaths": [
         ".buildchain/kfd/kfd-1/release-gate.json",
         ".buildchain/kfd/kfd-1/runtime-images-contract-world.witness.json",
@@ -188,6 +161,6 @@
       "shardEvidenceRoots": []
     }
   ],
-  "updatedAt": "2026-09-07T02:42:20.858Z",
-  "stateRoot": "sha256:3c68f77dedf924cd68ecaaf7c9f09e3db1057879afe3ed7d331c8d7bf47139ca"
+  "updatedAt": "2026-09-07T02:47:27.057Z",
+  "stateRoot": "sha256:7b6da2043880880065cba961c11653275a8973d9b79490f85c285263c223e460"
 }
